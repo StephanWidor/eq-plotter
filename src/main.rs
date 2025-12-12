@@ -102,202 +102,213 @@ impl eframe::App for EqPlotter {
 
         let mut frequency = 10.0.pow(*log_frequency);
 
-        egui::CentralPanel::default().show(ctx, |ui| {
-            ui.horizontal(|ui| {
-                ui.vertical(|ui| {
-                    egui::ComboBox::from_label("")
-                        .selected_text(eq.to_string())
-                        .width(220.0)
-                        .show_ui(ui, |ui| {
-                            for eq_type in eq::EQ::all(frequency, *gain_db, *q) {
-                                ui.selectable_value(eq, eq_type, eq_type.to_string());
-                            }
-                        });
+        egui::CentralPanel::default()
+            .frame(egui::Frame::default().fill(egui::Color32::from_rgb(32, 35, 38)))
+            .show(ctx, |ui| {
+                ui.horizontal(|ui| {
+                    ui.vertical(|ui| {
+                        egui::ComboBox::from_label("")
+                            .selected_text(eq.to_string())
+                            .width(220.0)
+                            .show_ui(ui, |ui| {
+                                for eq_type in eq::EQ::all(frequency, *gain_db, *q) {
+                                    ui.selectable_value(eq, eq_type, eq_type.to_string());
+                                }
+                            });
 
-                    ui.add_enabled(
-                        eq.has_frequency(),
-                        egui::Slider::new(
-                            &mut *log_frequency,
-                            EqPlotter::MIN_LOG_FREQUENCY..=EqPlotter::MAX_LOG_FREQUENCY,
-                        )
-                        .custom_formatter(|log_frequency, _| {
-                            10.0.pow(log_frequency).round().to_string()
-                        })
-                        .custom_parser(|as_string| {
-                            let parsed = String::from(as_string).parse::<f64>();
-                            match parsed {
-                                Ok(frequency) => Some(frequency.log10()),
-                                Err(_) => None,
-                            }
-                        })
-                        .prefix("freqency: ")
-                        .suffix("Hz"),
-                    );
-
-                    ui.add_enabled(
-                        eq.has_gain_db(),
-                        egui::Slider::new(
-                            &mut *gain_db,
-                            EqPlotter::MIN_GAIN_DB..=EqPlotter::MAX_GAIN_DB,
-                        )
-                        .prefix("gain: ")
-                        .suffix("dB"),
-                    );
-
-                    ui.add_enabled(
-                        eq.has_q(),
-                        egui::Slider::new(&mut *q, EqPlotter::MIN_Q..=EqPlotter::MAX_Q)
-                            .prefix("Q: "),
-                    );
-
-                    frequency = 10.0.pow(*log_frequency);
-                    eq.set_parameters(frequency, *gain_db, *q);
-                });
-
-                let log_frequency_formatter =
-                    |mark: egui_plot::GridMark, _range: &RangeInclusive<f64>| -> String {
-                        let log_frequency = mark.value;
-                        if log_frequency.fract().abs() < 1e-6 {
-                            let frequency = 10.0.pow(mark.value);
-                            format!("{}", frequency)
-                        } else {
-                            String::new()
-                        }
-                    };
-
-                let coefficients = biquad::coefficients::Coefficients::from_eq(eq, *sample_rate);
-                let frequency_response =
-                    biquad::utils::make_frequency_response_function(&coefficients, *sample_rate);
-                let plot_size = 400.0;
-
-                ui.vertical(|ui| {
-                    egui_plot::Plot::new("Gain (dB)")
-                        .allow_zoom(false)
-                        .allow_drag(false)
-                        .allow_scroll(false)
-                        .width(plot_size)
-                        .height(plot_size)
-                        .auto_bounds([false, false])
-                        .custom_x_axes(vec![
-                            egui_plot::AxisHints::new_x().formatter(log_frequency_formatter),
-                        ])
-                        .label_formatter(|_, point| {
-                            format!("{} Hz, {:.2} dB", 10.0.pow(point.x) as i32, point.y)
-                        })
-                        .legend(egui_plot::Legend::default())
-                        .show(ui, |plot_ui| {
-                            plot_ui.set_plot_bounds(egui_plot::PlotBounds::from_min_max(
-                                [EqPlotter::MIN_LOG_FREQUENCY, EqPlotter::MIN_GAIN_DB],
-                                [EqPlotter::MAX_LOG_FREQUENCY, EqPlotter::MAX_GAIN_DB],
-                            ));
-                            let gain_points = egui_plot::PlotPoints::from_explicit_callback(
-                                |log_frequency| {
-                                    utils::amplitude_to_db(
-                                        frequency_response(10.0.pow(log_frequency)).abs(),
-                                    )
-                                },
+                        ui.add_enabled(
+                            eq.has_frequency(),
+                            egui::Slider::new(
+                                &mut *log_frequency,
                                 EqPlotter::MIN_LOG_FREQUENCY..=EqPlotter::MAX_LOG_FREQUENCY,
-                                1000,
-                            );
-                            plot_ui.line(egui_plot::Line::new("Gain Response", gain_points));
-                        });
+                            )
+                            .custom_formatter(|log_frequency, _| {
+                                10.0.pow(log_frequency).round().to_string()
+                            })
+                            .custom_parser(|as_string| {
+                                let parsed = String::from(as_string).parse::<f64>();
+                                match parsed {
+                                    Ok(frequency) => Some(frequency.log10()),
+                                    Err(_) => None,
+                                }
+                            })
+                            .prefix("freqency: ")
+                            .suffix("Hz"),
+                        );
 
-                    egui_plot::Plot::new("Phase")
-                        .allow_zoom(false)
-                        .allow_drag(false)
-                        .allow_scroll(false)
-                        .width(plot_size)
-                        .height(plot_size)
-                        .auto_bounds([false, false])
-                        .custom_x_axes(vec![
-                            egui_plot::AxisHints::new_x().formatter(log_frequency_formatter),
-                        ])
-                        .label_formatter(|_, point| {
-                            format!("{} Hz, {:.2} rad", 10.0.pow(point.x) as i32, point.y)
-                        })
-                        .show_x(false)
-                        .legend(egui_plot::Legend::default())
-                        .show(ui, |plot_ui| {
-                            plot_ui.set_plot_bounds(egui_plot::PlotBounds::from_min_max(
-                                [EqPlotter::MIN_LOG_FREQUENCY, -f64::consts::PI],
-                                [EqPlotter::MAX_LOG_FREQUENCY, f64::consts::PI],
-                            ));
-                            let phase_points = egui_plot::PlotPoints::from_explicit_callback(
-                                |log_frequency| frequency_response(10.0.pow(log_frequency)).arg(),
-                                EqPlotter::MIN_LOG_FREQUENCY..=EqPlotter::MAX_LOG_FREQUENCY,
-                                1000,
-                            );
-                            plot_ui.line(egui_plot::Line::new("Phase Response", phase_points));
-                        });
-                });
+                        ui.add_enabled(
+                            eq.has_gain_db(),
+                            egui::Slider::new(
+                                &mut *gain_db,
+                                EqPlotter::MIN_GAIN_DB..=EqPlotter::MAX_GAIN_DB,
+                            )
+                            .prefix("gain: ")
+                            .suffix("dB"),
+                        );
 
-                ui.vertical(|ui| {
-                    egui_plot::Plot::new("Impulse Response")
-                        .allow_zoom(false)
-                        .allow_drag(false)
-                        .allow_scroll(false)
-                        .width(plot_size)
-                        .height(plot_size)
-                        .legend(egui_plot::Legend::default())
-                        .show(ui, |plot_ui| {
-                            let impulse_response =
-                                biquad::utils::impulse_response(&coefficients, 0.001, 10, 1024);
-                            let response_points =
-                                egui_plot::PlotPoints::from_ys_f64(&impulse_response);
-                            plot_ui.line(egui_plot::Line::new("Impulse Response", response_points));
-                        });
+                        ui.add_enabled(
+                            eq.has_q(),
+                            egui::Slider::new(&mut *q, EqPlotter::MIN_Q..=EqPlotter::MAX_Q)
+                                .prefix("Q: "),
+                        );
 
-                    egui_plot::Plot::new("Poles And Zeros")
-                        .allow_zoom(false)
-                        .allow_drag(false)
-                        .allow_scroll(false)
-                        .width(plot_size)
-                        .height(plot_size)
-                        .legend(egui_plot::Legend::default())
-                        .show(ui, |plot_ui| {
-                            plot_ui.set_plot_bounds(egui_plot::PlotBounds::from_min_max(
-                                [-1.5, -1.5],
-                                [1.5, 1.5],
-                            ));
-                            let unit_circle_points =
-                                egui_plot::PlotPoints::from_parametric_callback(
-                                    |angle| (angle.cos(), angle.sin()),
-                                    0.0..=2.0 * f64::consts::PI,
-                                    100,
-                                );
-                            plot_ui.line(egui_plot::Line::new("Unit Circle", unit_circle_points));
+                        frequency = 10.0.pow(*log_frequency);
+                        eq.set_parameters(frequency, *gain_db, *q);
+                    });
 
-                            let poles = poles(&coefficients)
-                                .iter()
-                                .map(|pole| [pole.re, pole.im])
-                                .collect::<Vec<_>>();
-                            let pole_markers = egui_plot::Points::new("Poles", poles)
-                                .filled(true)
-                                .radius(3.0);
-                            plot_ui.points(pole_markers);
-
-                            let zeros = zeros(&coefficients)
-                                .iter()
-                                .map(|zero| [zero.re, zero.im])
-                                .collect::<Vec<_>>();
-                            let zero_markers = egui_plot::Points::new("Zeros", zeros)
-                                .filled(true)
-                                .radius(3.0);
-                            plot_ui.points(zero_markers);
-
-                            if !is_stable(&coefficients) {
-                                plot_ui.text(
-                                    egui_plot::Text::new(
-                                        "Stability Warning",
-                                        egui_plot::PlotPoint::new(0.0, 0.5),
-                                        "Biquad is not stable!",
-                                    )
-                                    .color(egui::Color32::RED),
-                                );
+                    let log_frequency_formatter =
+                        |mark: egui_plot::GridMark, _range: &RangeInclusive<f64>| -> String {
+                            let log_frequency = mark.value;
+                            if log_frequency.fract().abs() < 1e-6 {
+                                let frequency = 10.0.pow(mark.value);
+                                format!("{}", frequency)
+                            } else {
+                                String::new()
                             }
-                        });
+                        };
+
+                    let coefficients =
+                        biquad::coefficients::Coefficients::from_eq(eq, *sample_rate);
+                    let frequency_response = biquad::utils::make_frequency_response_function(
+                        &coefficients,
+                        *sample_rate,
+                    );
+                    let plot_size = 400.0;
+
+                    ui.vertical(|ui| {
+                        egui_plot::Plot::new("Gain (dB)")
+                            .allow_zoom(false)
+                            .allow_drag(false)
+                            .allow_scroll(false)
+                            .width(plot_size)
+                            .height(plot_size)
+                            .auto_bounds([false, false])
+                            .custom_x_axes(vec![
+                                egui_plot::AxisHints::new_x().formatter(log_frequency_formatter),
+                            ])
+                            .label_formatter(|_, point| {
+                                format!("{} Hz, {:.2} dB", 10.0.pow(point.x) as i32, point.y)
+                            })
+                            .legend(egui_plot::Legend::default())
+                            .show(ui, |plot_ui| {
+                                plot_ui.set_plot_bounds(egui_plot::PlotBounds::from_min_max(
+                                    [EqPlotter::MIN_LOG_FREQUENCY, EqPlotter::MIN_GAIN_DB],
+                                    [EqPlotter::MAX_LOG_FREQUENCY, EqPlotter::MAX_GAIN_DB],
+                                ));
+                                let gain_points = egui_plot::PlotPoints::from_explicit_callback(
+                                    |log_frequency| {
+                                        utils::amplitude_to_db(
+                                            frequency_response(10.0.pow(log_frequency)).abs(),
+                                        )
+                                    },
+                                    EqPlotter::MIN_LOG_FREQUENCY..=EqPlotter::MAX_LOG_FREQUENCY,
+                                    1000,
+                                );
+                                plot_ui.line(egui_plot::Line::new("Gain Response", gain_points));
+                            });
+
+                        egui_plot::Plot::new("Phase")
+                            .allow_zoom(false)
+                            .allow_drag(false)
+                            .allow_scroll(false)
+                            .width(plot_size)
+                            .height(plot_size)
+                            .auto_bounds([false, false])
+                            .custom_x_axes(vec![
+                                egui_plot::AxisHints::new_x().formatter(log_frequency_formatter),
+                            ])
+                            .label_formatter(|_, point| {
+                                format!("{} Hz, {:.2} rad", 10.0.pow(point.x) as i32, point.y)
+                            })
+                            .show_x(false)
+                            .legend(egui_plot::Legend::default())
+                            .show(ui, |plot_ui| {
+                                plot_ui.set_plot_bounds(egui_plot::PlotBounds::from_min_max(
+                                    [EqPlotter::MIN_LOG_FREQUENCY, -f64::consts::PI],
+                                    [EqPlotter::MAX_LOG_FREQUENCY, f64::consts::PI],
+                                ));
+                                let phase_points = egui_plot::PlotPoints::from_explicit_callback(
+                                    |log_frequency| {
+                                        frequency_response(10.0.pow(log_frequency)).arg()
+                                    },
+                                    EqPlotter::MIN_LOG_FREQUENCY..=EqPlotter::MAX_LOG_FREQUENCY,
+                                    1000,
+                                );
+                                plot_ui.line(egui_plot::Line::new("Phase Response", phase_points));
+                            });
+                    });
+
+                    ui.vertical(|ui| {
+                        egui_plot::Plot::new("Impulse Response")
+                            .allow_zoom(false)
+                            .allow_drag(false)
+                            .allow_scroll(false)
+                            .width(plot_size)
+                            .height(plot_size)
+                            .legend(egui_plot::Legend::default())
+                            .show(ui, |plot_ui| {
+                                let impulse_response =
+                                    biquad::utils::impulse_response(&coefficients, 0.001, 10, 1024);
+                                let response_points =
+                                    egui_plot::PlotPoints::from_ys_f64(&impulse_response);
+                                plot_ui.line(egui_plot::Line::new(
+                                    "Impulse Response",
+                                    response_points,
+                                ));
+                            });
+
+                        egui_plot::Plot::new("Poles And Zeros")
+                            .allow_zoom(false)
+                            .allow_drag(false)
+                            .allow_scroll(false)
+                            .width(plot_size)
+                            .height(plot_size)
+                            .legend(egui_plot::Legend::default())
+                            .show(ui, |plot_ui| {
+                                plot_ui.set_plot_bounds(egui_plot::PlotBounds::from_min_max(
+                                    [-1.5, -1.5],
+                                    [1.5, 1.5],
+                                ));
+                                let unit_circle_points =
+                                    egui_plot::PlotPoints::from_parametric_callback(
+                                        |angle| (angle.cos(), angle.sin()),
+                                        0.0..=2.0 * f64::consts::PI,
+                                        100,
+                                    );
+                                plot_ui
+                                    .line(egui_plot::Line::new("Unit Circle", unit_circle_points));
+
+                                let poles = poles(&coefficients)
+                                    .iter()
+                                    .map(|pole| [pole.re, pole.im])
+                                    .collect::<Vec<_>>();
+                                let pole_markers = egui_plot::Points::new("Poles", poles)
+                                    .filled(true)
+                                    .radius(3.0);
+                                plot_ui.points(pole_markers);
+
+                                let zeros = zeros(&coefficients)
+                                    .iter()
+                                    .map(|zero| [zero.re, zero.im])
+                                    .collect::<Vec<_>>();
+                                let zero_markers = egui_plot::Points::new("Zeros", zeros)
+                                    .filled(true)
+                                    .radius(3.0);
+                                plot_ui.points(zero_markers);
+
+                                if !is_stable(&coefficients) {
+                                    plot_ui.text(
+                                        egui_plot::Text::new(
+                                            "Stability Warning",
+                                            egui_plot::PlotPoint::new(0.0, 0.5),
+                                            "Biquad is not stable!",
+                                        )
+                                        .color(egui::Color32::RED),
+                                    );
+                                }
+                            });
+                    });
                 });
             });
-        });
     }
 }
