@@ -167,7 +167,7 @@ impl eframe::App for EqPlotter {
                                 EqPlotter::MIN_LOG_FREQUENCY..=EqPlotter::MAX_LOG_FREQUENCY,
                                 1000,
                             );
-                            plot_ui.line(egui_plot::Line::new(gain_points).name("Gain Response"));
+                            plot_ui.line(egui_plot::Line::new("Gain Response", gain_points));
                         });
 
                     egui_plot::Plot::new("Phase")
@@ -195,7 +195,7 @@ impl eframe::App for EqPlotter {
                                 EqPlotter::MIN_LOG_FREQUENCY..=EqPlotter::MAX_LOG_FREQUENCY,
                                 1000,
                             );
-                            plot_ui.line(egui_plot::Line::new(phase_points).name("Phase Response"));
+                            plot_ui.line(egui_plot::Line::new("Phase Response", phase_points));
                         });
                 });
 
@@ -212,9 +212,7 @@ impl eframe::App for EqPlotter {
                                 biquad::utils::impulse_response(&coefficients, 0.001, 10, 1024);
                             let response_points =
                                 egui_plot::PlotPoints::from_ys_f64(&impulse_response);
-                            plot_ui.line(
-                                egui_plot::Line::new(response_points).name("Impulse Response"),
-                            );
+                            plot_ui.line(egui_plot::Line::new("Impulse Response", response_points));
                         });
 
                     egui_plot::Plot::new("Poles And Zeros")
@@ -235,14 +233,13 @@ impl eframe::App for EqPlotter {
                                     0.0..=2.0 * f64::consts::PI,
                                     100,
                                 );
-                            plot_ui.line(egui_plot::Line::new(unit_circle_points));
+                            plot_ui.line(egui_plot::Line::new("Unit Circle", unit_circle_points));
 
                             let poles = poles(&coefficients)
                                 .iter()
                                 .map(|pole| [pole.re, pole.im])
                                 .collect::<Vec<_>>();
-                            let pole_markers = egui_plot::Points::new(poles)
-                                .name("Poles")
+                            let pole_markers = egui_plot::Points::new("Poles", poles)
                                 .filled(true)
                                 .radius(3.0);
                             plot_ui.points(pole_markers);
@@ -251,8 +248,7 @@ impl eframe::App for EqPlotter {
                                 .iter()
                                 .map(|zero| [zero.re, zero.im])
                                 .collect::<Vec<_>>();
-                            let zero_markers = egui_plot::Points::new(zeros)
-                                .name("Zeros")
+                            let zero_markers = egui_plot::Points::new("Zeros", zeros)
                                 .filled(true)
                                 .radius(3.0);
                             plot_ui.points(zero_markers);
@@ -260,6 +256,7 @@ impl eframe::App for EqPlotter {
                             if !is_stable(&coefficients) {
                                 plot_ui.text(
                                     egui_plot::Text::new(
+                                        "Stability Warning",
                                         egui_plot::PlotPoint::new(0.0, 0.5),
                                         "Biquad is not stable!",
                                     )
