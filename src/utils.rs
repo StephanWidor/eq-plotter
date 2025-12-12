@@ -1,9 +1,9 @@
+#[cfg(test)]
+use assert_approx_eq::assert_approx_eq;
 use num::Complex;
 use num_traits::Float;
 use num_traits::cast::FromPrimitive;
 use std::f64;
-#[cfg(test)]
-use assert_approx_eq::assert_approx_eq;
 
 pub fn amplitude_to_db<F: Float + FromPrimitive>(amplitude: F) -> F {
     if amplitude > F::zero() {
@@ -85,7 +85,7 @@ mod tests {
         check_solutions(polynom_roots(0.0, 2.0, 6.0), &vec![Complex::from(-3.0)]);
         check_solutions(
             polynom_roots(1.6, 0.0, 0.4),
-            &vec![Complex{re: 0.0, im: 0.5}, Complex{re: 0.0, im: -0.5}],
+            &vec![Complex { re: 0.0, im: 0.5 }, Complex { re: 0.0, im: -0.5 }],
         );
         check_solutions(
             polynom_roots(1.0, 0.0, -4.0),

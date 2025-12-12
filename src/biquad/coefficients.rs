@@ -15,7 +15,6 @@ pub struct Coefficients<F: Float + FromPrimitive> {
 
 /// Formulas for coefficients taken from here http://shepazu.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html
 impl<F: Float + FromPrimitive> Coefficients<F> {
-
     pub fn from_volume_linear(volume_linear: F) -> Self {
         Self {
             a1: F::zero(),
@@ -140,12 +139,7 @@ impl<F: Float + FromPrimitive> Coefficients<F> {
         )
     }
 
-    pub fn from_lowshelf_linear(
-        cutoff_frequency: F,
-        gain_linear: F,
-        q: F,
-        sample_rate: F,
-    ) -> Self {
+    pub fn from_lowshelf_linear(cutoff_frequency: F, gain_linear: F, q: F, sample_rate: F) -> Self {
         let a = F::sqrt(gain_linear);
         let sqrt_a = F::sqrt(a);
         let (alpha, cos_omega0) = Self::alpha_and_cos_omega0(cutoff_frequency, q, sample_rate);
@@ -155,12 +149,19 @@ impl<F: Float + FromPrimitive> Coefficients<F> {
         let a0 = a_plus_one + a_minus_one * cos_omega0 + two_times_sqrt_a_times_alpha;
         assert!(a0 != F::zero());
         let one_through_a0 = F::one() / a0;
-    
-        Self {  b0: one_through_a0 * a * (a_plus_one - a_minus_one * cos_omega0 + two_times_sqrt_a_times_alpha),
-                b1: one_through_a0 * F::from(2).unwrap() * a * (a_minus_one - a_plus_one * cos_omega0),
-                b2: one_through_a0 * a * (a_plus_one - a_minus_one * cos_omega0 - two_times_sqrt_a_times_alpha),
-                a1: -one_through_a0 * F::from(2).unwrap() * (a_minus_one + a_plus_one * cos_omega0),
-                a2: one_through_a0 * (a_plus_one + a_minus_one * cos_omega0 - two_times_sqrt_a_times_alpha)}
+
+        Self {
+            b0: one_through_a0
+                * a
+                * (a_plus_one - a_minus_one * cos_omega0 + two_times_sqrt_a_times_alpha),
+            b1: one_through_a0 * F::from(2).unwrap() * a * (a_minus_one - a_plus_one * cos_omega0),
+            b2: one_through_a0
+                * a
+                * (a_plus_one - a_minus_one * cos_omega0 - two_times_sqrt_a_times_alpha),
+            a1: -one_through_a0 * F::from(2).unwrap() * (a_minus_one + a_plus_one * cos_omega0),
+            a2: one_through_a0
+                * (a_plus_one + a_minus_one * cos_omega0 - two_times_sqrt_a_times_alpha),
+        }
     }
 
     pub fn from_lowshelf(lowshelf: &eq::LowShelf<F>, sample_rate: F) -> Self {
@@ -187,12 +188,19 @@ impl<F: Float + FromPrimitive> Coefficients<F> {
         let a0 = a_plus_one - a_minus_one * cos_omega0 + two_times_sqrt_a_times_alpha;
         assert!(a0 != F::one());
         let one_through_a0 = F::one() / a0;
-    
-        Self {  b0: one_through_a0 * a * (a_plus_one + a_minus_one * cos_omega0 + two_times_sqrt_a_times_alpha),
-                b1: -one_through_a0 * F::from(2).unwrap() * a * (a_minus_one + a_plus_one * cos_omega0),
-                b2: one_through_a0 * a * (a_plus_one + a_minus_one * cos_omega0 - two_times_sqrt_a_times_alpha),
-                a1: one_through_a0 * F::from(2).unwrap() * (a_minus_one - a_plus_one * cos_omega0),
-                a2: one_through_a0 * (a_plus_one - a_minus_one * cos_omega0 - two_times_sqrt_a_times_alpha)}
+
+        Self {
+            b0: one_through_a0
+                * a
+                * (a_plus_one + a_minus_one * cos_omega0 + two_times_sqrt_a_times_alpha),
+            b1: -one_through_a0 * F::from(2).unwrap() * a * (a_minus_one + a_plus_one * cos_omega0),
+            b2: one_through_a0
+                * a
+                * (a_plus_one + a_minus_one * cos_omega0 - two_times_sqrt_a_times_alpha),
+            a1: one_through_a0 * F::from(2).unwrap() * (a_minus_one - a_plus_one * cos_omega0),
+            a2: one_through_a0
+                * (a_plus_one - a_minus_one * cos_omega0 - two_times_sqrt_a_times_alpha),
+        }
     }
 
     pub fn from_highshelf(highshelf: &eq::HighShelf<F>, sample_rate: F) -> Self {
@@ -219,7 +227,8 @@ impl<F: Float + FromPrimitive> Coefficients<F> {
     }
 
     fn alpha_and_cos_omega0(frequency: F, q: F, sample_rate: F) -> (F, F) {
-        let omega0 = F::from(2).unwrap() * F::from(f64::consts::PI).unwrap() * frequency / sample_rate;
+        let omega0 =
+            F::from(2).unwrap() * F::from(f64::consts::PI).unwrap() * frequency / sample_rate;
         let alpha = F::from(0.5).unwrap() * F::sin(omega0) / q;
         return (alpha, F::cos(omega0));
     }
