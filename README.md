@@ -1,5 +1,45 @@
 # eq-plotter
 
 Playing around to learn some Rust:
-Plotting impulse and frequency response, as well as poles and zeros of biquad eqs.
+
+- using egui for plotting impulse and frequency response, as well as poles and zeros of biquad eqs.
+- using nih-plug for building an eq audio plugin
+
 <img width="2604" height="2038" alt="Screenshot_20251213_011404" src="https://github.com/user-attachments/assets/858b5a0a-1ed4-4e37-937a-074b8a7bd6bc" />
+
+## Building:
+
+### egui app:
+
+#### native:
+```
+cargo build -p eq-plotter-egui
+```
+Find the binary in the target folder, or run by
+```
+cargo run --bin eq-plotter-egui
+```
+
+#### wasm:
+```
+cargo build -p eq-plotter-egui --target wasm32-unknown-unknown
+wasm-bindgen target/wasm32-unknown-unknown/debug/eq-plotter-egui.wasm --out-dir ./wasm_out --web
+python3 -m http.server --directory ./wasm_out 8080
+```
+Then you can run eq-plotter in your browser under localhost:8080.
+
+### nih plugin:
+
+#### Standalone:
+```
+cargo build -p eq-plugin-egui
+```
+Find the binary in the target folder, or run by
+```
+cargo run --bin eq-plugin-egui
+```
+#### Audio plugin:
+```
+cargo xtask bundle eq-plugin-egui --release
+```
+VST3 and Clap plugin can then be found in target/bundled

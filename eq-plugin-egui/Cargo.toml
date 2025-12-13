@@ -1,0 +1,21 @@
+[package]
+name = "eq-plugin-egui"
+version = "0.1.0"
+edition = "2021"
+authors = ["Stephan Widor <stephan@widor.online>"]
+license = "GPL-3.0-or-later"
+homepage = "https://widor.online"
+description = "Simple Eq Plugin"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+egui = { workspace = true }
+egui_plot = { workspace = true }
+
+audio-lib = { path = "../audio-lib" }
+eq-plotter-egui = { path = "../eq-plotter-egui" }
+
+nih_plug = { git = "https://github.com/robbert-vdh/nih-plug.git", features = ["assert_process_allocs", "standalone"] }
+nih_plug_egui = { git = "https://github.com/robbert-vdh/nih-plug.git" }

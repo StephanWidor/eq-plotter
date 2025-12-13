@@ -1,6 +1,11 @@
 [workspace]
 resolver= "3"
-members = ["audio-lib","eq-plotter-egui"]
+members = [
+    "audio-lib",
+    "eq-plotter-egui",
+    "eq-plugin-egui",
+    "xtask"
+]
 
 [workspace.dependencies]
 eframe = "0.31"
