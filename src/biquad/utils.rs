@@ -1,8 +1,7 @@
 use crate::biquad::coefficients::Coefficients;
 use crate::biquad::filter::Filter;
-use crate::utils::{omega, polynom_roots};
+use crate::utils;
 use num::Complex;
-use num_traits;
 use num_traits::cast::FromPrimitive;
 
 pub fn make_frequency_response_function<F: num_traits::Float + FromPrimitive>(
@@ -10,7 +9,7 @@ pub fn make_frequency_response_function<F: num_traits::Float + FromPrimitive>(
     sample_rate: F,
 ) -> impl Fn(F) -> Complex<F> {
     move |frequency| {
-        let omega = omega(frequency, sample_rate);
+        let omega = utils::omega(frequency, sample_rate);
         let z1 = Complex::from_polar(F::one(), -omega);
         let z2 = Complex::from_polar(F::one(), F::from(-2).unwrap() * omega);
         let numerator = Complex::from(coefficients.b0)
@@ -50,13 +49,13 @@ pub fn impulse_response<F: num_traits::Float + FromPrimitive>(
 pub fn zeros<F: num_traits::Float + FromPrimitive>(
     coefficients: &Coefficients<F>,
 ) -> Vec<Complex<F>> {
-    polynom_roots(coefficients.b0, coefficients.b1, coefficients.b2)
+    utils::polynom_roots(coefficients.b0, coefficients.b1, coefficients.b2)
 }
 
 pub fn poles<F: num_traits::Float + FromPrimitive>(
     coefficients: &Coefficients<F>,
 ) -> Vec<Complex<F>> {
-    polynom_roots(F::one(), coefficients.a1, coefficients.a2)
+    utils::polynom_roots(F::one(), coefficients.a1, coefficients.a2)
 }
 
 pub fn is_stable<F: num_traits::Float + FromPrimitive>(coefficients: &Coefficients<F>) -> bool {
@@ -69,10 +68,7 @@ pub fn is_stable<F: num_traits::Float + FromPrimitive>(coefficients: &Coefficien
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        eq,
-        utils::amplitude_to_db,
-    };
+    use crate::{eq, utils::amplitude_to_db};
     use assert_approx_eq::assert_approx_eq;
     use more_asserts::assert_le;
     use num::complex::ComplexFloat;
@@ -223,13 +219,13 @@ mod tests {
 
         let calc_response = make_frequency_response_function(&coefficients, sample_rate);
 
-        let mut gain_db_back = amplitude_to_db(calc_response(50.0).abs());
+        let mut gain_db_back = utils::amplitude_to_db(calc_response(50.0).abs());
         assert_le!(gain_db_back, -40.0);
 
-        gain_db_back = amplitude_to_db(calc_response(frequency).abs());
+        gain_db_back = utils::amplitude_to_db(calc_response(frequency).abs());
         assert_approx_eq!(gain_db_back, 0.0);
 
-        gain_db_back = amplitude_to_db(calc_response(20000.0).abs());
+        gain_db_back = utils::amplitude_to_db(calc_response(20000.0).abs());
         assert_le!(gain_db_back, -40.0);
     }
 

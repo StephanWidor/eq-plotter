@@ -2,7 +2,6 @@ use crate::eq;
 use crate::utils;
 use num_traits::Float;
 use num_traits::cast::FromPrimitive;
-use std::f64;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Coefficients<F: Float + FromPrimitive> {
@@ -228,7 +227,7 @@ impl<F: Float + FromPrimitive> Coefficients<F> {
 
     fn alpha_and_cos_omega0(frequency: F, q: F, sample_rate: F) -> (F, F) {
         let omega0 =
-            F::from(2).unwrap() * F::from(f64::consts::PI).unwrap() * frequency / sample_rate;
+            F::from(2).unwrap() * F::from(std::f64::consts::PI).unwrap() * frequency / sample_rate;
         let alpha = F::from(0.5).unwrap() * F::sin(omega0) / q;
         return (alpha, F::cos(omega0));
     }

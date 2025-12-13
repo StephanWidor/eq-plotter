@@ -3,7 +3,6 @@ use assert_approx_eq::assert_approx_eq;
 use num::Complex;
 use num_traits::Float;
 use num_traits::cast::FromPrimitive;
-use std::f64;
 
 pub fn amplitude_to_db<F: Float + FromPrimitive>(amplitude: F) -> F {
     if amplitude > F::zero() {
@@ -22,7 +21,7 @@ pub fn db_to_amplitude<F: Float + FromPrimitive>(db: F) -> F {
 }
 
 pub fn omega<F: Float + FromPrimitive>(frequency: F, sample_rate: F) -> F {
-    F::from(2.0 * f64::consts::PI).unwrap() * (frequency / sample_rate)
+    F::from(2.0 * std::f64::consts::PI).unwrap() * (frequency / sample_rate)
 }
 
 /// complex roots of polynom c2*x^2 + c1*x + c0

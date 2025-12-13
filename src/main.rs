@@ -2,12 +2,8 @@ mod biquad;
 mod eq;
 mod utils;
 
-use biquad::utils::{is_stable, poles, zeros};
-use core::f64;
-use eframe::egui;
 use num::complex::ComplexFloat;
 use num_traits::Pow;
-use std::ops::RangeInclusive;
 
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::JsCast;
@@ -160,16 +156,17 @@ impl eframe::App for EqPlotter {
                         eq.set_parameters(frequency, *gain_db, *q);
                     });
 
-                    let log_frequency_formatter =
-                        |mark: egui_plot::GridMark, _range: &RangeInclusive<f64>| -> String {
-                            let log_frequency = mark.value;
-                            if log_frequency.fract().abs() < 1e-6 {
-                                let frequency = 10.0.pow(mark.value);
-                                format!("{}", frequency)
-                            } else {
-                                String::new()
-                            }
-                        };
+                    let log_frequency_formatter = |mark: egui_plot::GridMark,
+                                                   _range: &std::ops::RangeInclusive<f64>|
+                     -> String {
+                        let log_frequency = mark.value;
+                        if log_frequency.fract().abs() < 1e-6 {
+                            let frequency = 10.0.pow(mark.value);
+                            format!("{}", frequency)
+                        } else {
+                            String::new()
+                        }
+                    };
 
                     let coefficients =
                         biquad::coefficients::Coefficients::from_eq(eq, *sample_rate);
@@ -228,8 +225,8 @@ impl eframe::App for EqPlotter {
                             .legend(egui_plot::Legend::default())
                             .show(ui, |plot_ui| {
                                 plot_ui.set_plot_bounds(egui_plot::PlotBounds::from_min_max(
-                                    [EqPlotter::MIN_LOG_FREQUENCY, -f64::consts::PI],
-                                    [EqPlotter::MAX_LOG_FREQUENCY, f64::consts::PI],
+                                    [EqPlotter::MIN_LOG_FREQUENCY, -std::f64::consts::PI],
+                                    [EqPlotter::MAX_LOG_FREQUENCY, std::f64::consts::PI],
                                 ));
                                 let phase_points = egui_plot::PlotPoints::from_explicit_callback(
                                     |log_frequency| {
@@ -276,13 +273,13 @@ impl eframe::App for EqPlotter {
                                 let unit_circle_points =
                                     egui_plot::PlotPoints::from_parametric_callback(
                                         |angle| (angle.cos(), angle.sin()),
-                                        0.0..=2.0 * f64::consts::PI,
+                                        0.0..=2.0 * std::f64::consts::PI,
                                         100,
                                     );
                                 plot_ui
                                     .line(egui_plot::Line::new("Unit Circle", unit_circle_points));
 
-                                let poles = poles(&coefficients)
+                                let poles = biquad::utils::poles(&coefficients)
                                     .iter()
                                     .map(|pole| [pole.re, pole.im])
                                     .collect::<Vec<_>>();
@@ -291,7 +288,7 @@ impl eframe::App for EqPlotter {
                                     .radius(3.0);
                                 plot_ui.points(pole_markers);
 
-                                let zeros = zeros(&coefficients)
+                                let zeros = biquad::utils::zeros(&coefficients)
                                     .iter()
                                     .map(|zero| [zero.re, zero.im])
                                     .collect::<Vec<_>>();
@@ -300,7 +297,7 @@ impl eframe::App for EqPlotter {
                                     .radius(3.0);
                                 plot_ui.points(zero_markers);
 
-                                if !is_stable(&coefficients) {
+                                if !biquad::utils::is_stable(&coefficients) {
                                     plot_ui.text(
                                         egui_plot::Text::new(
                                             "Stability Warning",
