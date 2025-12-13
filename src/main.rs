@@ -103,7 +103,11 @@ impl eframe::App for EqPlotter {
         let mut frequency = 10.0.pow(*log_frequency);
 
         egui::CentralPanel::default()
-            .frame(egui::Frame::default().fill(egui::Color32::from_rgb(32, 35, 38)))
+            .frame(
+                egui::Frame::default()
+                    .inner_margin(20)
+                    .fill(egui::Color32::from_rgb(32, 35, 38)),
+            )
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {
                     ui.vertical(|ui| {
