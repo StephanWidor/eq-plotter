@@ -1,17 +1,3 @@
-[package]
-name = "eq-plotter"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-assert_approx_eq = "1.1.0"
-eframe = "0.33.3"
-egui = "0.33.3"
-egui_plot = "0.34.0"
-more-asserts = "0.3.1"
-num = "0.4.3"
-num-traits = "0.2.19"
-variant_count = "1.1.0"
-console_error_panic_hook = "0.1"
-wasm-bindgen-futures = "0.4"
-web-sys = { version = "0.3", features = ["Window", "HtmlCanvasElement"] }
+[workspace]
+resolver= "3"
+members = ["audio-lib","eq-plotter-egui"]

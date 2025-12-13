@@ -1,7 +1,6 @@
-mod biquad;
-mod eq;
-mod utils;
-
+use audio_lib::biquad;
+use audio_lib::eq;
+use audio_lib::utils;
 use num::complex::ComplexFloat;
 use num_traits::Pow;
 
@@ -28,7 +27,7 @@ fn main() -> eframe::Result {
             .start(
                 canvas,
                 web_options,
-                Box::new(|_cc| Ok(Box::<EqPlotter>::default())),
+                Box::new(|_cc| Ok(Box::<eq_plotter_egui::EqPlotter>::default())),
             )
             .await
             .expect("failed to start WebRunner");
