@@ -68,7 +68,7 @@ pub fn is_stable<F: num_traits::Float + FromPrimitive>(coefficients: &Coefficien
 
 #[cfg(test)]
 mod tests {
-    use crate::{eq, utils::amplitude_to_db};
+    use crate::utils::amplitude_to_db;
     use assert_approx_eq::assert_approx_eq;
     use more_asserts::assert_le;
     use num::complex::ComplexFloat;
@@ -158,7 +158,7 @@ mod tests {
         let sample_rate = 44100.0;
         let gain_db = 2.3;
 
-        let coefficients = Coefficients::from_volume(&eq::Volume { gain_db: gain_db });
+        let coefficients = Coefficients::from_volume_db(gain_db);
         let response = make_frequency_response_function(&coefficients, sample_rate)(100.0);
 
         let gain_db_back = amplitude_to_db(response.abs());
@@ -168,13 +168,7 @@ mod tests {
     #[test]
     fn validate_lowpass() {
         let sample_rate = 48000.0;
-        let coefficients = Coefficients::from_lowpass(
-            &eq::LowPass {
-                cutoff_frequency: 1000.0,
-                q: 0.7,
-            },
-            sample_rate,
-        );
+        let coefficients = Coefficients::from_lowpass(1000.0, 0.7, sample_rate);
 
         let frequency_response = make_frequency_response_function(&coefficients, sample_rate);
 
@@ -188,13 +182,7 @@ mod tests {
     #[test]
     fn validate_highpass() {
         let sample_rate = 48000.0;
-        let coefficients = Coefficients::from_highpass(
-            &eq::HighPass {
-                cutoff_frequency: 1000.0,
-                q: 0.7,
-            },
-            sample_rate,
-        );
+        let coefficients = Coefficients::from_highpass(1000.0, 0.7, sample_rate);
 
         let calc_response = make_frequency_response_function(&coefficients, sample_rate);
 
@@ -209,13 +197,7 @@ mod tests {
     fn validate_bandpass() {
         let sample_rate = 48000.0;
         let frequency = 5000.0;
-        let coefficients = Coefficients::from_bandpass(
-            &eq::BandPass {
-                frequency: frequency,
-                q: 10.0,
-            },
-            sample_rate,
-        );
+        let coefficients = Coefficients::from_bandpass(frequency, 10.0, sample_rate);
 
         let calc_response = make_frequency_response_function(&coefficients, sample_rate);
 
@@ -233,13 +215,7 @@ mod tests {
     fn validate_allpass() {
         let sample_rate = 48000.0;
         let frequency = 5000.0;
-        let coefficients = Coefficients::from_allpass(
-            &eq::AllPass {
-                frequency: frequency,
-                q: 10.0,
-            },
-            sample_rate,
-        );
+        let coefficients = Coefficients::from_allpass(frequency, 10.0, sample_rate);
 
         let calc_response = make_frequency_response_function(&coefficients, sample_rate);
 
@@ -257,13 +233,7 @@ mod tests {
     fn validate_notch() {
         let sample_rate = 48000.0;
         let frequency = 5000.0;
-        let coefficients = Coefficients::from_notch(
-            &eq::Notch {
-                frequency: frequency,
-                q: 10.0,
-            },
-            sample_rate,
-        );
+        let coefficients = Coefficients::from_notch(frequency, 10.0, sample_rate);
 
         let calc_response = make_frequency_response_function(&coefficients, sample_rate);
 
@@ -282,14 +252,7 @@ mod tests {
         let sample_rate = 48000.0;
         let frequency = 5000.0;
         let gain_db = 3.4;
-        let coefficients = Coefficients::from_peak(
-            &eq::Peak {
-                frequency: frequency,
-                gain_db: gain_db,
-                q: 10.0,
-            },
-            sample_rate,
-        );
+        let coefficients = Coefficients::from_peak_db(gain_db, frequency, 10.0, sample_rate);
 
         let calc_response = make_frequency_response_function(&coefficients, sample_rate);
 
@@ -307,14 +270,7 @@ mod tests {
     fn validate_lowshelf() {
         let sample_rate = 48000.0;
         let gain_db = 3.4;
-        let coefficients = Coefficients::from_lowshelf(
-            &eq::LowShelf {
-                cutoff_frequency: 1000.0,
-                gain_db: 3.4,
-                q: 0.7,
-            },
-            sample_rate,
-        );
+        let coefficients = Coefficients::from_lowshelf_db(gain_db, 1000.0, 0.7, sample_rate);
 
         let calc_response = make_frequency_response_function(&coefficients, sample_rate);
 
@@ -329,14 +285,7 @@ mod tests {
     fn validate_highshelf() {
         let sample_rate = 48000.0;
         let gain_db = -2.4;
-        let coefficients = Coefficients::from_highshelf(
-            &eq::HighShelf {
-                cutoff_frequency: 1000.0,
-                gain_db: gain_db,
-                q: 0.7,
-            },
-            sample_rate,
-        );
+        let coefficients = Coefficients::from_highshelf_db(gain_db, 1000.0, 0.7, sample_rate);
 
         let calc_response = make_frequency_response_function(&coefficients, sample_rate);
 

@@ -14,6 +14,24 @@ pub struct Coefficients<F: Float + FromPrimitive> {
 
 /// Formulas for coefficients taken from here http://shepazu.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html
 impl<F: Float + FromPrimitive> Coefficients<F> {
+    pub fn from_eq(eq: &eq::Eq<F>, sample_rate: F) -> Self {
+        match eq.eq_type {
+            eq::EqType::Volume => Self::from_volume_db(eq.gain_db),
+            eq::EqType::LowPass => Self::from_lowpass(eq.frequency, eq.q, sample_rate),
+            eq::EqType::HighPass => Self::from_highpass(eq.frequency, eq.q, sample_rate),
+            eq::EqType::BandPass => Self::from_bandpass(eq.frequency, eq.q, sample_rate),
+            eq::EqType::AllPass => Self::from_allpass(eq.frequency, eq.q, sample_rate),
+            eq::EqType::Notch => Self::from_notch(eq.frequency, eq.q, sample_rate),
+            eq::EqType::Peak => Self::from_peak_db(eq.gain_db, eq.frequency, eq.q, sample_rate),
+            eq::EqType::LowShelf => {
+                Self::from_lowshelf_db(eq.gain_db, eq.frequency, eq.q, sample_rate)
+            }
+            eq::EqType::HighShelf => {
+                Self::from_highshelf_db(eq.gain_db, eq.frequency, eq.q, sample_rate)
+            }
+        }
+    }
+
     pub fn from_volume_linear(volume_linear: F) -> Self {
         Self {
             a1: F::zero(),
@@ -24,13 +42,12 @@ impl<F: Float + FromPrimitive> Coefficients<F> {
         }
     }
 
-    pub fn from_volume(volume: &eq::Volume<F>) -> Self {
-        Self::from_volume_linear(utils::db_to_amplitude(volume.gain_db))
+    pub fn from_volume_db(volume_db: F) -> Self {
+        Self::from_volume_linear(utils::db_to_amplitude(volume_db))
     }
 
-    pub fn from_lowpass(lowpass: &eq::LowPass<F>, sample_rate: F) -> Self {
-        let (alpha, cos_omega0) =
-            Self::alpha_and_cos_omega0(lowpass.cutoff_frequency, lowpass.q, sample_rate);
+    pub fn from_lowpass(cutoff_frequency: F, q: F, sample_rate: F) -> Self {
+        let (alpha, cos_omega0) = Self::alpha_and_cos_omega0(cutoff_frequency, q, sample_rate);
         let one_minus_cos_omega0 = F::one() - cos_omega0;
         let half_one_minus_cos_omega0 = F::from(0.5).unwrap() * one_minus_cos_omega0;
         let a0 = F::one() + alpha;
@@ -45,9 +62,8 @@ impl<F: Float + FromPrimitive> Coefficients<F> {
         }
     }
 
-    pub fn from_highpass(highpass: &eq::HighPass<F>, sample_rate: F) -> Self {
-        let (alpha, cos_omega0) =
-            Self::alpha_and_cos_omega0(highpass.cutoff_frequency, highpass.q, sample_rate);
+    pub fn from_highpass(cutoff_frequency: F, q: F, sample_rate: F) -> Self {
+        let (alpha, cos_omega0) = Self::alpha_and_cos_omega0(cutoff_frequency, q, sample_rate);
         let one_plus_cos_omega0 = F::one() + cos_omega0;
         let half_one_plus_cos_omega0 = F::from(0.5).unwrap() * one_plus_cos_omega0;
         let a0 = F::one() + alpha;
@@ -62,9 +78,8 @@ impl<F: Float + FromPrimitive> Coefficients<F> {
         }
     }
 
-    pub fn from_bandpass(bandpass: &eq::BandPass<F>, sample_rate: F) -> Self {
-        let (alpha, cos_omega0) =
-            Self::alpha_and_cos_omega0(bandpass.frequency, bandpass.q, sample_rate);
+    pub fn from_bandpass(frequency: F, q: F, sample_rate: F) -> Self {
+        let (alpha, cos_omega0) = Self::alpha_and_cos_omega0(frequency, q, sample_rate);
         let a0 = F::one() + alpha;
         assert!(a0 != F::zero());
         let one_through_a0 = F::one() / a0;
@@ -77,9 +92,8 @@ impl<F: Float + FromPrimitive> Coefficients<F> {
         }
     }
 
-    pub fn from_allpass(allpass: &eq::AllPass<F>, sample_rate: F) -> Self {
-        let (alpha, cos_omega0) =
-            Self::alpha_and_cos_omega0(allpass.frequency, allpass.q, sample_rate);
+    pub fn from_allpass(frequency: F, q: F, sample_rate: F) -> Self {
+        let (alpha, cos_omega0) = Self::alpha_and_cos_omega0(frequency, q, sample_rate);
         let two_times_cos_omega0 = F::from(2).unwrap() * cos_omega0;
         let one_plus_alpha = F::one() + alpha;
         let one_minus_alpha = F::one() - alpha;
@@ -95,8 +109,8 @@ impl<F: Float + FromPrimitive> Coefficients<F> {
         }
     }
 
-    pub fn from_notch(notch: &eq::Notch<F>, sample_rate: F) -> Self {
-        let (alpha, cos_omega0) = Self::alpha_and_cos_omega0(notch.frequency, notch.q, sample_rate);
+    pub fn from_notch(frequency: F, q: F, sample_rate: F) -> Self {
+        let (alpha, cos_omega0) = Self::alpha_and_cos_omega0(frequency, q, sample_rate);
         let two_times_cos_omega0 = F::from(2).unwrap() * cos_omega0;
         let a0 = F::one() + alpha;
         assert!(a0 != F::zero());
@@ -111,7 +125,7 @@ impl<F: Float + FromPrimitive> Coefficients<F> {
         }
     }
 
-    pub fn from_peak_linear(frequency: F, gain_linear: F, q: F, sample_rate: F) -> Self {
+    pub fn from_peak_linear(gain_linear: F, frequency: F, q: F, sample_rate: F) -> Self {
         let a = F::sqrt(gain_linear);
         let (alpha, cos_omega0) = Self::alpha_and_cos_omega0(frequency, q, sample_rate);
         let two_times_cos_omega0 = F::from(2).unwrap() * cos_omega0;
@@ -129,16 +143,11 @@ impl<F: Float + FromPrimitive> Coefficients<F> {
         }
     }
 
-    pub fn from_peak(peak: &eq::Peak<F>, sample_rate: F) -> Self {
-        Self::from_peak_linear(
-            peak.frequency,
-            utils::db_to_amplitude(peak.gain_db),
-            peak.q,
-            sample_rate,
-        )
+    pub fn from_peak_db(gain_db: F, frequency: F, q: F, sample_rate: F) -> Self {
+        Self::from_peak_linear(utils::db_to_amplitude(gain_db), frequency, q, sample_rate)
     }
 
-    pub fn from_lowshelf_linear(cutoff_frequency: F, gain_linear: F, q: F, sample_rate: F) -> Self {
+    pub fn from_lowshelf_linear(gain_linear: F, cutoff_frequency: F, q: F, sample_rate: F) -> Self {
         let a = F::sqrt(gain_linear);
         let sqrt_a = F::sqrt(a);
         let (alpha, cos_omega0) = Self::alpha_and_cos_omega0(cutoff_frequency, q, sample_rate);
@@ -163,18 +172,18 @@ impl<F: Float + FromPrimitive> Coefficients<F> {
         }
     }
 
-    pub fn from_lowshelf(lowshelf: &eq::LowShelf<F>, sample_rate: F) -> Self {
+    pub fn from_lowshelf_db(gain_db: F, cutoff_frequency: F, q: F, sample_rate: F) -> Self {
         Self::from_lowshelf_linear(
-            lowshelf.cutoff_frequency,
-            utils::db_to_amplitude(lowshelf.gain_db),
-            lowshelf.q,
+            utils::db_to_amplitude(gain_db),
+            cutoff_frequency,
+            q,
             sample_rate,
         )
     }
 
     pub fn from_highshelf_linear(
-        cutoff_frequency: F,
         gain_linear: F,
+        cutoff_frequency: F,
         q: F,
         sample_rate: F,
     ) -> Self {
@@ -202,27 +211,13 @@ impl<F: Float + FromPrimitive> Coefficients<F> {
         }
     }
 
-    pub fn from_highshelf(highshelf: &eq::HighShelf<F>, sample_rate: F) -> Self {
+    pub fn from_highshelf_db(gain_db: F, cutoff_frequency: F, q: F, sample_rate: F) -> Self {
         Self::from_highshelf_linear(
-            highshelf.cutoff_frequency,
-            utils::db_to_amplitude(highshelf.gain_db),
-            highshelf.q,
+            utils::db_to_amplitude(gain_db),
+            cutoff_frequency,
+            q,
             sample_rate,
         )
-    }
-
-    pub fn from_eq(eq: &eq::EQ<F>, sample_rate: F) -> Self {
-        match eq {
-            eq::EQ::Volume(volume) => Self::from_volume(&volume),
-            eq::EQ::LowPass(lowpass) => Self::from_lowpass(&lowpass, sample_rate),
-            eq::EQ::HighPass(highpass) => Self::from_highpass(&highpass, sample_rate),
-            eq::EQ::BandPass(bandpass) => Self::from_bandpass(&bandpass, sample_rate),
-            eq::EQ::AllPass(allpass) => Self::from_allpass(&allpass, sample_rate),
-            eq::EQ::Notch(notch) => Self::from_notch(&notch, sample_rate),
-            eq::EQ::Peak(peak) => Self::from_peak(&peak, sample_rate),
-            eq::EQ::LowShelf(lowshelf) => Self::from_lowshelf(&lowshelf, sample_rate),
-            eq::EQ::HighShelf(highshelf) => Self::from_highshelf(&highshelf, sample_rate),
-        }
     }
 
     fn alpha_and_cos_omega0(frequency: F, q: F, sample_rate: F) -> (F, F) {

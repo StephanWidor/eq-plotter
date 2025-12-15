@@ -1,195 +1,100 @@
 use num_traits::Float;
-use variant_count::VariantCount;
 
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub struct Volume<F: Float> {
-    pub gain_db: F,
+#[derive(Debug, PartialEq, Clone, Copy, variant_count::VariantCount)]
+pub enum EqType {
+    Volume,
+    LowPass,
+    HighPass,
+    BandPass,
+    AllPass,
+    Notch,
+    Peak,
+    LowShelf,
+    HighShelf,
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub struct LowPass<F: Float> {
-    pub cutoff_frequency: F,
-    pub q: F,
-}
-
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub struct HighPass<F: Float> {
-    pub cutoff_frequency: F,
-    pub q: F,
-}
-
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub struct BandPass<F: Float> {
-    pub frequency: F,
-    pub q: F,
-}
-
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub struct AllPass<F: Float> {
-    pub frequency: F,
-    pub q: F,
-}
-
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub struct Notch<F: Float> {
-    pub frequency: F,
-    pub q: F,
-}
-
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub struct Peak<F: Float> {
-    pub frequency: F,
-    pub gain_db: F,
-    pub q: F,
-}
-
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub struct LowShelf<F: Float> {
-    pub cutoff_frequency: F,
-    pub gain_db: F,
-    pub q: F,
-}
-
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub struct HighShelf<F: Float> {
-    pub cutoff_frequency: F,
-    pub gain_db: F,
-    pub q: F,
-}
-
-#[derive(Debug, PartialEq, Clone, Copy, VariantCount)]
-pub enum EQ<F: Float> {
-    Volume(crate::eq::Volume<F>),
-    LowPass(crate::eq::LowPass<F>),
-    HighPass(crate::eq::HighPass<F>),
-    BandPass(crate::eq::BandPass<F>),
-    AllPass(crate::eq::AllPass<F>),
-    Notch(crate::eq::Notch<F>),
-    Peak(crate::eq::Peak<F>),
-    LowShelf(crate::eq::LowShelf<F>),
-    HighShelf(crate::eq::HighShelf<F>),
-}
-
-impl<F: Float> EQ<F> {
+impl EqType {
     pub fn to_string(&self) -> &str {
         match self {
-            EQ::Volume(_) => "Volume",
-            EQ::LowPass(_) => "Low Pass",
-            EQ::HighPass(_) => "High Pass",
-            EQ::BandPass(_) => "Band Pass",
-            EQ::AllPass(_) => "All Pass",
-            EQ::Notch(_) => "Notch",
-            EQ::Peak(_) => "Peak",
-            EQ::LowShelf(_) => "Low Shelf",
-            EQ::HighShelf(_) => "High Shelf",
+            EqType::Volume => "Volume",
+            EqType::LowPass => "Low Pass",
+            EqType::HighPass => "High Pass",
+            EqType::BandPass => "Band Pass",
+            EqType::AllPass => "All Pass",
+            EqType::Notch => "Notch",
+            EqType::Peak => "Peak",
+            EqType::LowShelf => "Low Shelf",
+            EqType::HighShelf => "High Shelf",
         }
     }
 
     pub fn has_frequency(&self) -> bool {
         match self {
-            EQ::Volume(_) => false,
+            EqType::Volume => false,
             _ => true,
         }
     }
 
     pub fn has_gain_db(&self) -> bool {
         match self {
-            EQ::Volume(_) => true,
-            EQ::Peak(_) => true,
-            EQ::LowShelf(_) => true,
-            EQ::HighShelf(_) => true,
+            EqType::Volume => true,
+            EqType::Peak => true,
+            EqType::LowShelf => true,
+            EqType::HighShelf => true,
             _ => false,
         }
     }
 
     pub fn has_q(&self) -> bool {
         match self {
-            EQ::Volume(_) => false,
+            EqType::Volume => false,
             _ => true,
         }
     }
 
-    pub fn set_parameters(&mut self, frequency: F, gain_db: F, q: F) {
-        match self {
-            EQ::Volume(volume) => {
-                volume.gain_db = gain_db;
-            }
-            EQ::LowPass(lowpass) => {
-                lowpass.cutoff_frequency = frequency;
-                lowpass.q = q;
-            }
-            EQ::HighPass(highpass) => {
-                highpass.cutoff_frequency = frequency;
-                highpass.q = q;
-            }
-            EQ::BandPass(bandpass) => {
-                bandpass.frequency = frequency;
-                bandpass.q = q;
-            }
-            EQ::AllPass(allpass) => {
-                allpass.frequency = frequency;
-                allpass.q = q;
-            }
-            EQ::Notch(notch) => {
-                notch.frequency = frequency;
-                notch.q = q;
-            }
-            EQ::Peak(peak) => {
-                peak.frequency = frequency;
-                peak.gain_db = gain_db;
-                peak.q = q;
-            }
-            EQ::LowShelf(lowshelf) => {
-                lowshelf.cutoff_frequency = frequency;
-                lowshelf.gain_db = gain_db;
-                lowshelf.q = q;
-            }
-            EQ::HighShelf(highshelf) => {
-                highshelf.cutoff_frequency = frequency;
-                highshelf.gain_db = gain_db;
-                highshelf.q = q;
-            }
-        };
+    pub const ALL: [Self; Self::VARIANT_COUNT] = [
+        Self::Volume,
+        Self::LowPass,
+        Self::HighPass,
+        Self::BandPass,
+        Self::AllPass,
+        Self::Notch,
+        Self::Peak,
+        Self::LowShelf,
+        Self::HighShelf,
+    ];
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub struct Eq<F: Float> {
+    pub gain_db: F,
+    pub frequency: F,
+    pub q: F,
+    pub eq_type: EqType,
+}
+
+impl<F: Float> Eq<F> {
+    pub fn gain_db(&self) -> Option<F> {
+        if self.eq_type.has_gain_db() {
+            Some(self.gain_db)
+        } else {
+            None
+        }
     }
 
-    pub fn all(frequency: F, gain_db: F, q: F) -> [Self; 9] {
-        [
-            Self::Volume(Volume { gain_db: gain_db }),
-            Self::LowPass(LowPass {
-                cutoff_frequency: frequency,
-                q: q,
-            }),
-            Self::HighPass(HighPass {
-                cutoff_frequency: frequency,
-                q: q,
-            }),
-            Self::BandPass(BandPass {
-                frequency: frequency,
-                q: q,
-            }),
-            Self::AllPass(AllPass {
-                frequency: frequency,
-                q: q,
-            }),
-            Self::Notch(Notch {
-                frequency: frequency,
-                q: q,
-            }),
-            Self::Peak(Peak {
-                frequency: frequency,
-                gain_db: gain_db,
-                q: q,
-            }),
-            Self::LowShelf(LowShelf {
-                cutoff_frequency: frequency,
-                gain_db: gain_db,
-                q: q,
-            }),
-            Self::HighShelf(HighShelf {
-                cutoff_frequency: frequency,
-                gain_db: gain_db,
-                q: q,
-            }),
-        ]
+    pub fn frequency(&self) -> Option<F> {
+        if self.eq_type.has_frequency() {
+            Some(self.frequency)
+        } else {
+            None
+        }
+    }
+
+    pub fn q(&self) -> Option<F> {
+        if self.eq_type.has_q() {
+            Some(self.q)
+        } else {
+            None
+        }
     }
 }

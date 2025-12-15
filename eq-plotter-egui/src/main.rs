@@ -51,27 +51,19 @@ fn main() -> eframe::Result {
 
 struct EqPlotter {
     sample_rate: f64,
-    log_frequency: f64,
-    gain_db: f64,
-    q: f64,
-    eq: eq::EQ<f64>,
+    eq: eq::Eq<f64>,
 }
 
 impl Default for EqPlotter {
     fn default() -> Self {
-        let log_frequency = 1000.0.log10();
-        let gain_db = -3.0;
-        let q = 0.7;
         Self {
             sample_rate: 48000.0,
-            log_frequency: log_frequency,
-            gain_db: gain_db,
-            q: q,
-            eq: eq::EQ::Peak(eq::Peak {
-                frequency: log_frequency.pow(10.0),
-                gain_db: gain_db,
-                q: q,
-            }),
+            eq: eq::Eq {
+                gain_db: -3.0,
+                frequency: 1000.0,
+                q: 0.7,
+                eq_type: eq::EqType::Peak,
+            },
         }
     }
 }
@@ -87,15 +79,9 @@ impl EqPlotter {
 
 impl eframe::App for EqPlotter {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let Self {
-            sample_rate,
-            log_frequency,
-            gain_db,
-            q,
-            eq,
-        } = self;
+        let Self { sample_rate, eq } = self;
 
-        let mut frequency = 10.0.pow(*log_frequency);
+        let mut log_frequency = eq.frequency.log10();
 
         egui::CentralPanel::default()
             .frame(
@@ -107,18 +93,22 @@ impl eframe::App for EqPlotter {
                 ui.horizontal(|ui| {
                     ui.vertical(|ui| {
                         egui::ComboBox::from_label("")
-                            .selected_text(eq.to_string())
+                            .selected_text(eq.eq_type.to_string())
                             .width(220.0)
                             .show_ui(ui, |ui| {
-                                for eq_type in eq::EQ::all(frequency, *gain_db, *q) {
-                                    ui.selectable_value(eq, eq_type, eq_type.to_string());
+                                for eq_type in eq::EqType::ALL.iter() {
+                                    ui.selectable_value(
+                                        &mut eq.eq_type,
+                                        *eq_type,
+                                        eq_type.to_string(),
+                                    );
                                 }
                             });
 
                         ui.add_enabled(
-                            eq.has_frequency(),
+                            eq.eq_type.has_frequency(),
                             egui::Slider::new(
-                                &mut *log_frequency,
+                                &mut log_frequency,
                                 EqPlotter::MIN_LOG_FREQUENCY..=EqPlotter::MAX_LOG_FREQUENCY,
                             )
                             .custom_formatter(|log_frequency, _| {
@@ -134,11 +124,12 @@ impl eframe::App for EqPlotter {
                             .prefix("freqency: ")
                             .suffix("Hz"),
                         );
+                        eq.frequency = 10.0.pow(log_frequency);
 
                         ui.add_enabled(
-                            eq.has_gain_db(),
+                            eq.eq_type.has_gain_db(),
                             egui::Slider::new(
-                                &mut *gain_db,
+                                &mut eq.gain_db,
                                 EqPlotter::MIN_GAIN_DB..=EqPlotter::MAX_GAIN_DB,
                             )
                             .prefix("gain: ")
@@ -146,13 +137,10 @@ impl eframe::App for EqPlotter {
                         );
 
                         ui.add_enabled(
-                            eq.has_q(),
-                            egui::Slider::new(&mut *q, EqPlotter::MIN_Q..=EqPlotter::MAX_Q)
+                            eq.eq_type.has_q(),
+                            egui::Slider::new(&mut eq.q, EqPlotter::MIN_Q..=EqPlotter::MAX_Q)
                                 .prefix("Q: "),
                         );
-
-                        frequency = 10.0.pow(*log_frequency);
-                        eq.set_parameters(frequency, *gain_db, *q);
                     });
 
                     let log_frequency_formatter = |mark: egui_plot::GridMark,
