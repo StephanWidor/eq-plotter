@@ -18,6 +18,14 @@ impl<F: Float + FromPrimitive> Filter<F> {
         }
     }
 
+    pub fn set_coefficients(&mut self, coefficients: Coefficients<F>, reset_state: bool) {
+        self.coefficients = coefficients;
+        if reset_state {
+            self.input_state.fill(F::zero());
+            self.output_state.fill(F::zero());
+        }
+    }
+
     pub fn process(&mut self, sample: F) -> F {
         let c = &self.coefficients;
         let in_state = &mut self.input_state;
