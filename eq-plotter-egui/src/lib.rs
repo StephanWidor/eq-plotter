@@ -26,7 +26,9 @@ impl Default for EqPlotter {
 impl EqPlotter {
     pub const MIN_GAIN_DB: f64 = -20.0;
     pub const MAX_GAIN_DB: f64 = 20.0;
+    pub const MIN_FREQUENCY: f64 = 10.0;
     pub const MIN_LOG_FREQUENCY: f64 = 1.0; // 10.0.log10();
+    pub const MAX_FREQUENCY: f64 = 20000.0;
     pub const MAX_LOG_FREQUENCY: f64 = 4.3010299956639813; // 20000.0.log10();
     pub const MIN_Q: f64 = 0.1;
     pub const MAX_Q: f64 = 10.0;
