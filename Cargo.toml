@@ -1,3 +1,19 @@
 [workspace]
 resolver= "3"
 members = ["audio-lib","eq-plotter-egui"]
+
+[workspace.dependencies]
+eframe = "0.31"
+egui = "0.31"
+egui_plot = "0.31"
+num = "0.4.3"
+num-traits = "0.2.19"
+
+[profile.release]
+lto = "thin"
+strip = "symbols"
+
+[profile.profiling]
+inherits = "release"
+debug = true
+strip = "none"

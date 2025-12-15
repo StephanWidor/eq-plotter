@@ -4,13 +4,15 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+eframe = { workspace = true }
+egui = { workspace = true }
+egui_plot = { workspace = true }
+num = { workspace = true }
+num-traits = { workspace = true }
+
 audio-lib = { path = "../audio-lib" }
+
 console_error_panic_hook = "0.1"
-eframe = "0.33.3"
-egui = "0.33.3"
-egui_plot = "0.34.0"
-num = "0.4.3"
-num-traits = "0.2.19"
 wasm-bindgen-futures = { version = "0.4"}
 web-sys = { version = "0.3", features = ["Window", "HtmlCanvasElement"]}
 
