@@ -75,7 +75,7 @@ impl Default for EqPluginParams {
         Self {
             editor_state: nih_plug_egui::EguiState::from_size(1200, 800),
             gain_db: FloatParam::new(
-                "Gain (dB)",
+                "gain (dB)",
                 EqPlotter::DEFAULT_EQ.gain_db as f32,
                 FloatRange::Linear {
                     min: EqPlotter::MIN_GAIN_DB as f32,
