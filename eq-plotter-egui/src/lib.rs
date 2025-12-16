@@ -233,7 +233,6 @@ impl EqPlotter {
 
 impl eframe::App for EqPlotter {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let Self { sample_rate, eq } = self;
         egui::CentralPanel::default()
             .frame(
                 egui::Frame::default()
@@ -242,7 +241,7 @@ impl eframe::App for EqPlotter {
             )
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {
-                    EqPlotter::draw(ui, eq, *sample_rate);
+                    EqPlotter::draw(ui, &mut self.eq, self.sample_rate);
                 });
             });
     }
