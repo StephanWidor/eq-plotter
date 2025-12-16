@@ -34,7 +34,8 @@ impl EqPlotter {
         eq_type: eq::EqType::Peak,
     };
 
-    pub fn draw(ui: &mut egui::Ui, eq: &mut eq::Eq<f64>, sample_rate: f64) {
+    pub fn draw(ui: &mut egui::Ui, eq_in: &eq::Eq<f64>, sample_rate: f64) -> eq::Eq<f64> {
+        let mut eq = eq_in.clone();
         let mut log_frequency = eq.frequency.log10();
         ui.horizontal(|ui| {
             ui.vertical(|ui| {
@@ -95,7 +96,7 @@ impl EqPlotter {
                     }
                 };
 
-            let coefficients = biquad::coefficients::Coefficients::from_eq(eq, sample_rate);
+            let coefficients = biquad::coefficients::Coefficients::from_eq(&eq, sample_rate);
             let frequency_response =
                 biquad::utils::make_frequency_response_function(&coefficients, sample_rate);
             let plot_size = 400.0;
@@ -228,6 +229,7 @@ impl EqPlotter {
                     });
             });
         });
+        eq
     }
 }
 
@@ -241,7 +243,7 @@ impl eframe::App for EqPlotter {
             )
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {
-                    EqPlotter::draw(ui, &mut self.eq, self.sample_rate);
+                    self.eq = EqPlotter::draw(ui, &self.eq, self.sample_rate);
                 });
             });
     }

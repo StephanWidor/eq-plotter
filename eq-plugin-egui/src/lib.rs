@@ -195,32 +195,33 @@ impl Plugin for EqPlugin {
                 nih_plug_egui::resizable_window::ResizableWindow::new("res-wind")
                     .min_size(nih_plug_egui::egui::Vec2::new(1200.0, 800.0))
                     .show(egui_ctx, egui_state.as_ref(), |ui| {
-                        let mut eq = eq::Eq {
+                        let eq = eq::Eq {
                             gain_db: params.gain_db.value() as f64,
                             frequency: params.frequency.value() as f64,
                             q: params.q.value() as f64,
                             eq_type: params.eq_type.value().into(),
                         };
-                        EqPlotter::draw(
+                        let new_eq = EqPlotter::draw(
                             ui,
-                            &mut eq,
+                            &eq,
                             sample_rate.load(std::sync::atomic::Ordering::Relaxed) as f64,
                         );
 
+                        if eq == new_eq {
+                            return; // no changes
+                        }
+
                         setter.begin_set_parameter(&params.gain_db);
-                        setter.set_parameter(&params.gain_db, eq.gain_db as f32);
-                        setter.end_set_parameter(&params.gain_db);
-
                         setter.begin_set_parameter(&params.frequency);
-                        setter.set_parameter(&params.frequency, eq.frequency as f32);
-                        setter.end_set_parameter(&params.frequency);
-
                         setter.begin_set_parameter(&params.q);
-                        setter.set_parameter(&params.q, eq.q as f32);
-                        setter.end_set_parameter(&params.q);
-
                         setter.begin_set_parameter(&params.eq_type);
+                        setter.set_parameter(&params.gain_db, eq.gain_db as f32);
+                        setter.set_parameter(&params.frequency, eq.frequency as f32);
+                        setter.set_parameter(&params.q, eq.q as f32);
                         setter.set_parameter(&params.eq_type, eq.eq_type.into());
+                        setter.end_set_parameter(&params.gain_db);
+                        setter.end_set_parameter(&params.frequency);
+                        setter.end_set_parameter(&params.q);
                         setter.end_set_parameter(&params.eq_type);
                     });
             },
