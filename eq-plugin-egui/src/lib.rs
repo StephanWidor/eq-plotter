@@ -4,7 +4,7 @@ use nih_plug::prelude::*;
 use std::sync::Arc;
 
 // we have our own EqType here because we need nih-plugs Enum trait (can this be done simpler?)
-#[derive(Enum, PartialEq)]
+#[derive(Enum, PartialEq, Clone, Copy)]
 pub enum EqType {
     Volume,
     LowPass,
@@ -57,7 +57,7 @@ pub struct EqPluginParams {
     pub gain_db: FloatParam,
 
     #[id = "frequency"]
-    pub frequency: FloatParam,
+    pub log_frequency: FloatParam,
 
     #[id = "q"]
     pub q: FloatParam,
@@ -84,16 +84,18 @@ impl Default for EqPluginParams {
             )
             .with_smoother(SmoothingStyle::Linear(Self::SMOOTHING_LENGTH_MS))
             .with_unit(" dB"),
-            frequency: FloatParam::new(
+            log_frequency: FloatParam::new(
                 "frequency (Hz)",
-                EqPlotter::DEFAULT_EQ.frequency as f32,
+                utils::frequency_to_log(EqPlotter::DEFAULT_EQ.frequency as f32),
                 FloatRange::Linear {
-                    min: EqPlotter::MIN_FREQUENCY as f32,
-                    max: EqPlotter::MAX_FREQUENCY as f32,
+                    min: EqPlotter::MIN_LOG_FREQUENCY as f32,
+                    max: EqPlotter::MAX_LOG_FREQUENCY as f32,
                 },
             )
             .with_smoother(SmoothingStyle::Linear(Self::SMOOTHING_LENGTH_MS))
-            .with_unit(" Hz"),
+            .with_unit(" Hz")
+            .with_value_to_string(Arc::new(EqPlotter::log_frequency_to_string))
+            .with_string_to_value(Arc::new(EqPlotter::string_to_log_frequency)),
             q: FloatParam::new(
                 "q",
                 EqPlotter::DEFAULT_EQ.q as f32,
@@ -108,10 +110,28 @@ impl Default for EqPluginParams {
     }
 }
 
+#[derive(PartialEq, Clone, Copy)]
+struct LogFrequencyEq {
+    gain_db: f32,
+    log_frequency: f32,
+    q: f32,
+    eq_type: EqType,
+}
+impl Into<eq::Eq<f32>> for LogFrequencyEq {
+    fn into(self) -> eq::Eq<f32> {
+        eq::Eq {
+            gain_db: self.gain_db,
+            frequency: utils::log_to_frequency(self.log_frequency),
+            q: self.q,
+            eq_type: self.eq_type.into(),
+        }
+    }
+}
+
 pub struct EqPlugin {
     params: Arc<EqPluginParams>,
     sample_rate: Arc<AtomicF32>,
-    eq: eq::Eq<f32>,
+    eq: LogFrequencyEq,
     filter: biquad::filter::Filter<f32>,
 }
 
@@ -124,11 +144,11 @@ impl EqPlugin {
             b1: 0.0,
             b2: 0.0,
         };
-    const INIT_EQ: eq::Eq<f32> = eq::Eq {
+    const INIT_EQ: LogFrequencyEq = LogFrequencyEq {
         gain_db: std::f32::NEG_INFINITY,
-        frequency: 0.0,
+        log_frequency: std::f32::NEG_INFINITY,
         q: 0.0,
-        eq_type: eq::EqType::Volume,
+        eq_type: EqType::Volume,
     };
 }
 
@@ -197,7 +217,7 @@ impl Plugin for EqPlugin {
                     .show(egui_ctx, egui_state.as_ref(), |ui| {
                         let eq = eq::Eq {
                             gain_db: params.gain_db.value() as f64,
-                            frequency: params.frequency.value() as f64,
+                            frequency: utils::log_to_frequency(params.log_frequency.value()) as f64,
                             q: params.q.value() as f64,
                             eq_type: params.eq_type.value().into(),
                         };
@@ -212,15 +232,18 @@ impl Plugin for EqPlugin {
                         }
 
                         setter.begin_set_parameter(&params.gain_db);
-                        setter.begin_set_parameter(&params.frequency);
+                        setter.begin_set_parameter(&params.log_frequency);
                         setter.begin_set_parameter(&params.q);
                         setter.begin_set_parameter(&params.eq_type);
                         setter.set_parameter(&params.gain_db, new_eq.gain_db as f32);
-                        setter.set_parameter(&params.frequency, new_eq.frequency as f32);
+                        setter.set_parameter(
+                            &params.log_frequency,
+                            utils::frequency_to_log(new_eq.frequency) as f32,
+                        );
                         setter.set_parameter(&params.q, new_eq.q as f32);
                         setter.set_parameter(&params.eq_type, new_eq.eq_type.into());
                         setter.end_set_parameter(&params.gain_db);
-                        setter.end_set_parameter(&params.frequency);
+                        setter.end_set_parameter(&params.log_frequency);
                         setter.end_set_parameter(&params.q);
                         setter.end_set_parameter(&params.eq_type);
                     });
@@ -236,16 +259,16 @@ impl Plugin for EqPlugin {
     ) -> ProcessStatus {
         assert!(buffer.channels() == 1); // we are always mono
         for channel_samples in buffer.iter_samples() {
-            let eq = eq::Eq {
+            let eq = LogFrequencyEq {
                 gain_db: self.params.gain_db.smoothed.next(),
-                frequency: self.params.frequency.smoothed.next(),
+                log_frequency: self.params.log_frequency.smoothed.next(),
                 q: self.params.q.smoothed.next(),
                 eq_type: self.params.eq_type.value().into(),
             };
             if eq != self.eq {
                 self.eq = eq;
                 let new_coefficients = biquad::coefficients::Coefficients::from_eq(
-                    &self.eq,
+                    &(self.eq.into()),
                     self.sample_rate.load(std::sync::atomic::Ordering::Relaxed),
                 );
                 if biquad::utils::is_stable(&new_coefficients) {
