@@ -13,12 +13,7 @@ impl Default for EqPlotter {
     fn default() -> Self {
         Self {
             sample_rate: 48000.0,
-            eq: eq::Eq {
-                gain_db: -3.0,
-                frequency: 1000.0,
-                q: 0.7,
-                eq_type: eq::EqType::Peak,
-            },
+            eq: Self::DEFAULT_EQ,
         }
     }
 }
@@ -32,6 +27,12 @@ impl EqPlotter {
     pub const MAX_LOG_FREQUENCY: f64 = 4.3010299956639813; // 20000.0.log10();
     pub const MIN_Q: f64 = 0.1;
     pub const MAX_Q: f64 = 10.0;
+    pub const DEFAULT_EQ: eq::Eq<f64> = eq::Eq {
+        gain_db: -3.0,
+        frequency: 1000.0,
+        q: 0.7,
+        eq_type: eq::EqType::Peak,
+    };
 
     pub fn draw(ui: &mut egui::Ui, eq: &mut eq::Eq<f64>, sample_rate: f64) {
         let mut log_frequency = eq.frequency.log10();

@@ -1,5 +1,5 @@
 use audio_lib::*;
-use eq_plotter_egui;
+use eq_plotter_egui::EqPlotter;
 use nih_plug::prelude::*;
 use std::sync::Arc;
 
@@ -76,34 +76,34 @@ impl Default for EqPluginParams {
             editor_state: nih_plug_egui::EguiState::from_size(1200, 800),
             gain_db: FloatParam::new(
                 "Gain (dB)",
-                0.0f32,
+                EqPlotter::DEFAULT_EQ.gain_db as f32,
                 FloatRange::Linear {
-                    min: eq_plotter_egui::EqPlotter::MIN_GAIN_DB as f32,
-                    max: eq_plotter_egui::EqPlotter::MAX_GAIN_DB as f32,
+                    min: EqPlotter::MIN_GAIN_DB as f32,
+                    max: EqPlotter::MAX_GAIN_DB as f32,
                 },
             )
             .with_smoother(SmoothingStyle::Linear(Self::SMOOTHING_LENGTH_MS))
             .with_unit(" dB"),
             frequency: FloatParam::new(
                 "frequency (Hz)",
-                1000.0f32,
+                EqPlotter::DEFAULT_EQ.frequency as f32,
                 FloatRange::Linear {
-                    min: eq_plotter_egui::EqPlotter::MIN_FREQUENCY as f32,
-                    max: eq_plotter_egui::EqPlotter::MAX_FREQUENCY as f32,
+                    min: EqPlotter::MIN_FREQUENCY as f32,
+                    max: EqPlotter::MAX_FREQUENCY as f32,
                 },
             )
             .with_smoother(SmoothingStyle::Linear(Self::SMOOTHING_LENGTH_MS))
             .with_unit(" Hz"),
             q: FloatParam::new(
                 "q",
-                0.7f32,
+                EqPlotter::DEFAULT_EQ.q as f32,
                 FloatRange::Linear {
-                    min: eq_plotter_egui::EqPlotter::MIN_Q as f32,
-                    max: eq_plotter_egui::EqPlotter::MAX_Q as f32,
+                    min: EqPlotter::MIN_Q as f32,
+                    max: EqPlotter::MAX_Q as f32,
                 },
             )
             .with_smoother(SmoothingStyle::Linear(Self::SMOOTHING_LENGTH_MS)),
-            eq_type: EnumParam::new("eq type", EqType::Peak),
+            eq_type: EnumParam::new("eq type", EqPlotter::DEFAULT_EQ.eq_type.into()),
         }
     }
 }
@@ -177,7 +177,7 @@ impl Plugin for EqPlugin {
                             eq_type: params.eq_type.value().into(),
                         };
 
-                        eq_plotter_egui::EqPlotter::draw(ui, &mut eq, 48000.0);
+                        EqPlotter::draw(ui, &mut eq, 48000.0);
 
                         setter.begin_set_parameter(&params.gain_db);
                         setter.set_parameter(&params.gain_db, eq.gain_db as f32);
