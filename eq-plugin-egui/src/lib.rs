@@ -110,18 +110,35 @@ impl Default for EqPluginParams {
 
 pub struct EqPlugin {
     params: Arc<EqPluginParams>,
-    filter: biquad::filter::Filter<f32>,
     sample_rate: f32,
+    eq: eq::Eq<f32>,
+    filter: biquad::filter::Filter<f32>,
+}
+
+impl EqPlugin {
+    const INIT_FILTER_COEFFICIENTS: biquad::coefficients::Coefficients<f32> =
+        biquad::coefficients::Coefficients {
+            a1: 0.0,
+            a2: 0.0,
+            b0: 0.0,
+            b1: 0.0,
+            b2: 0.0,
+        };
+    const INIT_EQ: eq::Eq<f32> = eq::Eq {
+        gain_db: std::f32::NEG_INFINITY,
+        frequency: 0.0,
+        q: 0.0,
+        eq_type: eq::EqType::Volume,
+    };
 }
 
 impl Default for EqPlugin {
     fn default() -> Self {
         Self {
             params: Arc::new(EqPluginParams::default()),
-            filter: biquad::filter::Filter::new(
-                &biquad::coefficients::Coefficients::from_volume_db(0.0f32),
-            ),
             sample_rate: 1.0,
+            eq: Self::INIT_EQ,
+            filter: biquad::filter::Filter::new(&Self::INIT_FILTER_COEFFICIENTS),
         }
     }
 }
@@ -156,6 +173,9 @@ impl Plugin for EqPlugin {
         _context: &mut impl InitContext<Self>,
     ) -> bool {
         self.sample_rate = _buffer_config.sample_rate as f32;
+        self.eq = Self::INIT_EQ;
+        self.filter
+            .set_coefficients(Self::INIT_FILTER_COEFFICIENTS, true);
         true
     }
 
@@ -205,6 +225,7 @@ impl Plugin for EqPlugin {
         _aux: &mut AuxiliaryBuffers,
         _context: &mut impl ProcessContext<Self>,
     ) -> ProcessStatus {
+        assert!(buffer.channels() == 1); // we are always mono
         for channel_samples in buffer.iter_samples() {
             let eq = eq::Eq {
                 gain_db: self.params.gain_db.smoothed.next(),
@@ -212,17 +233,17 @@ impl Plugin for EqPlugin {
                 q: self.params.q.smoothed.next(),
                 eq_type: self.params.eq_type.value().into(),
             };
-            self.filter.set_coefficients(
-                biquad::coefficients::Coefficients::from_eq(&eq, self.sample_rate),
-                false,
-            );
+            if eq != self.eq {
+                self.eq = eq;
+                let new_coefficients =
+                    biquad::coefficients::Coefficients::from_eq(&self.eq, self.sample_rate);
+                if biquad::utils::is_stable(&new_coefficients) {
+                    self.filter.set_coefficients(new_coefficients, false);
+                }
+            }
 
             for sample in channel_samples {
                 *sample = self.filter.process(*sample);
-            }
-
-            if self.params.editor_state.is_open() {
-                // nothing to do yet
             }
         }
 

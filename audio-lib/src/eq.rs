@@ -73,6 +73,28 @@ pub struct Eq<F: Float> {
     pub eq_type: EqType,
 }
 
+// TODO: I bet this can be done better
+impl From<Eq<f32>> for Eq<f64> {
+    fn from(eq: Eq<f32>) -> Eq<f64> {
+        Self {
+            gain_db: eq.gain_db as f64,
+            frequency: eq.frequency as f64,
+            q: eq.q as f64,
+            eq_type: eq.eq_type,
+        }
+    }
+}
+impl From<Eq<f64>> for Eq<f32> {
+    fn from(eq: Eq<f64>) -> Eq<f32> {
+        Self {
+            gain_db: eq.gain_db as f32,
+            frequency: eq.frequency as f32,
+            q: eq.q as f32,
+            eq_type: eq.eq_type,
+        }
+    }
+}
+
 impl<F: Float> Eq<F> {
     pub fn gain_db(&self) -> Option<F> {
         if self.eq_type.has_gain_db() {
