@@ -2,7 +2,9 @@ use audio_lib::biquad;
 use audio_lib::eq;
 use audio_lib::utils;
 use num::complex::ComplexFloat;
+use num_traits::Float;
 use num_traits::Pow;
+use num_traits::cast::FromPrimitive;
 
 pub struct EqPlotter {
     sample_rate: f64,
@@ -34,9 +36,27 @@ impl EqPlotter {
         eq_type: eq::EqType::Peak,
     };
 
+    pub fn log_frequency_to_string<F: Float + FromPrimitive + std::fmt::Display>(
+        log_frequency: F,
+    ) -> String {
+        //format!("{} Hz", utils::log_to_frequency(log_frequency.round()))
+        format!("{}", utils::log_to_frequency(log_frequency).round())
+    }
+
+    pub fn string_to_log_frequency<F: Float + FromPrimitive + std::str::FromStr>(
+        frequency_string: &str,
+    ) -> Option<F> {
+        let trimmed_string = frequency_string.trim_end_matches(&[' ', 'H', 'z']);
+        trimmed_string
+            .parse::<F>()
+            .ok()
+            .map(utils::frequency_to_log)
+        //            .unwrap_or(F::from(EqPlotter::MIN_LOG_FREQUENCY).unwrap())
+    }
+
     pub fn draw(ui: &mut egui::Ui, eq_in: &eq::Eq<f64>, sample_rate: f64) -> eq::Eq<f64> {
         let mut eq = eq_in.clone();
-        let mut log_frequency = eq.frequency.log10();
+        let mut log_frequency = utils::frequency_to_log(eq.frequency);
         ui.horizontal(|ui| {
             ui.vertical(|ui| {
                 egui::ComboBox::from_label("")
@@ -55,19 +75,14 @@ impl EqPlotter {
                         EqPlotter::MIN_LOG_FREQUENCY..=EqPlotter::MAX_LOG_FREQUENCY,
                     )
                     .custom_formatter(|log_frequency, _| {
-                        10.0.pow(log_frequency).round().to_string()
+                        Self::log_frequency_to_string(log_frequency)
                     })
-                    .custom_parser(|as_string| {
-                        let parsed = String::from(as_string).parse::<f64>();
-                        match parsed {
-                            Ok(frequency) => Some(frequency.log10()),
-                            Err(_) => None,
-                        }
-                    })
-                    .prefix("freqency: ")
+                    //.custom_parser(|as_string| Some(Self::string_to_log_frequency(as_string)))
+                    .custom_parser(Self::string_to_log_frequency)
+                    .prefix("frequency: ")
                     .suffix("Hz"),
                 );
-                eq.frequency = 10.0.pow(log_frequency);
+                eq.frequency = utils::log_to_frequency(log_frequency);
 
                 ui.add_enabled(
                     eq.eq_type.has_gain_db(),
@@ -89,7 +104,7 @@ impl EqPlotter {
                 |mark: egui_plot::GridMark, _range: &std::ops::RangeInclusive<f64>| -> String {
                     let log_frequency = mark.value;
                     if log_frequency.fract().abs() < 1e-6 {
-                        let frequency = 10.0.pow(mark.value);
+                        let frequency = utils::log_to_frequency(log_frequency);
                         format!("{}", frequency)
                     } else {
                         String::new()

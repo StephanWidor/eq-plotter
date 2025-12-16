@@ -7,6 +7,22 @@ use num_traits::cast::FromPrimitive;
 #[allow(type_alias_bounds)]
 pub type PolynomRoots<F: Float> = smallvec::SmallVec<[Complex<F>; 2]>;
 
+pub fn frequency_to_log<F: Float + FromPrimitive>(frequency: F) -> F {
+    if frequency > F::zero() {
+        F::log10(frequency)
+    } else {
+        F::neg_infinity()
+    }
+}
+
+pub fn log_to_frequency<F: Float + FromPrimitive>(log_frequency: F) -> F {
+    if log_frequency == F::neg_infinity() {
+        F::zero()
+    } else {
+        F::from(10).unwrap().powf(log_frequency)
+    }
+}
+
 pub fn amplitude_to_db<F: Float + FromPrimitive>(amplitude: F) -> F {
     if amplitude > F::zero() {
         F::from(20).unwrap() * F::log10(amplitude)
