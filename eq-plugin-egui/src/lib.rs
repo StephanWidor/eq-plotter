@@ -110,7 +110,7 @@ impl Default for EqPluginParams {
 
 pub struct EqPlugin {
     params: Arc<EqPluginParams>,
-    sample_rate: f32,
+    sample_rate: Arc<AtomicF32>,
     eq: eq::Eq<f32>,
     filter: biquad::filter::Filter<f32>,
 }
@@ -136,7 +136,7 @@ impl Default for EqPlugin {
     fn default() -> Self {
         Self {
             params: Arc::new(EqPluginParams::default()),
-            sample_rate: 1.0,
+            sample_rate: Arc::new(AtomicF32::new(1.0)),
             eq: Self::INIT_EQ,
             filter: biquad::filter::Filter::new(&Self::INIT_FILTER_COEFFICIENTS),
         }
@@ -172,7 +172,11 @@ impl Plugin for EqPlugin {
         _buffer_config: &BufferConfig,
         _context: &mut impl InitContext<Self>,
     ) -> bool {
-        self.sample_rate = _buffer_config.sample_rate as f32;
+        self.sample_rate.store(
+            _buffer_config.sample_rate as f32,
+            std::sync::atomic::Ordering::Relaxed,
+        );
+
         self.eq = Self::INIT_EQ;
         self.filter
             .set_coefficients(Self::INIT_FILTER_COEFFICIENTS, true);
@@ -182,6 +186,7 @@ impl Plugin for EqPlugin {
     fn editor(&mut self, _async_executor: AsyncExecutor<Self>) -> Option<Box<dyn Editor>> {
         let params = self.params.clone();
         let egui_state = params.editor_state.clone();
+        let sample_rate = self.sample_rate.clone();
         nih_plug_egui::create_egui_editor(
             self.params.editor_state.clone(),
             (),
@@ -196,8 +201,11 @@ impl Plugin for EqPlugin {
                             q: params.q.value() as f64,
                             eq_type: params.eq_type.value().into(),
                         };
-
-                        EqPlotter::draw(ui, &mut eq, 48000.0);
+                        EqPlotter::draw(
+                            ui,
+                            &mut eq,
+                            sample_rate.load(std::sync::atomic::Ordering::Relaxed) as f64,
+                        );
 
                         setter.begin_set_parameter(&params.gain_db);
                         setter.set_parameter(&params.gain_db, eq.gain_db as f32);
@@ -235,8 +243,10 @@ impl Plugin for EqPlugin {
             };
             if eq != self.eq {
                 self.eq = eq;
-                let new_coefficients =
-                    biquad::coefficients::Coefficients::from_eq(&self.eq, self.sample_rate);
+                let new_coefficients = biquad::coefficients::Coefficients::from_eq(
+                    &self.eq,
+                    self.sample_rate.load(std::sync::atomic::Ordering::Relaxed),
+                );
                 if biquad::utils::is_stable(&new_coefficients) {
                     self.filter.set_coefficients(new_coefficients, false);
                 }
