@@ -215,10 +215,10 @@ impl Plugin for EqPlugin {
                         setter.begin_set_parameter(&params.frequency);
                         setter.begin_set_parameter(&params.q);
                         setter.begin_set_parameter(&params.eq_type);
-                        setter.set_parameter(&params.gain_db, eq.gain_db as f32);
-                        setter.set_parameter(&params.frequency, eq.frequency as f32);
-                        setter.set_parameter(&params.q, eq.q as f32);
-                        setter.set_parameter(&params.eq_type, eq.eq_type.into());
+                        setter.set_parameter(&params.gain_db, new_eq.gain_db as f32);
+                        setter.set_parameter(&params.frequency, new_eq.frequency as f32);
+                        setter.set_parameter(&params.q, new_eq.q as f32);
+                        setter.set_parameter(&params.eq_type, new_eq.eq_type.into());
                         setter.end_set_parameter(&params.gain_db);
                         setter.end_set_parameter(&params.frequency);
                         setter.end_set_parameter(&params.q);
