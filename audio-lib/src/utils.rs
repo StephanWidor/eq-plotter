@@ -4,6 +4,9 @@ use num::Complex;
 use num_traits::Float;
 use num_traits::cast::FromPrimitive;
 
+#[allow(type_alias_bounds)]
+pub type PolynomRoots<F: Float> = smallvec::SmallVec<[Complex<F>; 2]>;
+
 pub fn amplitude_to_db<F: Float + FromPrimitive>(amplitude: F) -> F {
     if amplitude > F::zero() {
         F::from(20).unwrap() * F::log10(amplitude)
@@ -25,27 +28,27 @@ pub fn omega<F: Float + FromPrimitive>(frequency: F, sample_rate: F) -> F {
 }
 
 /// complex roots of polynom c2*x^2 + c1*x + c0
-pub fn polynom_roots<F: Float + FromPrimitive>(c2: F, c1: F, c0: F) -> Vec<Complex<F>> {
+pub fn polynom_roots<F: Float + FromPrimitive>(c2: F, c1: F, c0: F) -> PolynomRoots<F> {
     if c2 == F::zero() {
         if c1 == F::zero() {
             if c0 == F::zero() {
                 // any x is a solution here, let's just return zero
-                return vec![Complex::<F>::from(F::zero())];
+                return PolynomRoots::from_elem(Complex::<F>::from(F::zero()), 1);
             }
-            return Vec::new();
+            return PolynomRoots::new();
         }
-        return vec![Complex::from(-c0 / c1)];
+        return PolynomRoots::from_elem(Complex::from(-c0 / c1), 1);
     }
     let p = c1 / c2;
     let q = c0 / c2;
     let root_arg = p * p / F::from(4).unwrap() - q;
     let p_half = Complex::from(p * F::from(0.5).unwrap());
     if root_arg == F::zero() {
-        return vec![-p_half];
+        return PolynomRoots::from_elem(-p_half, 1);
     }
 
     let root_val = Complex::from(root_arg).sqrt();
-    vec![-p_half - root_val, -p_half + root_val]
+    PolynomRoots::from_slice(&[-p_half - root_val, -p_half + root_val])
 }
 
 #[cfg(test)]
@@ -69,7 +72,7 @@ mod tests {
 
     #[test]
     fn check_explicit_polyom_roots() {
-        let check_solutions = |solutions: Vec<Complex<f64>>, expected: &Vec<Complex<f64>>| {
+        let check_solutions = |solutions: PolynomRoots<f64>, expected: &Vec<Complex<f64>>| {
             assert_eq!(solutions.len(), expected.len());
             for solution in solutions.iter() {
                 let find_index = expected

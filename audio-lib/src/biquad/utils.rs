@@ -48,13 +48,13 @@ pub fn impulse_response<F: num_traits::Float + FromPrimitive>(
 
 pub fn zeros<F: num_traits::Float + FromPrimitive>(
     coefficients: &Coefficients<F>,
-) -> Vec<Complex<F>> {
+) -> utils::PolynomRoots<F> {
     utils::polynom_roots(coefficients.b0, coefficients.b1, coefficients.b2)
 }
 
 pub fn poles<F: num_traits::Float + FromPrimitive>(
     coefficients: &Coefficients<F>,
-) -> Vec<Complex<F>> {
+) -> utils::PolynomRoots<F> {
     utils::polynom_roots(F::one(), coefficients.a1, coefficients.a2)
 }
 
