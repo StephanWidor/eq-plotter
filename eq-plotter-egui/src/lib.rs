@@ -30,8 +30,8 @@ impl EqPlotter {
     pub const MIN_Q: f64 = 0.1;
     pub const MAX_Q: f64 = 10.0;
     pub const DEFAULT_EQ: eq::Eq<f64> = eq::Eq {
-        gain_db: -3.0,
-        frequency: 1000.0,
+        gain: eq::Gain::Db(-3.0),
+        frequency: eq::Frequency::Hz(1000.0),
         q: 0.7,
         eq_type: eq::EqType::Peak,
     };
@@ -56,7 +56,8 @@ impl EqPlotter {
 
     pub fn draw(ui: &mut egui::Ui, eq_in: &eq::Eq<f64>, sample_rate: f64) -> eq::Eq<f64> {
         let mut eq = eq_in.clone();
-        let mut log_frequency = utils::frequency_to_log(eq.frequency);
+        let mut gain_db = eq.gain.db();
+        let mut log_frequency = eq.frequency.log_hz();
         ui.horizontal(|ui| {
             ui.vertical(|ui| {
                 egui::ComboBox::from_label("")
@@ -77,22 +78,22 @@ impl EqPlotter {
                     .custom_formatter(|log_frequency, _| {
                         Self::log_frequency_to_string(log_frequency)
                     })
-                    //.custom_parser(|as_string| Some(Self::string_to_log_frequency(as_string)))
                     .custom_parser(Self::string_to_log_frequency)
                     .prefix("frequency: ")
                     .suffix("Hz"),
                 );
-                eq.frequency = utils::log_to_frequency(log_frequency);
+                eq.frequency = eq::Frequency::LogHz(log_frequency);
 
                 ui.add_enabled(
                     eq.eq_type.has_gain_db(),
                     egui::Slider::new(
-                        &mut eq.gain_db,
+                        &mut gain_db,
                         EqPlotter::MIN_GAIN_DB..=EqPlotter::MAX_GAIN_DB,
                     )
                     .prefix("gain: ")
                     .suffix("dB"),
                 );
+                eq.gain = eq::Gain::Db(gain_db);
 
                 ui.add_enabled(
                     eq.eq_type.has_q(),

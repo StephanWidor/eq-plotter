@@ -15,20 +15,18 @@ pub struct Coefficients<F: Float + FromPrimitive> {
 /// Formulas for coefficients taken from here http://shepazu.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html
 impl<F: Float + FromPrimitive> Coefficients<F> {
     pub fn from_eq(eq: &eq::Eq<F>, sample_rate: F) -> Self {
+        let gain_db = eq.gain.db();
+        let frequency = eq.frequency.hz();
         match eq.eq_type {
-            eq::EqType::Volume => Self::from_volume_db(eq.gain_db),
-            eq::EqType::LowPass => Self::from_lowpass(eq.frequency, eq.q, sample_rate),
-            eq::EqType::HighPass => Self::from_highpass(eq.frequency, eq.q, sample_rate),
-            eq::EqType::BandPass => Self::from_bandpass(eq.frequency, eq.q, sample_rate),
-            eq::EqType::AllPass => Self::from_allpass(eq.frequency, eq.q, sample_rate),
-            eq::EqType::Notch => Self::from_notch(eq.frequency, eq.q, sample_rate),
-            eq::EqType::Peak => Self::from_peak_db(eq.gain_db, eq.frequency, eq.q, sample_rate),
-            eq::EqType::LowShelf => {
-                Self::from_lowshelf_db(eq.gain_db, eq.frequency, eq.q, sample_rate)
-            }
-            eq::EqType::HighShelf => {
-                Self::from_highshelf_db(eq.gain_db, eq.frequency, eq.q, sample_rate)
-            }
+            eq::EqType::Volume => Self::from_volume_db(gain_db),
+            eq::EqType::LowPass => Self::from_lowpass(frequency, eq.q, sample_rate),
+            eq::EqType::HighPass => Self::from_highpass(frequency, eq.q, sample_rate),
+            eq::EqType::BandPass => Self::from_bandpass(frequency, eq.q, sample_rate),
+            eq::EqType::AllPass => Self::from_allpass(frequency, eq.q, sample_rate),
+            eq::EqType::Notch => Self::from_notch(frequency, eq.q, sample_rate),
+            eq::EqType::Peak => Self::from_peak_db(gain_db, frequency, eq.q, sample_rate),
+            eq::EqType::LowShelf => Self::from_lowshelf_db(gain_db, frequency, eq.q, sample_rate),
+            eq::EqType::HighShelf => Self::from_highshelf_db(gain_db, frequency, eq.q, sample_rate),
         }
     }
 
