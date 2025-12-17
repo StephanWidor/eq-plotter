@@ -69,36 +69,40 @@ impl EqPlotter {
                         }
                     });
 
-                ui.add_enabled(
-                    eq.eq_type.has_frequency(),
-                    egui::Slider::new(
-                        &mut log_frequency,
-                        EqPlotter::MIN_LOG_FREQUENCY..=EqPlotter::MAX_LOG_FREQUENCY,
-                    )
-                    .custom_formatter(|log_frequency, _| {
-                        Self::log_frequency_to_string(log_frequency)
-                    })
-                    .custom_parser(Self::string_to_log_frequency)
-                    .prefix("frequency: ")
-                    .suffix("Hz"),
-                );
-                eq.frequency = eq::Frequency::LogHz(log_frequency);
+                if eq.eq_type.has_frequency() {
+                    ui.add(
+                        egui::Slider::new(
+                            &mut log_frequency,
+                            EqPlotter::MIN_LOG_FREQUENCY..=EqPlotter::MAX_LOG_FREQUENCY,
+                        )
+                        .custom_formatter(|log_frequency, _| {
+                            Self::log_frequency_to_string(log_frequency)
+                        })
+                        .custom_parser(Self::string_to_log_frequency)
+                        .prefix("frequency: ")
+                        .suffix("Hz"),
+                    );
+                    eq.frequency = eq::Frequency::LogHz(log_frequency);
+                }
 
-                ui.add_enabled(
-                    eq.eq_type.has_gain_db(),
-                    egui::Slider::new(
-                        &mut gain_db,
-                        EqPlotter::MIN_GAIN_DB..=EqPlotter::MAX_GAIN_DB,
-                    )
-                    .prefix("gain: ")
-                    .suffix("dB"),
-                );
-                eq.gain = eq::Gain::Db(gain_db);
+                if eq.eq_type.has_gain_db() {
+                    ui.add(
+                        egui::Slider::new(
+                            &mut gain_db,
+                            EqPlotter::MIN_GAIN_DB..=EqPlotter::MAX_GAIN_DB,
+                        )
+                        .prefix("gain: ")
+                        .suffix("dB"),
+                    );
+                    eq.gain = eq::Gain::Db(gain_db);
+                }
 
-                ui.add_enabled(
-                    eq.eq_type.has_q(),
-                    egui::Slider::new(&mut eq.q, EqPlotter::MIN_Q..=EqPlotter::MAX_Q).prefix("Q: "),
-                );
+                if eq.eq_type.has_q() {
+                    ui.add(
+                        egui::Slider::new(&mut eq.q, EqPlotter::MIN_Q..=EqPlotter::MAX_Q)
+                            .prefix("Q: "),
+                    );
+                }
             });
 
             let log_frequency_formatter =
