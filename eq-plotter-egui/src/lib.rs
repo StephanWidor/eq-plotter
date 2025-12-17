@@ -21,6 +21,8 @@ impl Default for EqPlotter {
 }
 
 impl EqPlotter {
+    pub const WINDOW_SIZE: [u32; 2] = [1120, 840]; // [width, height]
+    pub const BACKGROUND_COLOR: [u8; 3] = [32, 35, 38]; // [r,g,b]
     pub const MIN_GAIN_DB: f64 = -20.0;
     pub const MAX_GAIN_DB: f64 = 20.0;
     pub const MIN_FREQUENCY: f64 = 10.0;
@@ -39,7 +41,6 @@ impl EqPlotter {
     pub fn log_frequency_to_string<F: Float + FromPrimitive + std::fmt::Display>(
         log_frequency: F,
     ) -> String {
-        //format!("{} Hz", utils::log_to_frequency(log_frequency.round()))
         format!("{}", utils::log_to_frequency(log_frequency).round())
     }
 
@@ -51,7 +52,6 @@ impl EqPlotter {
             .parse::<F>()
             .ok()
             .map(utils::frequency_to_log)
-        //            .unwrap_or(F::from(EqPlotter::MIN_LOG_FREQUENCY).unwrap())
     }
 
     pub fn draw(ui: &mut egui::Ui, eq_in: &eq::Eq<f64>, sample_rate: f64) -> eq::Eq<f64> {
@@ -259,12 +259,14 @@ impl eframe::App for EqPlotter {
             .frame(
                 egui::Frame::default()
                     .inner_margin(20)
-                    .fill(egui::Color32::from_rgb(32, 35, 38)),
+                    .fill(egui::Color32::from_rgb(
+                        Self::BACKGROUND_COLOR[0],
+                        Self::BACKGROUND_COLOR[1],
+                        Self::BACKGROUND_COLOR[2],
+                    )),
             )
             .show(ctx, |ui| {
-                ui.horizontal(|ui| {
-                    self.eq = EqPlotter::draw(ui, &self.eq, self.sample_rate);
-                });
+                self.eq = EqPlotter::draw(ui, &self.eq, self.sample_rate);
             });
     }
 }

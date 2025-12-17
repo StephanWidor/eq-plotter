@@ -73,7 +73,10 @@ impl EqPluginParams {
 impl Default for EqPluginParams {
     fn default() -> Self {
         Self {
-            editor_state: nih_plug_egui::EguiState::from_size(1200, 800),
+            editor_state: nih_plug_egui::EguiState::from_size(
+                EqPlotter::WINDOW_SIZE[0],
+                EqPlotter::WINDOW_SIZE[1],
+            ),
             gain_db: FloatParam::new(
                 "gain (dB)",
                 EqPlotter::DEFAULT_EQ.gain.db() as f32,
@@ -109,24 +112,6 @@ impl Default for EqPluginParams {
         }
     }
 }
-
-// #[derive(PartialEq, Clone, Copy)]
-// struct LogFrequencyEq {
-//     gain_db: f32,
-//     log_frequency: f32,
-//     q: f32,
-//     eq_type: EqType,
-// }
-// impl Into<eq::Eq<f32>> for LogFrequencyEq {
-//     fn into(self) -> eq::Eq<f32> {
-//         eq::Eq {
-//             gain_db: self.gain_db,
-//             frequency: utils::log_to_frequency(self.log_frequency),
-//             q: self.q,
-//             eq_type: self.eq_type.into(),
-//         }
-//     }
-// }
 
 pub struct EqPlugin {
     params: Arc<EqPluginParams>,
@@ -205,16 +190,30 @@ impl Plugin for EqPlugin {
 
     fn editor(&mut self, _async_executor: AsyncExecutor<Self>) -> Option<Box<dyn Editor>> {
         let params = self.params.clone();
-        let egui_state = params.editor_state.clone();
         let sample_rate = self.sample_rate.clone();
+        let editor_size = params.editor_state.size();
         nih_plug_egui::create_egui_editor(
             self.params.editor_state.clone(),
             (),
-            |_, _| {},
+            move |egui_ctx, _| {
+                egui_ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(egui::Vec2::new(
+                    editor_size.0 as f32,
+                    editor_size.1 as f32,
+                )));
+                egui_ctx.send_viewport_cmd(egui::ViewportCommand::Resizable(false));
+            },
             move |egui_ctx, setter, _state| {
-                nih_plug_egui::resizable_window::ResizableWindow::new("res-wind")
-                    .min_size(nih_plug_egui::egui::Vec2::new(1200.0, 800.0))
-                    .show(egui_ctx, egui_state.as_ref(), |ui| {
+                egui::CentralPanel::default()
+                    .frame(
+                        egui::Frame::default()
+                            .inner_margin(20)
+                            .fill(egui::Color32::from_rgb(
+                                EqPlotter::BACKGROUND_COLOR[0],
+                                EqPlotter::BACKGROUND_COLOR[1],
+                                EqPlotter::BACKGROUND_COLOR[2],
+                            )),
+                    )
+                    .show(egui_ctx, |ui| {
                         let eq = eq::Eq {
                             gain: eq::Gain::Db(params.gain_db.value() as f64),
                             frequency: eq::Frequency::LogHz(params.log_frequency.value() as f64),

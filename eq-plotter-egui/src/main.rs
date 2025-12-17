@@ -1,3 +1,5 @@
+use eq_plotter_egui::EqPlotter;
+
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::JsCast;
 #[cfg(target_arch = "wasm32")]
@@ -21,7 +23,7 @@ fn main() -> eframe::Result {
             .start(
                 canvas,
                 web_options,
-                Box::new(|_cc| Ok(Box::<eq_plotter_egui::EqPlotter>::default())),
+                Box::new(|_cc| Ok(Box::<EqPlotter>::default())),
             )
             .await
             .expect("failed to start WebRunner");
@@ -32,13 +34,19 @@ fn main() -> eframe::Result {
 #[cfg(not(target_arch = "wasm32"))]
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_maximized(true),
+        viewport: egui::ViewportBuilder::default()
+            .with_inner_size([
+                EqPlotter::WINDOW_SIZE[0] as f32,
+                EqPlotter::WINDOW_SIZE[1] as f32,
+            ])
+            .with_clamp_size_to_monitor_size(false)
+            .with_resizable(false),
         ..Default::default()
     };
 
     eframe::run_native(
         "EQ Plotter",
         options,
-        Box::new(|_cc| Ok(Box::<eq_plotter_egui::EqPlotter>::default())),
+        Box::new(|_cc| Ok(Box::<EqPlotter>::default())),
     )
 }
