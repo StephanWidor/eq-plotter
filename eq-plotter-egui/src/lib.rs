@@ -1,3 +1,4 @@
+use app_lib as app;
 use audio_lib::biquad;
 use audio_lib::eq;
 use audio_lib::utils;
@@ -15,28 +16,13 @@ impl Default for EqPlotter {
     fn default() -> Self {
         Self {
             sample_rate: 48000.0,
-            eq: Self::DEFAULT_EQ,
+            eq: app::DEFAULT_EQ,
         }
     }
 }
 
 impl EqPlotter {
     pub const WINDOW_SIZE: [u32; 2] = [1120, 840]; // [width, height]
-    pub const BACKGROUND_COLOR: [u8; 3] = [32, 35, 38]; // [r,g,b]
-    pub const MIN_GAIN_DB: f64 = -20.0;
-    pub const MAX_GAIN_DB: f64 = 20.0;
-    pub const MIN_FREQUENCY: f64 = 10.0;
-    pub const MIN_LOG_FREQUENCY: f64 = 1.0; // 10.0.log10();
-    pub const MAX_FREQUENCY: f64 = 20000.0;
-    pub const MAX_LOG_FREQUENCY: f64 = 4.3010299956639813; // 20000.0.log10();
-    pub const MIN_Q: f64 = 0.1;
-    pub const MAX_Q: f64 = 10.0;
-    pub const DEFAULT_EQ: eq::Eq<f64> = eq::Eq {
-        gain: eq::Gain::Db(-3.0),
-        frequency: eq::Frequency::Hz(1000.0),
-        q: 0.7,
-        eq_type: eq::EqType::Peak,
-    };
 
     pub fn log_frequency_to_string<F: Float + FromPrimitive + std::fmt::Display>(
         log_frequency: F,
@@ -73,7 +59,7 @@ impl EqPlotter {
                     ui.add(
                         egui::Slider::new(
                             &mut log_frequency,
-                            EqPlotter::MIN_LOG_FREQUENCY..=EqPlotter::MAX_LOG_FREQUENCY,
+                            app::MIN_LOG_FREQUENCY..=app::MAX_LOG_FREQUENCY,
                         )
                         .custom_formatter(|log_frequency, _| {
                             Self::log_frequency_to_string(log_frequency)
@@ -89,7 +75,7 @@ impl EqPlotter {
                     ui.add(
                         egui::Slider::new(
                             &mut gain_db,
-                            EqPlotter::MIN_GAIN_DB..=EqPlotter::MAX_GAIN_DB,
+                            app::MIN_GAIN_DB..=app::MAX_GAIN_DB,
                         )
                         .prefix("gain: ")
                         .suffix("dB"),
@@ -99,7 +85,7 @@ impl EqPlotter {
 
                 if eq.eq_type.has_q() {
                     ui.add(
-                        egui::Slider::new(&mut eq.q, EqPlotter::MIN_Q..=EqPlotter::MAX_Q)
+                        egui::Slider::new(&mut eq.q, app::MIN_Q..=app::MAX_Q)
                             .prefix("Q: "),
                     );
                 }
@@ -138,8 +124,8 @@ impl EqPlotter {
                     .legend(egui_plot::Legend::default())
                     .show(ui, |plot_ui| {
                         plot_ui.set_plot_bounds(egui_plot::PlotBounds::from_min_max(
-                            [EqPlotter::MIN_LOG_FREQUENCY, EqPlotter::MIN_GAIN_DB],
-                            [EqPlotter::MAX_LOG_FREQUENCY, EqPlotter::MAX_GAIN_DB],
+                            [app::MIN_LOG_FREQUENCY, app::MIN_GAIN_DB],
+                            [app::MAX_LOG_FREQUENCY, app::MAX_GAIN_DB],
                         ));
                         let gain_points = egui_plot::PlotPoints::from_explicit_callback(
                             |log_frequency| {
@@ -147,7 +133,7 @@ impl EqPlotter {
                                     frequency_response(10.0.pow(log_frequency)).abs(),
                                 )
                             },
-                            EqPlotter::MIN_LOG_FREQUENCY..=EqPlotter::MAX_LOG_FREQUENCY,
+                            app::MIN_LOG_FREQUENCY..=app::MAX_LOG_FREQUENCY,
                             1000,
                         );
                         plot_ui.line(egui_plot::Line::new(gain_points).name("Gain Response"));
@@ -170,12 +156,12 @@ impl EqPlotter {
                     .legend(egui_plot::Legend::default())
                     .show(ui, |plot_ui| {
                         plot_ui.set_plot_bounds(egui_plot::PlotBounds::from_min_max(
-                            [EqPlotter::MIN_LOG_FREQUENCY, -std::f64::consts::PI],
-                            [EqPlotter::MAX_LOG_FREQUENCY, std::f64::consts::PI],
+                            [app::MIN_LOG_FREQUENCY, -std::f64::consts::PI],
+                            [app::MAX_LOG_FREQUENCY, std::f64::consts::PI],
                         ));
                         let phase_points = egui_plot::PlotPoints::from_explicit_callback(
                             |log_frequency| frequency_response(10.0.pow(log_frequency)).arg(),
-                            EqPlotter::MIN_LOG_FREQUENCY..=EqPlotter::MAX_LOG_FREQUENCY,
+                            app::MIN_LOG_FREQUENCY..=app::MAX_LOG_FREQUENCY,
                             1000,
                         );
                         plot_ui.line(egui_plot::Line::new(phase_points).name("Phase Response"));
@@ -260,9 +246,9 @@ impl eframe::App for EqPlotter {
                 egui::Frame::default()
                     .inner_margin(20)
                     .fill(egui::Color32::from_rgb(
-                        Self::BACKGROUND_COLOR[0],
-                        Self::BACKGROUND_COLOR[1],
-                        Self::BACKGROUND_COLOR[2],
+                        app::UI_BACKGROUND_COLOR[0],
+                        app::UI_BACKGROUND_COLOR[1],
+                        app::UI_BACKGROUND_COLOR[2],
                     )),
             )
             .show(ctx, |ui| {

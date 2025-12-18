@@ -14,6 +14,7 @@ crate-type = ["cdylib", "lib"]
 egui = { workspace = true }
 egui_plot = { workspace = true }
 
+app-lib = { path = "../app-lib" }
 audio-lib = { path = "../audio-lib" }
 eq-plotter-egui = { path = "../eq-plotter-egui" }
 

@@ -1,3 +1,4 @@
+use app_lib as app;
 use audio_lib::*;
 use eq_plotter_egui::EqPlotter;
 use nih_plug::prelude::*;
@@ -79,20 +80,20 @@ impl Default for EqPluginParams {
             ),
             gain_db: FloatParam::new(
                 "gain (dB)",
-                EqPlotter::DEFAULT_EQ.gain.db() as f32,
+                app::DEFAULT_EQ.gain.db() as f32,
                 FloatRange::Linear {
-                    min: EqPlotter::MIN_GAIN_DB as f32,
-                    max: EqPlotter::MAX_GAIN_DB as f32,
+                    min: app::MIN_GAIN_DB as f32,
+                    max: app::MAX_GAIN_DB as f32,
                 },
             )
             .with_smoother(SmoothingStyle::Linear(Self::SMOOTHING_LENGTH_MS))
             .with_unit(" dB"),
             log_frequency: FloatParam::new(
                 "frequency (Hz)",
-                EqPlotter::DEFAULT_EQ.frequency.log_hz() as f32,
+                app::DEFAULT_EQ.frequency.log_hz() as f32,
                 FloatRange::Linear {
-                    min: EqPlotter::MIN_LOG_FREQUENCY as f32,
-                    max: EqPlotter::MAX_LOG_FREQUENCY as f32,
+                    min: app::MIN_LOG_FREQUENCY as f32,
+                    max: app::MAX_LOG_FREQUENCY as f32,
                 },
             )
             .with_smoother(SmoothingStyle::Linear(Self::SMOOTHING_LENGTH_MS))
@@ -101,14 +102,14 @@ impl Default for EqPluginParams {
             .with_string_to_value(Arc::new(EqPlotter::string_to_log_frequency)),
             q: FloatParam::new(
                 "q",
-                EqPlotter::DEFAULT_EQ.q as f32,
+                app::DEFAULT_EQ.q as f32,
                 FloatRange::Linear {
-                    min: EqPlotter::MIN_Q as f32,
-                    max: EqPlotter::MAX_Q as f32,
+                    min: app::MIN_Q as f32,
+                    max: app::MAX_Q as f32,
                 },
             )
             .with_smoother(SmoothingStyle::Linear(Self::SMOOTHING_LENGTH_MS)),
-            eq_type: EnumParam::new("eq type", EqPlotter::DEFAULT_EQ.eq_type.into()),
+            eq_type: EnumParam::new("eq type", app::DEFAULT_EQ.eq_type.into()),
         }
     }
 }
@@ -208,9 +209,9 @@ impl Plugin for EqPlugin {
                         egui::Frame::default()
                             .inner_margin(20)
                             .fill(egui::Color32::from_rgb(
-                                EqPlotter::BACKGROUND_COLOR[0],
-                                EqPlotter::BACKGROUND_COLOR[1],
-                                EqPlotter::BACKGROUND_COLOR[2],
+                                app::UI_BACKGROUND_COLOR[0],
+                                app::UI_BACKGROUND_COLOR[1],
+                                app::UI_BACKGROUND_COLOR[2],
                             )),
                     )
                     .show(egui_ctx, |ui| {
