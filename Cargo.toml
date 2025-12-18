@@ -3,6 +3,7 @@ resolver= "3"
 members = [
     "audio-lib",
     "eq-plotter-egui",
+    "eq-plotter-slint",
     "eq-plugin-egui",
     "xtask"
 ]
