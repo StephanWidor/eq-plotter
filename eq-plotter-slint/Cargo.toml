@@ -4,7 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-slint = "1.14.1"
+app-lib = { path = "../app-lib" }
+audio-lib = { path = "../audio-lib" }
+
+slint = { version = "1.14.1" }
 
 [build-dependencies]
 slint-build = "1.14.1"
