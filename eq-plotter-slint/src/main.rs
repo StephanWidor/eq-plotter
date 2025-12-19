@@ -11,7 +11,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let eq=std::sync::Arc::new(sync::RwLock::new( app::DEFAULT_EQ));
     let eq_types=slint::VecModel::from_slice(&eq::EqType::ALL);
 
-    let ui = EqPlotter::new()?;
+    let ui = EqPlotterUi::new()?;
 
 
 
