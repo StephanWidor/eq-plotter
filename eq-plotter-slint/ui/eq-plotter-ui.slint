@@ -7,6 +7,7 @@ import {
 } from "std-widgets.slint";
 
 export global Eq {
+    in property <string> eq_type;
     in property <float> gain_db;
     in property <float> frequency;
     in property <float> log_frequency;
@@ -24,7 +25,7 @@ export global Eq {
 }
 
 export global Callbacks {
-    callback request-set-eq-type(int);
+    callback request-set-eq-type(string);
     callback request-set-gain-db(float);
     callback request-set-log-frequency(float);
     callback request-set-q(float);
@@ -42,9 +43,10 @@ component EqControl inherits VerticalBox {
             min-width: 160px;
             max-height: 20px;
             model: Eq.eq_types;
-            current-index: 0;
-            // selected(current-value) => {
-            //     root.load-model(self.current-index)
+            current-value: Eq.eq_type;
+            selected(eq-type) => {
+                Callbacks.request-set-eq-type(eq_type);
+            }
         }
     }
 
