@@ -73,21 +73,15 @@ impl EqPlotter {
 
                 if eq.eq_type.has_gain_db() {
                     ui.add(
-                        egui::Slider::new(
-                            &mut gain_db,
-                            app::MIN_GAIN_DB..=app::MAX_GAIN_DB,
-                        )
-                        .prefix("gain: ")
-                        .suffix("dB"),
+                        egui::Slider::new(&mut gain_db, app::MIN_GAIN_DB..=app::MAX_GAIN_DB)
+                            .prefix("gain: ")
+                            .suffix("dB"),
                     );
                     eq.gain = eq::Gain::Db(gain_db);
                 }
 
                 if eq.eq_type.has_q() {
-                    ui.add(
-                        egui::Slider::new(&mut eq.q, app::MIN_Q..=app::MAX_Q)
-                            .prefix("Q: "),
-                    );
+                    ui.add(egui::Slider::new(&mut eq.q, app::MIN_Q..=app::MAX_Q).prefix("Q: "));
                 }
             });
 

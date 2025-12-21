@@ -73,15 +73,15 @@ impl TryFrom<&str> for EqType {
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value {
             "Volume" => Ok(EqType::Volume),
-            "Low Pass"=>Ok(EqType::LowPass),
-            "High Pass"=>Ok(EqType::HighPass),
-            "Band Pass"=>Ok(EqType::BandPass),
-            "All Pass"=>Ok(EqType::AllPass),
-            "Notch"=>Ok(EqType::Notch),
-            "Peak"=>Ok(EqType::Peak),
-            "Low Shelf"=>Ok(EqType::LowShelf),
-            "High Shelf"=>Ok(EqType::HighShelf),
-            _=> Err(stringify!("EqType {} is not defined", value)),
+            "Low Pass" => Ok(EqType::LowPass),
+            "High Pass" => Ok(EqType::HighPass),
+            "Band Pass" => Ok(EqType::BandPass),
+            "All Pass" => Ok(EqType::AllPass),
+            "Notch" => Ok(EqType::Notch),
+            "Peak" => Ok(EqType::Peak),
+            "Low Shelf" => Ok(EqType::LowShelf),
+            "High Shelf" => Ok(EqType::HighShelf),
+            _ => Err(stringify!("EqType {} is not defined", value)),
         }
     }
 }

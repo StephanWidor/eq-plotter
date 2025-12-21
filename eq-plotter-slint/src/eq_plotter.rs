@@ -1,6 +1,6 @@
-use std::sync;
 use app_lib as app;
 use audio_lib::eq;
+use std::sync;
 
 slint::include_modules!();
 
@@ -12,9 +12,9 @@ pub struct EqPlotter {
 
 impl EqPlotter {
     pub fn new() -> core::result::Result<Self, slint::PlatformError> {
-        let eq_plotter=EqPlotter {
+        let eq_plotter = EqPlotter {
             ui: EqPlotterUi::new()?,
-            eq: sync::Arc::new(sync::RwLock::new( app::DEFAULT_EQ.into())),
+            eq: sync::Arc::new(sync::RwLock::new(app::DEFAULT_EQ.into())),
             sample_rate: 48000.0f32,
         };
 
@@ -30,11 +30,16 @@ impl EqPlotter {
     }
 
     fn init_ui_properties(&self) {
-        let read_eq=self.eq.read().unwrap();
-        let ui_eq=self.ui.global::<Eq>();
+        let read_eq = self.eq.read().unwrap();
+        let ui_eq = self.ui.global::<Eq>();
 
-        let eq_type_strings:[slint::SharedString;eq::EqType::VARIANT_COUNT]=
-            array_init::from_iter(eq::EqType::ALL.iter().map(|eq_type:&eq::EqType|{eq_type.to_string().into()})).unwrap();
+        let eq_type_strings: [slint::SharedString; eq::EqType::VARIANT_COUNT] =
+            array_init::from_iter(
+                eq::EqType::ALL
+                    .iter()
+                    .map(|eq_type: &eq::EqType| eq_type.to_string().into()),
+            )
+            .unwrap();
         ui_eq.set_eq_types(slint::VecModel::from_slice(&eq_type_strings));
         ui_eq.set_eq_type(read_eq.eq_type.to_string().into());
 
@@ -55,60 +60,60 @@ impl EqPlotter {
     }
 
     fn init_ui_callbacks(&self) {
-        let ui_callbacks=self.ui.global::<Callbacks>();
+        let ui_callbacks = self.ui.global::<Callbacks>();
         ui_callbacks.on_request_set_eq_type({
             let ui_handle = self.ui.as_weak().unwrap();
-            let eq_handle=self.eq.clone();
-            move |eq_type: slint::SharedString|{
-                let new_eq_type_option=eq::EqType::try_from(eq_type.as_str());
+            let eq_handle = self.eq.clone();
+            move |eq_type: slint::SharedString| {
+                let new_eq_type_option = eq::EqType::try_from(eq_type.as_str());
                 match new_eq_type_option {
                     Ok(new_eq_type) => {
-                        ui_handle.global::<Eq>().set_eq_type(new_eq_type.to_string().into());
-                        eq_handle.write().unwrap().eq_type=new_eq_type;
+                        ui_handle
+                            .global::<Eq>()
+                            .set_eq_type(new_eq_type.to_string().into());
+                        eq_handle.write().unwrap().eq_type = new_eq_type;
                     }
-                    _ => {    // we actually shouldn't ever get here!
-                        ui_handle.global::<Eq>().set_eq_type(eq_handle.read().unwrap().eq_type.to_string().into());
+                    _ => {
+                        // we actually shouldn't ever get here!
+                        ui_handle
+                            .global::<Eq>()
+                            .set_eq_type(eq_handle.read().unwrap().eq_type.to_string().into());
                     }
                 }
             }
         });
         ui_callbacks.on_request_set_gain_db({
             let ui_handle = self.ui.as_weak().unwrap();
-            let eq_handle=self.eq.clone();
-            move |gain_db: f32|{
+            let eq_handle = self.eq.clone();
+            move |gain_db: f32| {
                 ui_handle.global::<Eq>().set_gain_db(gain_db);
-                eq_handle.write().unwrap().gain=eq::Gain::Db(gain_db);
+                eq_handle.write().unwrap().gain = eq::Gain::Db(gain_db);
             }
         });
         ui_callbacks.on_request_set_log_frequency({
             let ui_handle = self.ui.as_weak().unwrap();
-            let eq_handle=self.eq.clone();
-            move |log_frequency: f32|{
-                let frequency=eq::Frequency::LogHz(log_frequency);
+            let eq_handle = self.eq.clone();
+            move |log_frequency: f32| {
+                let frequency = eq::Frequency::LogHz(log_frequency);
 
-                let ui_eq=ui_handle.global::<Eq>();
+                let ui_eq = ui_handle.global::<Eq>();
                 ui_eq.set_log_frequency(frequency.hz());
                 ui_eq.set_frequency(frequency.hz());
-                eq_handle.write().unwrap().frequency=frequency;
+                eq_handle.write().unwrap().frequency = frequency;
             }
         });
         ui_callbacks.on_request_set_q({
             let ui_handle = self.ui.as_weak().unwrap();
-            let eq_handle=self.eq.clone();
-            move |q: f32|{
+            let eq_handle = self.eq.clone();
+            move |q: f32| {
                 ui_handle.global::<Eq>().set_q(q);
-                eq_handle.write().unwrap().q=q;
+                eq_handle.write().unwrap().q = q;
             }
         });
         ui_callbacks.on_render_eq_plots({
-            let sample_rate=self.sample_rate;
-            let eq_handle=self.eq.clone();
-            move ||{
-                crate::plotters::render_eq_plots(
-                    &eq_handle.read().unwrap(),
-                    sample_rate
-                )
-            }
+            let sample_rate = self.sample_rate;
+            let eq_handle = self.eq.clone();
+            move || crate::plotters::render_eq_plots(&eq_handle.read().unwrap(), sample_rate)
         });
     }
 }
