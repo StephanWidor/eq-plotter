@@ -184,30 +184,38 @@ pub fn render_eq_plots(eq: &eq::Eq<f32>, sample_rate: f32) -> slint::Image {
             .expect("error drawing impulse response points");
 
         let poles = biquad::utils::poles(&coefficients);
-        let poles_series = chart
-            .draw_series(PointSeries::of_element(
-                (0..=1).map(|i| (poles[i].re, poles[i].im)),
-                2,
-                ShapeStyle::from(&RED).filled(),
-                &|coord, size, style| EmptyElement::at(coord) + Circle::new((0, 0), size, style),
-            ))
-            .expect("error drawing poles");
-        poles_series
-            .label("Poles")
-            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], RED));
+        if !poles.is_empty() {
+            let poles_series = chart
+                .draw_series(PointSeries::of_element(
+                    (0..poles.len()).map(|i| (poles[i].re, poles[i].im)),
+                    poles.len() as u32,
+                    ShapeStyle::from(&RED).filled(),
+                    &|coord, size, style| {
+                        EmptyElement::at(coord) + Circle::new((0, 0), size, style)
+                    },
+                ))
+                .expect("error drawing poles");
+            poles_series
+                .label("Poles")
+                .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], RED));
+        }
 
         let zeros = biquad::utils::zeros(&coefficients);
-        let zeros_series = chart
-            .draw_series(PointSeries::of_element(
-                (0..=1).map(|i| (zeros[i].re, zeros[i].im)),
-                2,
-                ShapeStyle::from(&GREEN).filled(),
-                &|coord, size, style| EmptyElement::at(coord) + Circle::new((0, 0), size, style),
-            ))
-            .expect("error drawing poles");
-        zeros_series
-            .label("Zeros")
-            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], GREEN));
+        if !zeros.is_empty() {
+            let zeros_series = chart
+                .draw_series(PointSeries::of_element(
+                    (0..zeros.len()).map(|i| (zeros[i].re, zeros[i].im)),
+                    zeros.len() as u32,
+                    ShapeStyle::from(&GREEN).filled(),
+                    &|coord, size, style| {
+                        EmptyElement::at(coord) + Circle::new((0, 0), size, style)
+                    },
+                ))
+                .expect("error drawing poles");
+            zeros_series
+                .label("Zeros")
+                .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], GREEN));
+        }
 
         chart
             .configure_series_labels()
