@@ -62,6 +62,12 @@ impl EqPlotter {
         ui_eq.set_min_q(app::MIN_Q as f32);
         ui_eq.set_max_q(app::MAX_Q as f32);
         ui_eq.set_q(read_eq.q);
+
+        self.ui
+            .set_gain_control_visible(read_eq.eq_type.has_gain_db());
+        self.ui
+            .set_frequency_control_visible(read_eq.eq_type.has_frequency());
+        self.ui.set_q_control_visible(read_eq.eq_type.has_q());
     }
 
     fn init_ui_callbacks(&self) {
@@ -77,6 +83,9 @@ impl EqPlotter {
                             .global::<Eq>()
                             .set_eq_type(new_eq_type.to_string().into());
                         eq_handle.write().unwrap().eq_type = new_eq_type;
+                        ui_handle.set_gain_control_visible(new_eq_type.has_gain_db());
+                        ui_handle.set_frequency_control_visible(new_eq_type.has_frequency());
+                        ui_handle.set_q_control_visible(new_eq_type.has_q());
                     }
                     _ => {
                         // we actually shouldn't ever get here!

@@ -38,6 +38,10 @@ export global Callbacks {
 }
 
 export component EqPlotterUi inherits Window {
+    in-out property <bool> gain-control-visible <=> gain-box.visible;
+    in-out property <bool> frequency-control-visible <=> frequency-box.visible;
+    in-out property <bool> q-control-visible <=> q-box.visible;
+
     HorizontalLayout {
         VerticalBox {
             HorizontalBox {
@@ -60,7 +64,7 @@ export component EqPlotterUi inherits Window {
                 Text { }    // just for the layout
             }
 
-            HorizontalBox {
+            gain-box := HorizontalBox {
                 Text {
                     text: "Gain (dB)";
                     width: 120px;
@@ -83,7 +87,7 @@ export component EqPlotterUi inherits Window {
                 }
             }
 
-            HorizontalBox {
+            frequency-box := HorizontalBox {
                 Text {
                     text: "Frequency (Hz)";
                     width: 120px;
@@ -106,7 +110,7 @@ export component EqPlotterUi inherits Window {
                 }
             }
 
-            HorizontalBox {
+            q-box := HorizontalBox {
                 Text {
                     text: "Q";
                     width: 120px;
