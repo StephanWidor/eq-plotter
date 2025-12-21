@@ -206,7 +206,7 @@ pub fn render_eq_plots(
         if !poles.is_empty() {
             let poles_series = chart
                 .draw_series(PointSeries::of_element(
-                    (0..poles.len()).map(|i| (poles[i].re, poles[i].im)),
+                    poles.iter().map(|pole| (pole.re, pole.im)),
                     poles.len() as u32,
                     ShapeStyle::from(&RED).filled(),
                     &|coord, size, style| {
@@ -223,7 +223,7 @@ pub fn render_eq_plots(
         if !zeros.is_empty() {
             let zeros_series = chart
                 .draw_series(PointSeries::of_element(
-                    (0..zeros.len()).map(|i| (zeros[i].re, zeros[i].im)),
+                    zeros.iter().map(|zero| (zero.re, zero.im)),
                     zeros.len() as u32,
                     ShapeStyle::from(&GREEN).filled(),
                     &|coord, size, style| {
