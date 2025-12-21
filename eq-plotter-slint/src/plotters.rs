@@ -6,7 +6,11 @@ use num::complex::ComplexFloat;
 use plotters::prelude::*;
 use slint::SharedPixelBuffer;
 
-pub fn render_eq_plots(eq: &eq::Eq<f32>, sample_rate: f32) -> slint::Image {
+pub fn render_eq_plots(
+    eq: &eq::Eq<f32>,
+    sample_rate: f32,
+    background_color: slint::Color,
+) -> slint::Image {
     let coefficients = biquad::coefficients::Coefficients::from_eq(eq, sample_rate);
     let frequency_response =
         biquad::utils::make_frequency_response_function(&coefficients, sample_rate);
@@ -19,9 +23,9 @@ pub fn render_eq_plots(eq: &eq::Eq<f32>, sample_rate: f32) -> slint::Image {
     let root_area = backend.into_drawing_area();
     root_area
         .fill(&RGBColor(
-            app::UI_BACKGROUND_COLOR[0],
-            app::UI_BACKGROUND_COLOR[1],
-            app::UI_BACKGROUND_COLOR[2],
+            background_color.red(),
+            background_color.green(),
+            background_color.blue(),
         ))
         .expect("error filling drawing area");
 
@@ -36,13 +40,28 @@ pub fn render_eq_plots(eq: &eq::Eq<f32>, sample_rate: f32) -> slint::Image {
     let log_frequency_max = app::MAX_LOG_FREQUENCY as f32;
     let log_frequency_steps = (log_frequency_min..log_frequency_max).step(0.01);
 
-    let lighter_gray = RGBColor(200, 200, 200);
-    let darker_gray = RGBColor(50, 50, 50);
-    let plot_color = RGBColor(200, 150, 0);
-    let caption_text_style =
-        ("sans-serif", 20, FontStyle::Bold, &lighter_gray).into_text_style(&root_area);
-    let label_text_style =
-        ("sans-serif", 15, FontStyle::Normal, &lighter_gray).into_text_style(&root_area);
+    let inverted_background_color = RGBColor(
+        255 - background_color.red(),
+        255 - background_color.green(),
+        255 - background_color.blue(),
+    )
+    .mix(0.8);
+    let inverted_background_color_transparent = inverted_background_color.mix(0.2);
+    let plot_color = RGBColor(255, 100, 0);
+    let caption_text_style = (
+        "sans-serif",
+        20,
+        FontStyle::Bold,
+        &inverted_background_color,
+    )
+        .into_text_style(&root_area);
+    let label_text_style = (
+        "sans-serif",
+        15,
+        FontStyle::Normal,
+        &inverted_background_color,
+    )
+        .into_text_style(&root_area);
     {
         let gain_db_min = app::MIN_GAIN_DB as f32;
         let gain_db_max = app::MAX_GAIN_DB as f32;
@@ -62,9 +81,9 @@ pub fn render_eq_plots(eq: &eq::Eq<f32>, sample_rate: f32) -> slint::Image {
             .x_desc("Frquency (Hz)")
             .y_labels(6)
             .y_desc("Gain (dB)")
-            .axis_style(darker_gray)
-            .bold_line_style(darker_gray)
-            .light_line_style(darker_gray)
+            .axis_style(inverted_background_color_transparent)
+            .bold_line_style(inverted_background_color_transparent)
+            .light_line_style(inverted_background_color_transparent)
             .label_style(label_text_style.clone())
             .x_label_formatter(&|log_frequency| {
                 format!("{}", utils::log_to_frequency(*log_frequency))
@@ -102,9 +121,9 @@ pub fn render_eq_plots(eq: &eq::Eq<f32>, sample_rate: f32) -> slint::Image {
             .x_labels(4)
             .y_labels(6)
             .y_desc("Phase (rad)")
-            .axis_style(darker_gray)
-            .bold_line_style(darker_gray)
-            .light_line_style(darker_gray)
+            .axis_style(inverted_background_color_transparent)
+            .bold_line_style(inverted_background_color_transparent)
+            .light_line_style(inverted_background_color_transparent)
             .label_style(label_text_style.clone())
             .x_label_formatter(&|log_frequency| {
                 format!("{}", utils::log_to_frequency(*log_frequency))
@@ -139,9 +158,9 @@ pub fn render_eq_plots(eq: &eq::Eq<f32>, sample_rate: f32) -> slint::Image {
             .configure_mesh()
             .x_labels(4)
             .y_labels(6)
-            .axis_style(darker_gray)
-            .bold_line_style(darker_gray)
-            .light_line_style(darker_gray)
+            .axis_style(inverted_background_color_transparent)
+            .bold_line_style(inverted_background_color_transparent)
+            .light_line_style(inverted_background_color_transparent)
             .label_style(label_text_style.clone())
             .x_label_formatter(&|i| format!("{}", i))
             .y_label_formatter(&|r| format!("{:.1}", r))
@@ -166,9 +185,9 @@ pub fn render_eq_plots(eq: &eq::Eq<f32>, sample_rate: f32) -> slint::Image {
             .configure_mesh()
             .x_labels(10)
             .y_labels(10)
-            .axis_style(darker_gray)
-            .bold_line_style(darker_gray)
-            .light_line_style(darker_gray)
+            .axis_style(inverted_background_color_transparent)
+            .bold_line_style(inverted_background_color_transparent)
+            .light_line_style(inverted_background_color_transparent)
             .label_style(label_text_style.clone())
             .x_label_formatter(&|x| format!("{:.1}", x))
             .y_label_formatter(&|y| format!("{:.1}", y))

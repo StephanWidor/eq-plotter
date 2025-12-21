@@ -7,14 +7,19 @@ slint::include_modules!();
 pub struct EqPlotter {
     ui: EqPlotterUi,
     eq: sync::Arc<sync::RwLock<eq::Eq<f32>>>,
+    background_color: slint::Color,
     sample_rate: f32,
 }
 
 impl EqPlotter {
     pub fn new() -> core::result::Result<Self, slint::PlatformError> {
+        let ui = EqPlotterUi::new()?;
+        let background_color = ui.global::<Colors>().get_background_color();
+
         let eq_plotter = EqPlotter {
-            ui: EqPlotterUi::new()?,
+            ui: ui,
             eq: sync::Arc::new(sync::RwLock::new(app::DEFAULT_EQ.into())),
+            background_color: background_color,
             sample_rate: 48000.0f32,
         };
 
@@ -113,7 +118,14 @@ impl EqPlotter {
         ui_callbacks.on_render_eq_plots({
             let sample_rate = self.sample_rate;
             let eq_handle = self.eq.clone();
-            move || crate::plotters::render_eq_plots(&eq_handle.read().unwrap(), sample_rate)
+            let background_color = self.background_color;
+            move || {
+                crate::plotters::render_eq_plots(
+                    &eq_handle.read().unwrap(),
+                    sample_rate,
+                    background_color,
+                )
+            }
         });
     }
 }

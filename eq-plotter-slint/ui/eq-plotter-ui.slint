@@ -4,7 +4,12 @@ import {
     Slider,
     VerticalBox,
     ComboBox,
+    Palette,
 } from "std-widgets.slint";
+
+export global Colors {
+    in-out property <color> background-color: Palette.background;
+}
 
 export global Eq {
     in property <string> eq_type;
@@ -25,25 +30,25 @@ export global Eq {
 }
 
 export global Callbacks {
-    callback request-set-eq-type(string);
-    callback request-set-gain-db(float);
-    callback request-set-log-frequency(float);
-    callback request-set-q(float);
+    pure callback request-set-eq-type(string);
+    pure callback request-set-gain-db(float);
+    pure callback request-set-log-frequency(float);
+    pure callback request-set-q(float);
     pure callback render-eq-plots() -> image;
 }
 
 export component EqPlotterUi inherits Window {
-    HorizontalBox {
+    HorizontalLayout {
         VerticalBox {
             HorizontalBox {
                 Text {
                     text: "Type";
-                    min-width: 160px;
+                    width: 120px;
                 }
 
                 ComboBox {
-                    min-width: 160px;
-                    max-height: 20px;
+                    width: 160px;
+                    max-height: 20px;   // somehow necessary to not make it ridiculously high
                     model: Eq.eq_types;
                     current-value: Eq.eq_type;
                     selected(eq-type) => {
@@ -51,16 +56,19 @@ export component EqPlotterUi inherits Window {
                         eq-plot.source = Callbacks.render-eq-plots();
                     }
                 }
+
+                Text { }    // just for the layout
             }
 
             HorizontalBox {
                 Text {
                     text: "Gain (dB)";
-                    min-width: 160px;
+                    width: 120px;
                 }
 
                 Slider {
-                    min-width: 160px;
+                    width: 160px;
+                    max-height: 20px;   // somehow necessary to not make it ridiculously high
                     minimum: Eq.min_gain_db;
                     maximum: Eq.max_gain_db;
                     value: Eq.gain_db;
@@ -78,11 +86,12 @@ export component EqPlotterUi inherits Window {
             HorizontalBox {
                 Text {
                     text: "Frequency (Hz)";
-                    min-width: 160px;
+                    width: 120px;
                 }
 
                 Slider {
-                    min-width: 160px;
+                    width: 160px;
+                    max-height: 20px;   // somehow necessary to not make it ridiculously high
                     minimum: Eq.min_log_frequency;
                     maximum: Eq.max_log_frequency;
                     value: Eq.log_frequency;
@@ -100,11 +109,12 @@ export component EqPlotterUi inherits Window {
             HorizontalBox {
                 Text {
                     text: "Q";
-                    min-width: 160px;
+                    width: 120px;
                 }
 
                 Slider {
-                    min-width: 160px;
+                    width: 160px;
+                    max-height: 20px;   // somehow necessary to not make it ridiculously high
                     minimum: Eq.min_q;
                     maximum: Eq.max_q;
                     value: Eq.q;
