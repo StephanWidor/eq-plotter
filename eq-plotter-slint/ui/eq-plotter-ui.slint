@@ -29,91 +29,101 @@ export global Callbacks {
     callback request-set-gain-db(float);
     callback request-set-log-frequency(float);
     callback request-set-q(float);
-}
-
-component EqControl inherits VerticalBox {
-    callback request-set-gain-db(float);
-    HorizontalBox {
-        Text {
-            text: "Type";
-            min-width: 160px;
-        }
-
-        ComboBox {
-            min-width: 160px;
-            max-height: 20px;
-            model: Eq.eq_types;
-            current-value: Eq.eq_type;
-            selected(eq-type) => {
-                Callbacks.request-set-eq-type(eq_type);
-            }
-        }
-    }
-
-    HorizontalBox {
-        Text {
-            text: "Gain (dB)";
-            min-width: 160px;
-        }
-
-        Slider {
-            min-width: 160px;
-            minimum: Eq.min_gain_db;
-            maximum: Eq.max_gain_db;
-            value: Eq.gain_db;
-            changed(value) => {
-                Callbacks.request-set-gain-db(value);
-            }
-        }
-
-        Text {
-            text: Eq.gain_db.to-fixed(2);
-        }
-    }
-
-    HorizontalBox {
-        Text {
-            text: "Frequency (Hz)";
-            min-width: 160px;
-        }
-
-        Slider {
-            min-width: 160px;
-            minimum: Eq.min_log_frequency;
-            maximum: Eq.max_log_frequency;
-            value: Eq.log_frequency;
-            changed(value) => {
-                Callbacks.request-set-log-frequency(value);
-            }
-        }
-
-        Text {
-            text: Eq.frequency.to-fixed(0);
-        }
-    }
-
-    HorizontalBox {
-        Text {
-            text: "Q";
-            min-width: 160px;
-        }
-
-        Slider {
-            min-width: 160px;
-            minimum: Eq.min_q;
-            maximum: Eq.max_q;
-            value: Eq.q;
-            changed(value) => {
-                Callbacks.request-set-q(value);
-            }
-        }
-
-        Text {
-            text: Eq.q.to-fixed(2);
-        }
-    }
+    pure callback render-eq-plots() -> image;
 }
 
 export component EqPlotterUi inherits Window {
-    control := EqControl { }
+    HorizontalBox {
+        VerticalBox {
+            HorizontalBox {
+                Text {
+                    text: "Type";
+                    min-width: 160px;
+                }
+
+                ComboBox {
+                    min-width: 160px;
+                    max-height: 20px;
+                    model: Eq.eq_types;
+                    current-value: Eq.eq_type;
+                    selected(eq-type) => {
+                        Callbacks.request-set-eq-type(eq_type);
+                        eq-plot.source = Callbacks.render-eq-plots();
+                    }
+                }
+            }
+
+            HorizontalBox {
+                Text {
+                    text: "Gain (dB)";
+                    min-width: 160px;
+                }
+
+                Slider {
+                    min-width: 160px;
+                    minimum: Eq.min_gain_db;
+                    maximum: Eq.max_gain_db;
+                    value: Eq.gain_db;
+                    changed(value) => {
+                        Callbacks.request-set-gain-db(value);
+                        eq-plot.source = Callbacks.render-eq-plots();
+                    }
+                }
+
+                Text {
+                    text: Eq.gain_db.to-fixed(2);
+                }
+            }
+
+            HorizontalBox {
+                Text {
+                    text: "Frequency (Hz)";
+                    min-width: 160px;
+                }
+
+                Slider {
+                    min-width: 160px;
+                    minimum: Eq.min_log_frequency;
+                    maximum: Eq.max_log_frequency;
+                    value: Eq.log_frequency;
+                    changed(value) => {
+                        Callbacks.request-set-log-frequency(value);
+                        eq-plot.source = Callbacks.render-eq-plots();
+                    }
+                }
+
+                Text {
+                    text: Eq.frequency.to-fixed(0);
+                }
+            }
+
+            HorizontalBox {
+                Text {
+                    text: "Q";
+                    min-width: 160px;
+                }
+
+                Slider {
+                    min-width: 160px;
+                    minimum: Eq.min_q;
+                    maximum: Eq.max_q;
+                    value: Eq.q;
+                    changed(value) => {
+                        Callbacks.request-set-q(value);
+                        eq-plot.source = Callbacks.render-eq-plots();
+                    }
+                }
+
+                Text {
+                    text: Eq.q.to-fixed(2);
+                }
+            }
+        }
+
+        eq-plot := Image {
+            source: Callbacks.render-eq-plots();
+            width: 1024px;
+            height: 1024px;
+        }
+    }
 }

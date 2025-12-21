@@ -9,14 +9,16 @@ slint::include_modules!();
 
 pub struct EqPlotter {
     ui: EqPlotterUi,
-    eq: sync::Arc<sync::RwLock<eq::Eq<f64>>>,
+    eq: sync::Arc<sync::RwLock<eq::Eq<f32>>>,
+    sample_rate: f32,
 }
 
 impl EqPlotter {
     pub fn new() -> core::result::Result<Self, slint::PlatformError> {
         let eq_plotter=EqPlotter {
             ui: EqPlotterUi::new()?,
-            eq: sync::Arc::new(sync::RwLock::new( app::DEFAULT_EQ)),
+            eq: sync::Arc::new(sync::RwLock::new( app::DEFAULT_EQ.into())),
+            sample_rate: 48000.0f32,
         };
 
         eq_plotter.init_ui_properties();
@@ -41,18 +43,18 @@ impl EqPlotter {
 
         ui_eq.set_min_gain_db(app::MIN_GAIN_DB as f32);
         ui_eq.set_max_gain_db(app::MAX_GAIN_DB as f32);
-        ui_eq.set_gain_db(read_eq.gain.db() as f32);
+        ui_eq.set_gain_db(read_eq.gain.db());
 
         ui_eq.set_min_frequency(app::MIN_FREQUENCY as f32);
         ui_eq.set_max_frequency(app::MAX_FREQUENCY as f32);
         ui_eq.set_min_log_frequency(app::MIN_LOG_FREQUENCY as f32);
         ui_eq.set_max_log_frequency(app::MAX_LOG_FREQUENCY as f32);
-        ui_eq.set_frequency(read_eq.frequency.hz() as f32);
-        ui_eq.set_log_frequency(read_eq.frequency.log_hz() as f32);
+        ui_eq.set_frequency(read_eq.frequency.hz());
+        ui_eq.set_log_frequency(read_eq.frequency.log_hz());
 
         ui_eq.set_min_q(app::MIN_Q as f32);
         ui_eq.set_max_q(app::MAX_Q as f32);
-        ui_eq.set_q(read_eq.q as f32);
+        ui_eq.set_q(read_eq.q);
     }
 
     fn init_ui_callbacks(&self) {
@@ -64,7 +66,6 @@ impl EqPlotter {
                 let new_eq_type_option=eq::EqType::try_from(eq_type.as_str());
                 match new_eq_type_option {
                     Ok(new_eq_type) => {
-                        println!("Setting eq type to {}", new_eq_type.to_string());
                         ui_handle.global::<Eq>().set_eq_type(new_eq_type.to_string().into());
                         eq_handle.write().unwrap().eq_type=new_eq_type;
                     }
@@ -78,21 +79,19 @@ impl EqPlotter {
             let ui_handle = self.ui.as_weak().unwrap();
             let eq_handle=self.eq.clone();
             move |gain_db: f32|{
-                println!("Setting gain to {}dB", gain_db);
                 ui_handle.global::<Eq>().set_gain_db(gain_db);
-                eq_handle.write().unwrap().gain=eq::Gain::Db(gain_db as f64);
+                eq_handle.write().unwrap().gain=eq::Gain::Db(gain_db);
             }
         });
         ui_callbacks.on_request_set_log_frequency({
             let ui_handle = self.ui.as_weak().unwrap();
             let eq_handle=self.eq.clone();
             move |log_frequency: f32|{
-                let frequency=eq::Frequency::LogHz(log_frequency as f64);
+                let frequency=eq::Frequency::LogHz(log_frequency);
 
-                println!("Setting frequency to {}Hz (log: {})", frequency.hz(), frequency.log_hz());
                 let ui_eq=ui_handle.global::<Eq>();
-                ui_eq.set_log_frequency(frequency.hz() as f32);
-                ui_eq.set_frequency(frequency.hz() as f32);
+                ui_eq.set_log_frequency(frequency.hz());
+                ui_eq.set_frequency(frequency.hz());
                 eq_handle.write().unwrap().frequency=frequency;
             }
         });
@@ -100,9 +99,18 @@ impl EqPlotter {
             let ui_handle = self.ui.as_weak().unwrap();
             let eq_handle=self.eq.clone();
             move |q: f32|{
-                println!("Setting q to {}", q);
                 ui_handle.global::<Eq>().set_q(q);
-                eq_handle.write().unwrap().q=q as f64;
+                eq_handle.write().unwrap().q=q;
+            }
+        });
+        ui_callbacks.on_render_eq_plots({
+            let sample_rate=self.sample_rate;
+            let eq_handle=self.eq.clone();
+            move ||{
+                crate::plotters::render_eq_plots(
+                    &eq_handle.read().unwrap(),
+                    sample_rate
+                )
             }
         });
     }
