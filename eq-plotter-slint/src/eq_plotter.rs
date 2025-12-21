@@ -1,7 +1,4 @@
-// Prevent console window in addition to Slint window in Windows release builds when, e.g., starting the app via file manager.
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-
-use std::sync;//::{self, RwLock};
+use std::sync;
 use app_lib as app;
 use audio_lib::eq;
 
