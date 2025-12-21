@@ -8,52 +8,6 @@ use num_traits::Pow;
 use plotters::prelude::*;
 use slint::SharedPixelBuffer;
 
-pub fn render_eq_gain_response(eq: &eq::Eq<f64>, sample_rate: f64) -> slint::Image {
-    let mut pixel_buffer = SharedPixelBuffer::new(640, 480);
-    let size = (pixel_buffer.width(), pixel_buffer.height());
-    let backend = BitMapBackend::with_buffer(pixel_buffer.make_mut_bytes(), size);
-
-    let root = backend.into_drawing_area();
-    root.fill(&WHITE).expect("error filling drawing area");
-
-    let mut chart = ChartBuilder::on(&root)
-        .caption("Gain Response", ("sans-serif", 50).into_font())
-        .margin(5)
-        .x_label_area_size(30)
-        .y_label_area_size(30)
-        .build_cartesian_2d(
-            app::MIN_LOG_FREQUENCY as f32..app::MAX_LOG_FREQUENCY as f32,
-            app::MIN_GAIN_DB as f32..app::MAX_GAIN_DB as f32)
-        .expect("error building coordinate system");
-
-    chart.configure_mesh().draw().expect("error drawing");
-
-    let coefficients = biquad::coefficients::Coefficients::from_eq(eq, sample_rate);
-    let frequency_response =
-        biquad::utils::make_frequency_response_function(&coefficients, sample_rate);
-
-    chart.draw_series(plotters::series::LineSeries::new(
-            (0..=(app::MAX_LOG_FREQUENCY*100.0).to_i32().unwrap()).map(|i| i as f32 / 100.0f32).map(|log_frequency| {
-                (log_frequency, utils::amplitude_to_db(frequency_response(10.0f64.pow(log_frequency as f64)).abs()) as f32)
-                }),
-            &RED,
-        ))
-        .expect("error creating draw series");
-
-    chart
-        .configure_series_labels()
-        .background_style(&WHITE.mix(0.8))
-        .border_style(&BLACK)
-        .draw()
-        .expect("error drawing series");
-
-    root.present().expect("error presenting");
-    drop(chart);
-    drop(root);
-
-    slint::Image::from_rgb8(pixel_buffer)
-}
-
 pub fn render_eq_plots(eq: &eq::Eq<f32>, sample_rate: f32) -> slint::Image {
     let coefficients = biquad::coefficients::Coefficients::from_eq(eq, sample_rate);
     let frequency_response =
