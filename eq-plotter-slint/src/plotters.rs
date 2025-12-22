@@ -28,13 +28,7 @@ pub fn render_eq_plots(
             background_color.blue(),
         ))
         .expect("error filling drawing area");
-
-    let half_pixels = num_pixels / 2;
-    let (upper_area, lower_area) = root_area.split_vertically(half_pixels);
-    let (left_upper_area, right_upper_area) = upper_area.split_horizontally(half_pixels);
-    let (left_lower_area, right_lower_area) = lower_area.split_horizontally(half_pixels);
-    drop(upper_area);
-    drop(lower_area);
+    let plot_areas = root_area.split_evenly((2, 2));
 
     let log_frequency_min = app::MIN_LOG_FREQUENCY as f32;
     let log_frequency_max = app::MAX_LOG_FREQUENCY as f32;
@@ -65,7 +59,7 @@ pub fn render_eq_plots(
     {
         let gain_db_min = app::MIN_GAIN_DB as f32;
         let gain_db_max = app::MAX_GAIN_DB as f32;
-        let mut chart = ChartBuilder::on(&left_upper_area)
+        let mut chart = ChartBuilder::on(&plot_areas[0])
             .margin(5)
             .set_all_label_area_size(30)
             .top_x_label_area_size(0)
@@ -109,7 +103,7 @@ pub fn render_eq_plots(
     {
         let phase_min = -std::f32::consts::PI;
         let phase_max = std::f32::consts::PI;
-        let mut chart = ChartBuilder::on(&left_lower_area)
+        let mut chart = ChartBuilder::on(&plot_areas[2])
             .margin(5)
             .set_all_label_area_size(30)
             .top_x_label_area_size(0)
@@ -147,7 +141,7 @@ pub fn render_eq_plots(
     {
         let impulse_response = biquad::utils::impulse_response(&coefficients, 0.001, 10, 1024);
 
-        let mut chart = ChartBuilder::on(&right_upper_area)
+        let mut chart = ChartBuilder::on(&plot_areas[1])
             .margin(5)
             .set_all_label_area_size(30)
             .top_x_label_area_size(0)
@@ -174,7 +168,7 @@ pub fn render_eq_plots(
             .expect("error drawing impulse response points");
     }
     {
-        let mut chart = ChartBuilder::on(&right_lower_area)
+        let mut chart = ChartBuilder::on(&plot_areas[3])
             .margin(5)
             .set_all_label_area_size(30)
             .top_x_label_area_size(0)
@@ -246,10 +240,9 @@ pub fn render_eq_plots(
 
     root_area.present().expect("error presenting");
 
-    drop(left_upper_area);
-    drop(right_upper_area);
-    drop(left_lower_area);
-    drop(right_lower_area);
+    for plot_area in plot_areas {
+        drop(plot_area);
+    }
     drop(root_area);
 
     slint::Image::from_rgb8(pixel_buffer)
