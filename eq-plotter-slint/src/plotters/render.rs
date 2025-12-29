@@ -1,3 +1,4 @@
+use crate::plotters::style;
 use app_lib as app;
 use audio_lib::biquad;
 use audio_lib::eq;
@@ -17,7 +18,7 @@ pub fn render_eq_plots(
     let backend = BitMapBackend::with_buffer(pixel_buffer.make_mut_bytes(), (width, height));
     let root_area = backend.into_drawing_area();
 
-    let chart_style = ChartStyleData::new(&background_color, height as f64 / 2.0);
+    let chart_style = style::ChartStyleData::new(&background_color, height as f64 / 2.0);
 
     root_area
         .fill(&chart_style.colors.background)
@@ -43,70 +44,9 @@ pub fn render_eq_plots(
     slint::Image::from_rgb8(pixel_buffer)
 }
 
-struct ChartColors {
-    pub background: RGBColor,
-    pub text: RGBAColor,
-    pub line: RGBAColor,
-    pub plot: RGBColor,
-}
-
-struct ChartFonts {
-    pub caption: FontDesc<'static>,
-    pub label: FontDesc<'static>,
-}
-
-struct ChartStyleData {
-    pub colors: ChartColors,
-    pub fonts: ChartFonts,
-    pub margin_size: u32,
-    pub label_area_size: u32,
-}
-
-impl ChartStyleData {
-    pub fn new(background_color: &slint::Color, area_height: f64) -> Self {
-        let label_size = 10.0f64.max(area_height / 35.0);
-        ChartStyleData {
-            colors: ChartColors {
-                background: RGBColor(
-                    background_color.red(),
-                    background_color.green(),
-                    background_color.blue(),
-                ),
-                text: RGBColor(
-                    255 - background_color.red(),
-                    255 - background_color.green(),
-                    255 - background_color.blue(),
-                )
-                .mix(0.8),
-                line: RGBColor(
-                    255 - background_color.red(),
-                    255 - background_color.green(),
-                    255 - background_color.blue(),
-                )
-                .mix(0.05),
-                plot: RGBColor(255, 100, 0),
-            },
-            fonts: ChartFonts {
-                caption: FontDesc::new(FontFamily::SansSerif, 1.2 * label_size, FontStyle::Bold),
-                label: FontDesc::new(FontFamily::SansSerif, label_size, FontStyle::Normal),
-            },
-            margin_size: 2 * label_size.round() as u32,
-            label_area_size: (1.5 * label_size).round() as u32,
-        }
-    }
-
-    pub fn caption_text_style<'a>(&self) -> TextStyle<'a> {
-        self.fonts.caption.color(&self.colors.text)
-    }
-
-    pub fn label_text_style<'a>(&self) -> TextStyle<'a> {
-        self.fonts.label.color(&self.colors.text)
-    }
-}
-
 fn draw_gain_chart<DB: DrawingBackend>(
     area: &DrawingArea<DB, plotters::coord::Shift>,
-    style: &ChartStyleData,
+    style: &style::ChartStyleData,
     frequency_response: &impl Fn(f32) -> num::Complex<f32>,
 ) {
     let log_frequency_steps =
@@ -166,7 +106,7 @@ fn draw_gain_chart<DB: DrawingBackend>(
 
 fn draw_phase_chart<DB: DrawingBackend>(
     area: &DrawingArea<DB, plotters::coord::Shift>,
-    style: &ChartStyleData,
+    style: &style::ChartStyleData,
     frequency_response: &impl Fn(f32) -> num::Complex<f32>,
 ) {
     let log_frequency_steps =
@@ -224,7 +164,7 @@ fn draw_phase_chart<DB: DrawingBackend>(
 
 fn draw_ir_chart<DB: DrawingBackend>(
     area: &DrawingArea<DB, plotters::coord::Shift>,
-    style: &ChartStyleData,
+    style: &style::ChartStyleData,
     coefficients: &biquad::coefficients::Coefficients<f32>,
 ) {
     let impulse_response = biquad::utils::impulse_response(&coefficients, 0.001, 10, 1024);
@@ -268,7 +208,7 @@ fn draw_ir_chart<DB: DrawingBackend>(
 
 fn draw_poles_and_zeros_chart<DB: DrawingBackend>(
     area: &DrawingArea<DB, plotters::coord::Shift>,
-    style: &ChartStyleData,
+    style: &style::ChartStyleData,
     coefficients: &biquad::coefficients::Coefficients<f32>,
 ) {
     let mut chart = ChartBuilder::on(&area)
