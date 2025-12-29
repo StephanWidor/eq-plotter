@@ -44,34 +44,35 @@ export component EqPlotterUi inherits Window {
 
     HorizontalLayout {
         VerticalBox {
+            property <length> left-text-width: 100px;
+            property <length> slider-width: 160px;
+            property <length> right-text-width: 40px;
             HorizontalBox {
                 Text {
                     text: "Type";
-                    width: 120px;
+                    width: left-text-width;
                 }
 
                 ComboBox {
-                    width: 160px;
+                    width: slider-width;
                     max-height: 20px;   // somehow necessary to not make it ridiculously high
                     model: Eq.eq_types;
                     current-value: Eq.eq_type;
                     selected(eq-type) => {
                         Callbacks.request-set-eq-type(eq_type);
-                        eq-plot.source = Callbacks.render-eq-plots();
+                        eq-plot.update-source();
                     }
                 }
-
-                Text { }    // just for the layout
             }
 
             gain-box := HorizontalBox {
                 Text {
                     text: "Gain (dB)";
-                    width: 120px;
+                    width: left-text-width;
                 }
 
                 Slider {
-                    width: 160px;
+                    width: slider-width;
                     max-height: 20px;   // somehow necessary to not make it ridiculously high
                     minimum: Eq.min_gain_db;
                     maximum: Eq.max_gain_db;
@@ -83,6 +84,8 @@ export component EqPlotterUi inherits Window {
                 }
 
                 Text {
+                    width: right-text-width;
+                    horizontal-alignment: TextHorizontalAlignment.right;
                     text: Eq.gain_db.to-fixed(2);
                 }
             }
@@ -90,11 +93,11 @@ export component EqPlotterUi inherits Window {
             frequency-box := HorizontalBox {
                 Text {
                     text: "Frequency (Hz)";
-                    width: 120px;
+                    width: left-text-width;
                 }
 
                 Slider {
-                    width: 160px;
+                    width: slider-width;
                     max-height: 20px;   // somehow necessary to not make it ridiculously high
                     minimum: Eq.min_log_frequency;
                     maximum: Eq.max_log_frequency;
@@ -106,6 +109,8 @@ export component EqPlotterUi inherits Window {
                 }
 
                 Text {
+                    width: right-text-width;
+                    horizontal-alignment: TextHorizontalAlignment.right;
                     text: Eq.frequency.to-fixed(0);
                 }
             }
@@ -113,11 +118,11 @@ export component EqPlotterUi inherits Window {
             q-box := HorizontalBox {
                 Text {
                     text: "Q";
-                    width: 120px;
+                    width: left-text-width;
                 }
 
                 Slider {
-                    width: 160px;
+                    width: slider-width;
                     max-height: 20px;   // somehow necessary to not make it ridiculously high
                     minimum: Eq.min_q;
                     maximum: Eq.max_q;
@@ -129,15 +134,23 @@ export component EqPlotterUi inherits Window {
                 }
 
                 Text {
+                    width: right-text-width;
+                    horizontal-alignment: TextHorizontalAlignment.right;
                     text: Eq.q.to-fixed(2);
                 }
+            }
+
+            HorizontalLayout {
+                preferred-width: 100%;
+                preferred-height: 100%;
+                vertical-stretch: 1;
             }
         }
 
         eq-plot := Image {
             source: Callbacks.render-eq-plots();
-            width: 1024px;
-            height: 1024px;
+            width: 1000px;
+            height: 1000px;
         }
     }
 }
