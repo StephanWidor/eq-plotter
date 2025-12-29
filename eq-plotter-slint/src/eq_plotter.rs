@@ -125,13 +125,15 @@ impl EqPlotter {
             }
         });
         ui_callbacks.on_render_eq_plots({
-            let sample_rate = self.sample_rate;
             let eq_handle = self.eq.clone();
+            let sample_rate = self.sample_rate;
             let background_color = self.background_color;
-            move || {
+            move |width, height| {
                 crate::plotters::render_eq_plots(
                     &eq_handle.read().unwrap(),
                     sample_rate,
+                    width as u32,
+                    height as u32,
                     background_color,
                 )
             }
