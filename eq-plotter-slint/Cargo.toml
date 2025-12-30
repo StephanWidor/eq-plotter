@@ -7,8 +7,8 @@ edition = "2021"
 num = { workspace = true }
 num-traits = { workspace = true }
 
-app-lib = { path = "../app-lib" }
-audio-lib = { path = "../audio-lib" }
+app-lib = { workspace = true }
+audio-lib = { workspace = true }
 
 array-init = "2.1.0"
 plotters = "0.3"

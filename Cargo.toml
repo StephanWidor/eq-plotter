@@ -15,6 +15,9 @@ egui = "0.31"
 egui_plot = "0.31"
 num = "0.4.3"
 num-traits = "0.2.19"
+app-lib = { path = "app-lib" }
+audio-lib = { path = "audio-lib" }
+eq-plotter-egui = { path = "eq-plotter-egui" }
 
 [profile.release]
 lto = "thin"

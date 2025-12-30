@@ -4,4 +4,4 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-audio-lib = { path = "../audio-lib" }
+audio-lib = { workspace = true }
