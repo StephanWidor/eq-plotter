@@ -1,0 +1,160 @@
+import {
+    Button,
+    HorizontalBox,
+    Slider,
+    VerticalBox,
+    ComboBox,
+    Palette,
+} from "std-widgets.slint";
+
+export global Colors {
+    in-out property <color> background-color: Palette.background;
+}
+
+export global Eq {
+    in property <string> eq_type;
+    in property <float> gain_db;
+    in property <float> frequency;
+    in property <float> log_frequency;
+    in property <float> q;
+
+    in property <[string]> eq_types;
+    in property <float> min_gain_db;
+    in property <float> max_gain_db;
+    in property <float> min_frequency;
+    in property <float> max_frequency;
+    in property <float> min_log_frequency;
+    in property <float> max_log_frequency;
+    in property <float> min_q;
+    in property <float> max_q;
+}
+
+export global Callbacks {
+    pure callback request-set-eq-type(string);
+    pure callback request-set-gain-db(float);
+    pure callback request-set-log-frequency(float);
+    pure callback request-set-q(float);
+    pure callback render-eq-plots(width: length, height: length) -> image;
+}
+
+export component EqPlotterUi inherits Window {
+    in-out property <bool> gain-control-visible <=> gain-box.visible;
+    in-out property <bool> frequency-control-visible <=> frequency-box.visible;
+    in-out property <bool> q-control-visible <=> q-box.visible;
+
+    HorizontalLayout {
+        VerticalBox {
+            property <length> left-text-width: 100px;
+            property <length> slider-width: 160px;
+            property <length> right-text-width: 40px;
+            HorizontalBox {
+                Text {
+                    text: "Type";
+                    width: left-text-width;
+                }
+
+                ComboBox {
+                    width: slider-width;
+                    max-height: 20px;   // somehow necessary to not make it ridiculously high
+                    model: Eq.eq_types;
+                    current-value: Eq.eq_type;
+                    selected(eq-type) => {
+                        Callbacks.request-set-eq-type(eq_type);
+                        eq-plot.update-source();
+                    }
+                }
+            }
+
+            gain-box := HorizontalBox {
+                Text {
+                    text: "Gain (dB)";
+                    width: left-text-width;
+                }
+
+                Slider {
+                    width: slider-width;
+                    max-height: 20px;   // somehow necessary to not make it ridiculously high
+                    minimum: Eq.min_gain_db;
+                    maximum: Eq.max_gain_db;
+                    value: Eq.gain_db;
+                    changed(value) => {
+                        Callbacks.request-set-gain-db(value);
+                        eq-plot.update-source();
+                    }
+                }
+
+                Text {
+                    width: right-text-width;
+                    horizontal-alignment: TextHorizontalAlignment.right;
+                    text: Eq.gain_db.to-fixed(2);
+                }
+            }
+
+            frequency-box := HorizontalBox {
+                Text {
+                    text: "Frequency (Hz)";
+                    width: left-text-width;
+                }
+
+                Slider {
+                    width: slider-width;
+                    max-height: 20px;   // somehow necessary to not make it ridiculously high
+                    minimum: Eq.min_log_frequency;
+                    maximum: Eq.max_log_frequency;
+                    value: Eq.log_frequency;
+                    changed(value) => {
+                        Callbacks.request-set-log-frequency(value);
+                        eq-plot.update-source();
+                    }
+                }
+
+                Text {
+                    width: right-text-width;
+                    horizontal-alignment: TextHorizontalAlignment.right;
+                    text: Eq.frequency.to-fixed(0);
+                }
+            }
+
+            q-box := HorizontalBox {
+                Text {
+                    text: "Q";
+                    width: left-text-width;
+                }
+
+                Slider {
+                    width: slider-width;
+                    max-height: 20px;   // somehow necessary to not make it ridiculously high
+                    minimum: Eq.min_q;
+                    maximum: Eq.max_q;
+                    value: Eq.q;
+                    changed(value) => {
+                        Callbacks.request-set-q(value);
+                        eq-plot.update-source();
+                    }
+                }
+
+                Text {
+                    width: right-text-width;
+                    horizontal-alignment: TextHorizontalAlignment.right;
+                    text: Eq.q.to-fixed(2);
+                }
+            }
+
+            HorizontalLayout {
+                preferred-width: 100%;
+                preferred-height: 100%;
+                vertical-stretch: 1;
+            }
+        }
+
+        eq-plot := Image {
+            width: 1000px;
+            height: 1000px;
+            image-fit: preserve;
+            source: Callbacks.render-eq-plots(eq-plot.width, eq-plot.height);
+            function update-source() {
+                eq-plot.source = Callbacks.render-eq-plots(eq-plot.width, eq-plot.height);
+            }
+        }
+    }
+}

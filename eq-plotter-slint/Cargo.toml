@@ -1,0 +1,24 @@
+[package]
+name = "eq-plotter-slint"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+num = { workspace = true }
+num-traits = { workspace = true }
+
+app-lib = { path = "../app-lib" }
+audio-lib = { path = "../audio-lib" }
+
+array-init = "2.1.0"
+plotters = "0.3"
+slint = { version = "1.14.1" }
+
+# this fixes compiler errors caused by depending on slint and plotters crate together
+[dependencies.font-kit]
+version = "*"
+features = ["source-fontconfig-dlopen"]
+
+
+[build-dependencies]
+slint-build = "1.14.1"
