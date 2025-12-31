@@ -1,10 +1,9 @@
 use crate::eq;
 use crate::utils;
 use num_traits::Float;
-use num_traits::cast::FromPrimitive;
 
 #[derive(Debug, Clone, Copy)]
-pub struct Coefficients<F: Float + FromPrimitive> {
+pub struct Coefficients<F: Float> {
     pub a1: F,
     pub a2: F,
     pub b0: F,
@@ -13,7 +12,7 @@ pub struct Coefficients<F: Float + FromPrimitive> {
 }
 
 /// Formulas for coefficients taken from here http://shepazu.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html
-impl<F: Float + FromPrimitive> Coefficients<F> {
+impl<F: Float> Coefficients<F> {
     pub fn from_eq(eq: &eq::Eq<F>, sample_rate: F) -> Self {
         let gain_db = eq.gain.db();
         let frequency = eq.frequency.hz();

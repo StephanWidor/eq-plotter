@@ -1,6 +1,5 @@
 use crate::utils;
 use num_traits::Float;
-use num_traits::cast::FromPrimitive;
 
 #[derive(Debug, PartialEq, Clone, Copy, variant_count::VariantCount)]
 pub enum EqType {
@@ -92,7 +91,7 @@ pub enum Gain<F: Float> {
     Db(F),
 }
 
-impl<F: Float + FromPrimitive> Gain<F> {
+impl<F: Float> Gain<F> {
     pub fn amplitude(&self) -> F {
         match self {
             Gain::Amplitude(amplitude) => *amplitude,
@@ -131,7 +130,7 @@ pub enum Frequency<F: Float> {
     LogHz(F),
 }
 
-impl<F: Float + FromPrimitive> Frequency<F> {
+impl<F: Float> Frequency<F> {
     pub fn hz(&self) -> F {
         match self {
             Frequency::Hz(hz) => *hz,

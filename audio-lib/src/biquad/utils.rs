@@ -2,9 +2,8 @@ use crate::biquad::coefficients::Coefficients;
 use crate::biquad::filter::Filter;
 use crate::utils;
 use num::Complex;
-use num_traits::cast::FromPrimitive;
 
-pub fn make_frequency_response_function<F: num_traits::Float + FromPrimitive>(
+pub fn make_frequency_response_function<F: num_traits::Float>(
     coefficients: &Coefficients<F>,
     sample_rate: F,
 ) -> impl Fn(F) -> Complex<F> {
@@ -22,7 +21,7 @@ pub fn make_frequency_response_function<F: num_traits::Float + FromPrimitive>(
     }
 }
 
-pub fn impulse_response<F: num_traits::Float + FromPrimitive>(
+pub fn impulse_response<F: num_traits::Float>(
     coefficients: &Coefficients<F>,
     eps: F,
     hold_length: usize,
@@ -46,19 +45,15 @@ pub fn impulse_response<F: num_traits::Float + FromPrimitive>(
     response
 }
 
-pub fn zeros<F: num_traits::Float + FromPrimitive>(
-    coefficients: &Coefficients<F>,
-) -> utils::PolynomRoots<F> {
+pub fn zeros<F: num_traits::Float>(coefficients: &Coefficients<F>) -> utils::PolynomRoots<F> {
     utils::polynom_roots(coefficients.b0, coefficients.b1, coefficients.b2)
 }
 
-pub fn poles<F: num_traits::Float + FromPrimitive>(
-    coefficients: &Coefficients<F>,
-) -> utils::PolynomRoots<F> {
+pub fn poles<F: num_traits::Float>(coefficients: &Coefficients<F>) -> utils::PolynomRoots<F> {
     utils::polynom_roots(F::one(), coefficients.a1, coefficients.a2)
 }
 
-pub fn is_stable<F: num_traits::Float + FromPrimitive>(coefficients: &Coefficients<F>) -> bool {
+pub fn is_stable<F: num_traits::Float>(coefficients: &Coefficients<F>) -> bool {
     let poles = poles(coefficients);
     poles
         .into_iter()

@@ -2,12 +2,11 @@
 use assert_approx_eq::assert_approx_eq;
 use num::Complex;
 use num_traits::Float;
-use num_traits::cast::FromPrimitive;
 
 #[allow(type_alias_bounds)]
 pub type PolynomRoots<F: Float> = smallvec::SmallVec<[Complex<F>; 2]>;
 
-pub fn frequency_to_log<F: Float + FromPrimitive>(frequency: F) -> F {
+pub fn frequency_to_log<F: Float>(frequency: F) -> F {
     if frequency > F::zero() {
         F::log10(frequency)
     } else {
@@ -15,7 +14,7 @@ pub fn frequency_to_log<F: Float + FromPrimitive>(frequency: F) -> F {
     }
 }
 
-pub fn log_to_frequency<F: Float + FromPrimitive>(log_frequency: F) -> F {
+pub fn log_to_frequency<F: Float>(log_frequency: F) -> F {
     if log_frequency == F::neg_infinity() {
         F::zero()
     } else {
@@ -23,7 +22,7 @@ pub fn log_to_frequency<F: Float + FromPrimitive>(log_frequency: F) -> F {
     }
 }
 
-pub fn amplitude_to_db<F: Float + FromPrimitive>(amplitude: F) -> F {
+pub fn amplitude_to_db<F: Float>(amplitude: F) -> F {
     if amplitude > F::zero() {
         F::from(20).unwrap() * F::log10(amplitude)
     } else {
@@ -31,7 +30,7 @@ pub fn amplitude_to_db<F: Float + FromPrimitive>(amplitude: F) -> F {
     }
 }
 
-pub fn db_to_amplitude<F: Float + FromPrimitive>(db: F) -> F {
+pub fn db_to_amplitude<F: Float>(db: F) -> F {
     if db == F::neg_infinity() {
         F::zero()
     } else {
@@ -39,12 +38,12 @@ pub fn db_to_amplitude<F: Float + FromPrimitive>(db: F) -> F {
     }
 }
 
-pub fn omega<F: Float + FromPrimitive>(frequency: F, sample_rate: F) -> F {
+pub fn omega<F: Float>(frequency: F, sample_rate: F) -> F {
     F::from(2.0 * std::f64::consts::PI).unwrap() * (frequency / sample_rate)
 }
 
 /// complex roots of polynom c2*x^2 + c1*x + c0
-pub fn polynom_roots<F: Float + FromPrimitive>(c2: F, c1: F, c0: F) -> PolynomRoots<F> {
+pub fn polynom_roots<F: Float>(c2: F, c1: F, c0: F) -> PolynomRoots<F> {
     if c2 == F::zero() {
         if c1 == F::zero() {
             if c0 == F::zero() {

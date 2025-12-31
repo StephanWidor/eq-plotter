@@ -1,15 +1,14 @@
 use crate::biquad::coefficients::Coefficients;
 use num_traits::Float;
-use num_traits::cast::FromPrimitive;
 
 #[derive(Debug)]
-pub struct Filter<F: Float + FromPrimitive> {
+pub struct Filter<F: Float> {
     coefficients: Coefficients<F>,
     input_state: [F; 2],
     output_state: [F; 2],
 }
 
-impl<F: Float + FromPrimitive> Filter<F> {
+impl<F: Float> Filter<F> {
     pub fn new(coefficients: &Coefficients<F>) -> Self {
         Self {
             coefficients: *coefficients,
