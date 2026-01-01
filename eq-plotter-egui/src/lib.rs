@@ -3,9 +3,7 @@ use audio_lib::biquad;
 use audio_lib::eq;
 use audio_lib::utils;
 use num::complex::ComplexFloat;
-use num_traits::Float;
 use num_traits::Pow;
-use num_traits::cast::FromPrimitive;
 
 pub struct EqPlotter {
     sample_rate: f64,
@@ -24,13 +22,13 @@ impl Default for EqPlotter {
 impl EqPlotter {
     pub const WINDOW_SIZE: [u32; 2] = [1120, 840]; // [width, height]
 
-    pub fn log_frequency_to_string<F: Float + FromPrimitive + std::fmt::Display>(
+    pub fn log_frequency_to_string<F: utils::Float + std::fmt::Display>(
         log_frequency: F,
     ) -> String {
         format!("{}", utils::log_to_frequency(log_frequency).round())
     }
 
-    pub fn string_to_log_frequency<F: Float + FromPrimitive + std::str::FromStr>(
+    pub fn string_to_log_frequency<F: utils::Float + std::str::FromStr>(
         frequency_string: &str,
     ) -> Option<F> {
         let trimmed_string = frequency_string.trim_end_matches(&[' ', 'H', 'z']);

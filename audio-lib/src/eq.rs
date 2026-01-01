@@ -1,5 +1,4 @@
 use crate::utils;
-use num_traits::Float;
 
 #[derive(Debug, PartialEq, Clone, Copy, variant_count::VariantCount)]
 pub enum EqType {
@@ -29,14 +28,14 @@ impl EqType {
         }
     }
 
-    pub fn has_frequency(&self) -> bool {
+    pub const fn has_frequency(&self) -> bool {
         match self {
             EqType::Volume => false,
             _ => true,
         }
     }
 
-    pub fn has_gain_db(&self) -> bool {
+    pub const fn has_gain_db(&self) -> bool {
         match self {
             EqType::Volume => true,
             EqType::Peak => true,
@@ -46,7 +45,7 @@ impl EqType {
         }
     }
 
-    pub fn has_q(&self) -> bool {
+    pub const fn has_q(&self) -> bool {
         match self {
             EqType::Volume => false,
             _ => true,
@@ -86,12 +85,12 @@ impl TryFrom<&str> for EqType {
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
-pub enum Gain<F: Float> {
+pub enum Gain<F: utils::Float> {
     Amplitude(F),
     Db(F),
 }
 
-impl<F: Float> Gain<F> {
+impl<F: utils::Float> Gain<F> {
     pub fn amplitude(&self) -> F {
         match self {
             Gain::Amplitude(amplitude) => *amplitude,
@@ -125,12 +124,12 @@ impl From<Gain<f64>> for Gain<f32> {
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
-pub enum Frequency<F: Float> {
+pub enum Frequency<F: utils::Float> {
     Hz(F),
     LogHz(F),
 }
 
-impl<F: Float> Frequency<F> {
+impl<F: utils::Float> Frequency<F> {
     pub fn hz(&self) -> F {
         match self {
             Frequency::Hz(hz) => *hz,
@@ -164,7 +163,7 @@ impl From<Frequency<f64>> for Frequency<f32> {
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
-pub struct Eq<F: Float> {
+pub struct Eq<F: utils::Float> {
     pub gain: Gain<F>,
     pub frequency: Frequency<F>,
     pub q: F,

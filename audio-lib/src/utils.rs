@@ -1,13 +1,44 @@
 #[cfg(test)]
 use assert_approx_eq::assert_approx_eq;
-use num::Complex;
-use num_traits::Float;
+
+pub trait Float:
+    num_traits::Float + num_traits::ConstZero + num_traits::ConstOne + num_traits::FloatConst
+{
+    const TWO: Self;
+    const FOUR: Self;
+    const TWO_PI: Self;
+    const TEN: Self;
+    const TWENTY: Self;
+
+    const ONE_HALF: Self;
+    const ONE_TWENTIETH: Self;
+}
+impl Float for f32 {
+    const TWO: f32 = 2.0_f32;
+    const FOUR: f32 = 4.0_f32;
+    const TWO_PI: Self = std::f32::consts::TAU;
+    const TEN: f32 = 10.0_f32;
+    const TWENTY: f32 = 20.0_f32;
+
+    const ONE_HALF: f32 = 0.5_f32;
+    const ONE_TWENTIETH: f32 = 0.05_f32;
+}
+impl Float for f64 {
+    const TWO: f64 = 2.0;
+    const FOUR: f64 = 4.0;
+    const TWO_PI: Self = std::f64::consts::TAU;
+    const TEN: f64 = 10.0;
+    const TWENTY: f64 = 20.0;
+
+    const ONE_HALF: f64 = 0.5;
+    const ONE_TWENTIETH: Self = 0.05;
+}
 
 #[allow(type_alias_bounds)]
-pub type PolynomRoots<F: Float> = smallvec::SmallVec<[Complex<F>; 2]>;
+pub type PolynomRoots<F: Float> = smallvec::SmallVec<[num::Complex<F>; 2]>;
 
 pub fn frequency_to_log<F: Float>(frequency: F) -> F {
-    if frequency > F::zero() {
+    if frequency > F::ZERO {
         F::log10(frequency)
     } else {
         F::neg_infinity()
@@ -16,15 +47,15 @@ pub fn frequency_to_log<F: Float>(frequency: F) -> F {
 
 pub fn log_to_frequency<F: Float>(log_frequency: F) -> F {
     if log_frequency == F::neg_infinity() {
-        F::zero()
+        F::ZERO
     } else {
-        F::from(10).unwrap().powf(log_frequency)
+        F::TEN.powf(log_frequency)
     }
 }
 
 pub fn amplitude_to_db<F: Float>(amplitude: F) -> F {
-    if amplitude > F::zero() {
-        F::from(20).unwrap() * F::log10(amplitude)
+    if amplitude > F::ZERO {
+        F::TWENTY * F::log10(amplitude)
     } else {
         F::neg_infinity()
     }
@@ -32,37 +63,37 @@ pub fn amplitude_to_db<F: Float>(amplitude: F) -> F {
 
 pub fn db_to_amplitude<F: Float>(db: F) -> F {
     if db == F::neg_infinity() {
-        F::zero()
+        F::ZERO
     } else {
-        F::from(10).unwrap().powf(db * F::from(0.05).unwrap())
+        F::TEN.powf(db * F::ONE_TWENTIETH)
     }
 }
 
 pub fn omega<F: Float>(frequency: F, sample_rate: F) -> F {
-    F::from(2.0 * std::f64::consts::PI).unwrap() * (frequency / sample_rate)
+    F::TWO_PI * (frequency / sample_rate)
 }
 
 /// complex roots of polynom c2*x^2 + c1*x + c0
 pub fn polynom_roots<F: Float>(c2: F, c1: F, c0: F) -> PolynomRoots<F> {
-    if c2 == F::zero() {
-        if c1 == F::zero() {
-            if c0 == F::zero() {
+    if c2 == F::ZERO {
+        if c1 == F::ZERO {
+            if c0 == F::ZERO {
                 // any x is a solution here, let's just return zero
-                return PolynomRoots::from_elem(Complex::<F>::from(F::zero()), 1);
+                return PolynomRoots::from_elem(num::Complex::<F>::from(F::ZERO), 1);
             }
             return PolynomRoots::new();
         }
-        return PolynomRoots::from_elem(Complex::from(-c0 / c1), 1);
+        return PolynomRoots::from_elem(num::Complex::from(-c0 / c1), 1);
     }
     let p = c1 / c2;
     let q = c0 / c2;
-    let root_arg = p * p / F::from(4).unwrap() - q;
-    let p_half = Complex::from(p * F::from(0.5).unwrap());
-    if root_arg == F::zero() {
+    let root_arg = p * p / F::FOUR - q;
+    let p_half = num::Complex::from(p * F::ONE_HALF);
+    if root_arg == F::ZERO {
         return PolynomRoots::from_elem(-p_half, 1);
     }
 
-    let root_val = Complex::from(root_arg).sqrt();
+    let root_val = num::Complex::from(root_arg).sqrt();
     PolynomRoots::from_slice(&[-p_half - root_val, -p_half + root_val])
 }
 
@@ -87,7 +118,7 @@ mod tests {
 
     #[test]
     fn check_explicit_polyom_roots() {
-        let check_solutions = |solutions: PolynomRoots<f64>, expected: &Vec<Complex<f64>>| {
+        let check_solutions = |solutions: PolynomRoots<f64>, expected: &Vec<num::Complex<f64>>| {
             assert_eq!(solutions.len(), expected.len());
             for solution in solutions.iter() {
                 let find_index = expected
@@ -97,16 +128,22 @@ mod tests {
             }
         };
 
-        check_solutions(polynom_roots(0.0, 0.0, 0.0), &vec![Complex::from(0.0)]);
+        check_solutions(polynom_roots(0.0, 0.0, 0.0), &vec![num::Complex::from(0.0)]);
         check_solutions(polynom_roots(0.0, 0.0, 0.1), &Vec::new());
-        check_solutions(polynom_roots(0.0, 2.0, 6.0), &vec![Complex::from(-3.0)]);
+        check_solutions(
+            polynom_roots(0.0, 2.0, 6.0),
+            &vec![num::Complex::from(-3.0)],
+        );
         check_solutions(
             polynom_roots(1.6, 0.0, 0.4),
-            &vec![Complex { re: 0.0, im: 0.5 }, Complex { re: 0.0, im: -0.5 }],
+            &vec![
+                num::Complex { re: 0.0, im: 0.5 },
+                num::Complex { re: 0.0, im: -0.5 },
+            ],
         );
         check_solutions(
             polynom_roots(1.0, 0.0, -4.0),
-            &vec![Complex::from(-2.0), Complex::from(2.0)],
+            &vec![num::Complex::from(-2.0), num::Complex::from(2.0)],
         );
     }
 
@@ -115,7 +152,7 @@ mod tests {
         let check_solutions = |c2, c1, c0| {
             let solutions = polynom_roots(c2, c1, c0);
             for solution in solutions {
-                let eval: Complex<f64> = solution * solution * c2 + solution * c1 + c0;
+                let eval: num::Complex<f64> = solution * solution * c2 + solution * c1 + c0;
                 let abs_eval = eval.abs();
                 assert_le!(abs_eval, 1e-10);
             }

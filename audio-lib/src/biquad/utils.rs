@@ -3,25 +3,25 @@ use crate::biquad::filter::Filter;
 use crate::utils;
 use num::Complex;
 
-pub fn make_frequency_response_function<F: num_traits::Float>(
+pub fn make_frequency_response_function<F: utils::Float>(
     coefficients: &Coefficients<F>,
     sample_rate: F,
 ) -> impl Fn(F) -> Complex<F> {
     move |frequency| {
         let omega = utils::omega(frequency, sample_rate);
-        let z1 = Complex::from_polar(F::one(), -omega);
-        let z2 = Complex::from_polar(F::one(), F::from(-2).unwrap() * omega);
+        let z1 = Complex::from_polar(F::ONE, -omega);
+        let z2 = Complex::from_polar(F::ONE, -F::TWO * omega);
         let numerator = Complex::from(coefficients.b0)
             + Complex::from(coefficients.b1) * z1
             + Complex::from(coefficients.b2) * z2;
-        let denominator = Complex::from(F::one())
+        let denominator = Complex::<F>::ONE
             + Complex::from(coefficients.a1) * z1
             + Complex::from(coefficients.a2) * z2;
         numerator / denominator
     }
 }
 
-pub fn impulse_response<F: num_traits::Float>(
+pub fn impulse_response<F: utils::Float>(
     coefficients: &Coefficients<F>,
     eps: F,
     hold_length: usize,
@@ -29,10 +29,10 @@ pub fn impulse_response<F: num_traits::Float>(
 ) -> Vec<F> {
     let mut filter = Filter::new(coefficients);
     let mut response = Vec::new();
-    response.push(filter.process(F::one()));
+    response.push(filter.process(F::ONE));
     let mut eps_count = 0;
     while eps_count <= hold_length && response.len() <= max_length {
-        let filter_out = filter.process(F::zero());
+        let filter_out = filter.process(F::ZERO);
         if filter_out.abs() <= eps {
             eps_count += 1;
         } else {
@@ -40,24 +40,24 @@ pub fn impulse_response<F: num_traits::Float>(
         }
         response.push(filter_out);
     }
-    response.resize(response.len() + 1 - eps_count, F::zero());
+    response.resize(response.len() + 1 - eps_count, F::ZERO);
 
     response
 }
 
-pub fn zeros<F: num_traits::Float>(coefficients: &Coefficients<F>) -> utils::PolynomRoots<F> {
+pub fn zeros<F: utils::Float>(coefficients: &Coefficients<F>) -> utils::PolynomRoots<F> {
     utils::polynom_roots(coefficients.b0, coefficients.b1, coefficients.b2)
 }
 
-pub fn poles<F: num_traits::Float>(coefficients: &Coefficients<F>) -> utils::PolynomRoots<F> {
-    utils::polynom_roots(F::one(), coefficients.a1, coefficients.a2)
+pub fn poles<F: utils::Float>(coefficients: &Coefficients<F>) -> utils::PolynomRoots<F> {
+    utils::polynom_roots(F::ONE, coefficients.a1, coefficients.a2)
 }
 
-pub fn is_stable<F: num_traits::Float>(coefficients: &Coefficients<F>) -> bool {
+pub fn is_stable<F: utils::Float>(coefficients: &Coefficients<F>) -> bool {
     let poles = poles(coefficients);
     poles
         .into_iter()
-        .find(|pole: &Complex<F>| pole.norm() >= F::one())
+        .find(|pole: &Complex<F>| pole.norm() >= F::ONE)
         == None
 }
 

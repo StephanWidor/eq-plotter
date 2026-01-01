@@ -1,27 +1,27 @@
 use crate::biquad::coefficients::Coefficients;
-use num_traits::Float;
+use crate::utils;
 
 #[derive(Debug)]
-pub struct Filter<F: Float> {
+pub struct Filter<F: utils::Float> {
     coefficients: Coefficients<F>,
     input_state: [F; 2],
     output_state: [F; 2],
 }
 
-impl<F: Float> Filter<F> {
-    pub fn new(coefficients: &Coefficients<F>) -> Self {
+impl<F: utils::Float> Filter<F> {
+    pub const fn new(coefficients: &Coefficients<F>) -> Self {
         Self {
             coefficients: *coefficients,
-            input_state: [F::zero(); 2],
-            output_state: [F::zero(); 2],
+            input_state: [F::ZERO; 2],
+            output_state: [F::ZERO; 2],
         }
     }
 
     pub fn set_coefficients(&mut self, coefficients: Coefficients<F>, reset_state: bool) {
         self.coefficients = coefficients;
         if reset_state {
-            self.input_state.fill(F::zero());
-            self.output_state.fill(F::zero());
+            self.input_state.fill(F::ZERO);
+            self.output_state.fill(F::ZERO);
         }
     }
 
