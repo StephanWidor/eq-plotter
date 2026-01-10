@@ -5,53 +5,50 @@ use nih_plug::prelude as nih;
 use std::sync;
 
 // hm, can we somehow get rid of this without destroying the nih::Enum and nih::Params derive?
-use nih_plug::params::enums::Enum;
 use nih_plug::params::Params;
 
-// we have our own EqType here because we need nih-plug's Enum trait (can this be done simpler?)
-#[derive(nih::Enum, PartialEq, Clone, Copy)]
-pub enum EqType {
-    Volume,
-    LowPass,
-    HighPass,
-    BandPass,
-    AllPass,
-    Notch,
-    Peak,
-    LowShelf,
-    HighShelf,
+#[derive(PartialEq, Clone, Copy)]
+pub struct EqTypeWrapper {
+    eq_type: eq::EqType,
 }
 
-impl From<eq::EqType> for EqType {
-    fn from(eq: eq::EqType) -> Self {
-        match eq {
-            eq::EqType::Volume => EqType::Volume,
-            eq::EqType::LowPass => EqType::LowPass,
-            eq::EqType::HighPass => EqType::HighPass,
-            eq::EqType::BandPass => EqType::BandPass,
-            eq::EqType::AllPass => EqType::AllPass,
-            eq::EqType::Notch => EqType::Notch,
-            eq::EqType::Peak => EqType::Peak,
-            eq::EqType::LowShelf => EqType::LowShelf,
-            eq::EqType::HighShelf => EqType::HighShelf,
-        }
+impl From<eq::EqType> for EqTypeWrapper {
+    fn from(eq_type: eq::EqType) -> Self {
+        Self { eq_type: eq_type }
     }
 }
-impl Into<eq::EqType> for EqType {
+
+impl Into<eq::EqType> for EqTypeWrapper {
     fn into(self) -> eq::EqType {
-        match self {
-            EqType::Volume => eq::EqType::Volume,
-            EqType::LowPass => eq::EqType::LowPass,
-            EqType::HighPass => eq::EqType::HighPass,
-            EqType::BandPass => eq::EqType::BandPass,
-            EqType::AllPass => eq::EqType::AllPass,
-            EqType::Notch => eq::EqType::Notch,
-            EqType::Peak => eq::EqType::Peak,
-            EqType::LowShelf => eq::EqType::LowShelf,
-            EqType::HighShelf => eq::EqType::HighShelf,
+        self.eq_type
+    }
+}
+
+impl nih::Enum for EqTypeWrapper {
+    fn variants() -> &'static [&'static str] {
+        &eq::EqType::ALL_NAMES
+    }
+
+    fn ids() -> Option<&'static [&'static str]> {
+        None
+    }
+
+    fn to_index(self) -> usize {
+        self.eq_type as usize
+    }
+
+    fn from_index(index: usize) -> Self {
+        let from_result = eq::EqType::try_from(index);
+        match from_result {
+            Ok(eq_type) => Self { eq_type: eq_type },
+            _ => Self {
+                eq_type: eq::EqType::try_from(0).unwrap(),
+            },
         }
     }
 }
+
+pub type EqTypeParam = nih::EnumParam<EqTypeWrapper>;
 
 #[derive(nih::Params)]
 pub struct PluginParams {
@@ -68,7 +65,7 @@ pub struct PluginParams {
     pub q: nih::FloatParam,
 
     #[id = "eq_type"]
-    pub eq_type: nih::EnumParam<EqType>,
+    pub eq_type: EqTypeParam,
 
     pub sample_rate: sync::Arc<nih::AtomicF32>,
 }
@@ -119,7 +116,10 @@ impl Default for PluginParams {
                 },
             )
             .with_smoother(nih::SmoothingStyle::Linear(Self::SMOOTHING_LENGTH_MS)),
-            eq_type: nih::EnumParam::new("eq type", app::DEFAULT_EQ.eq_type.into()),
+            eq_type: EqTypeParam::new(
+                app::DEFAULT_EQ.eq_type.to_string(),
+                EqTypeWrapper::from(app::DEFAULT_EQ.eq_type),
+            ),
             sample_rate: sync::Arc::new(nih::AtomicF32::new(1.0)),
         }
     }
