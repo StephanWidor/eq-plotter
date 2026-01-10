@@ -5,7 +5,6 @@ use audio_lib::eq;
 use audio_lib::utils;
 use num::complex::ComplexFloat;
 use plotters::prelude::*;
-use slint::SharedPixelBuffer;
 
 pub fn render_eq_plots(
     eq: &eq::Eq<f32>,
@@ -14,8 +13,17 @@ pub fn render_eq_plots(
     height: u32,
     background_color: slint::Color,
 ) -> slint::Image {
-    let mut pixel_buffer = SharedPixelBuffer::new(width, height);
+    #[cfg(not(feature = "plot-svg"))]
+    let mut pixel_buffer = slint::SharedPixelBuffer::new(width, height);
+    #[cfg(not(feature = "plot-svg"))]
     let backend = BitMapBackend::with_buffer(pixel_buffer.make_mut_bytes(), (width, height));
+
+    #[cfg(feature = "plot-svg")]
+    let mut svg_string_buffer = String::new();
+    #[cfg(feature = "plot-svg")]
+    let backend =
+        plotters::backend::SVGBackend::with_string(&mut svg_string_buffer, (width, height));
+
     let root_area = backend.into_drawing_area();
 
     let chart_style = style::ChartStyleData::new(&background_color, height as f64 / 2.0);
@@ -41,7 +49,14 @@ pub fn render_eq_plots(
     }
     drop(root_area);
 
-    slint::Image::from_rgb8(pixel_buffer)
+    #[cfg(not(feature = "plot-svg"))]
+    {
+        slint::Image::from_rgb8(pixel_buffer)
+    }
+    #[cfg(feature = "plot-svg")]
+    {
+        slint::Image::load_from_svg_data(svg_string_buffer.as_bytes()).unwrap()
+    }
 }
 
 fn draw_gain_chart<DB: DrawingBackend>(
