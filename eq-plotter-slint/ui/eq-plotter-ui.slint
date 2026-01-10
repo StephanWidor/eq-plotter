@@ -44,9 +44,9 @@ export component EqPlotterUi inherits Window {
 
     HorizontalLayout {
         VerticalBox {
-            property <length> left-text-width: 100px;
+            property <length> left-text-width: 80px;
             property <length> slider-width: 160px;
-            property <length> right-text-width: 40px;
+            property <length> right-text-width: 60px;
             HorizontalBox {
                 Text {
                     text: "Type";
@@ -67,7 +67,7 @@ export component EqPlotterUi inherits Window {
 
             gain-box := HorizontalBox {
                 Text {
-                    text: "Gain (dB)";
+                    text: "Gain";
                     width: left-text-width;
                 }
 
@@ -86,13 +86,13 @@ export component EqPlotterUi inherits Window {
                 Text {
                     width: right-text-width;
                     horizontal-alignment: TextHorizontalAlignment.right;
-                    text: Eq.gain_db.to-fixed(2);
+                    text: Eq.gain_db.to-fixed(2) + "dB";
                 }
             }
 
             frequency-box := HorizontalBox {
                 Text {
-                    text: "Frequency (Hz)";
+                    text: "Frequency";
                     width: left-text-width;
                 }
 
@@ -111,7 +111,7 @@ export component EqPlotterUi inherits Window {
                 Text {
                     width: right-text-width;
                     horizontal-alignment: TextHorizontalAlignment.right;
-                    text: Eq.frequency.to-fixed(0);
+                    text: Eq.frequency.to-fixed(0) + "Hz";
                 }
             }
 
