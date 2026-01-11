@@ -67,7 +67,7 @@ pub struct PluginParams {
     #[id = "eq_type"]
     pub eq_type: EqTypeParam,
 
-    pub sample_rate: sync::Arc<nih::AtomicF32>,
+    pub sample_rate: nih::AtomicF32,
 }
 
 impl PluginParams {
@@ -120,7 +120,7 @@ impl Default for PluginParams {
                 app::DEFAULT_EQ.eq_type.to_string(),
                 EqTypeWrapper::from(app::DEFAULT_EQ.eq_type),
             ),
-            sample_rate: sync::Arc::new(nih::AtomicF32::new(1.0)),
+            sample_rate: nih::AtomicF32::new(1_f32),
         }
     }
 }

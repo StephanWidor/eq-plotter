@@ -6,7 +6,6 @@ use std::sync::Arc;
 
 pub fn create_editor(
     params: Arc<params::PluginParams>,
-    sample_rate: Arc<nih::AtomicF32>,
     editor_size: (u32, u32),
 ) -> Option<Box<dyn nih::Editor>> {
     nih_plug_egui::create_egui_editor(
@@ -40,7 +39,10 @@ pub fn create_editor(
                     let new_eq = eq_plotter_egui::EqPlotter::draw(
                         ui,
                         &eq,
-                        sample_rate.load(std::sync::atomic::Ordering::Relaxed) as f64,
+                        params
+                            .sample_rate
+                            .load(std::sync::atomic::Ordering::Relaxed)
+                            as f64,
                     );
 
                     if eq == new_eq {
