@@ -25,7 +25,16 @@ impl<F: utils::Float> Coefficients<F> {
             eq::EqType::Peak => Self::from_peak_db(gain_db, frequency, eq.q, sample_rate),
             eq::EqType::LowShelf => Self::from_lowshelf_db(gain_db, frequency, eq.q, sample_rate),
             eq::EqType::HighShelf => Self::from_highshelf_db(gain_db, frequency, eq.q, sample_rate),
+            eq::EqType::Bypassed => Self::passthrough(),
         }
+    }
+
+    pub const fn muted() -> Self {
+        Self::from_volume_linear(F::ZERO)
+    }
+
+    pub const fn passthrough() -> Self {
+        Self::from_volume_linear(F::ONE)
     }
 
     pub const fn from_volume_linear(volume_linear: F) -> Self {
