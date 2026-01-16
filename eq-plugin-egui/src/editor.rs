@@ -36,15 +36,17 @@ pub fn create_editor(
                         q: params.q.value() as f64,
                         eq_type: params.eq_type.value().into(),
                     };
-                    let new_eq = eq_plotter_egui::EqPlotter::draw(
+                    let mut new_eqs = [eq.clone()];
+                    eq_plotter_egui::EqPlotter::draw(
                         ui,
-                        &eq,
+                        &mut new_eqs,
                         params
                             .sample_rate
                             .load(std::sync::atomic::Ordering::Relaxed)
                             as f64,
                     );
 
+                    let new_eq = new_eqs[0];
                     if eq == new_eq {
                         return; // no changes
                     }

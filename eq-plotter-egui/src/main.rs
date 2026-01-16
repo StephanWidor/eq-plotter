@@ -47,6 +47,6 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "EQ Plotter",
         options,
-        Box::new(|_cc| Ok(Box::<EqPlotter>::default())),
+        Box::new(|_cc| Ok(Box::new(EqPlotter::new(5)))),
     )
 }
