@@ -1,15 +1,16 @@
 [workspace]
-resolver= "3"
+resolver = "3"
 members = [
     "app-lib",
     "audio-lib",
     "eq-plotter-egui",
     "eq-plotter-slint",
     "eq-plugin-egui",
-    "xtask"
+    "xtask",
 ]
 
 [workspace.dependencies]
+array-init = "2.1.0"
 eframe = "0.31"
 egui = "0.31"
 egui_plot = "0.31"

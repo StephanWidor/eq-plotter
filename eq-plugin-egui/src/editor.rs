@@ -1,11 +1,10 @@
 use crate::params;
 use app_lib as app;
-use audio_lib::eq;
 use nih_plug::prelude as nih;
-use std::sync::Arc;
+use std::sync;
 
 pub fn create_editor(
-    params: Arc<params::PluginParams>,
+    params: sync::Arc<params::PluginParams>,
     editor_size: (u32, u32),
 ) -> Option<Box<dyn nih::Editor>> {
     nih_plug_egui::create_egui_editor(
@@ -30,13 +29,9 @@ pub fn create_editor(
                         )),
                 )
                 .show(egui_ctx, |ui| {
-                    let eq = eq::Eq {
-                        gain: eq::Gain::Db(params.gain_db.value() as f64),
-                        frequency: eq::Frequency::LogHz(params.log_frequency.value() as f64),
-                        q: params.q.value() as f64,
-                        eq_type: params.eq_type.value().into(),
-                    };
-                    let mut new_eqs = [eq.clone()];
+                    let eqs = params.eqs();
+                    let mut new_eqs = eqs.clone();
+                    let eq_params = params.eq_params();
                     eq_plotter_egui::EqPlotter::draw(
                         ui,
                         &mut new_eqs,
@@ -46,23 +41,13 @@ pub fn create_editor(
                             as f64,
                     );
 
-                    let new_eq = new_eqs[0];
-                    if eq == new_eq {
-                        return; // no changes
+                    for ((new_eq, old_eq), params) in
+                        new_eqs.iter().zip(eqs).zip(eq_params.as_ref())
+                    {
+                        if !(*new_eq == old_eq) {
+                            params.update_from_eq(&new_eq, setter);
+                        }
                     }
-
-                    setter.begin_set_parameter(&params.gain_db);
-                    setter.begin_set_parameter(&params.log_frequency);
-                    setter.begin_set_parameter(&params.q);
-                    setter.begin_set_parameter(&params.eq_type);
-                    setter.set_parameter(&params.gain_db, new_eq.gain.db() as f32);
-                    setter.set_parameter(&params.log_frequency, new_eq.frequency.log_hz() as f32);
-                    setter.set_parameter(&params.q, new_eq.q as f32);
-                    setter.set_parameter(&params.eq_type, new_eq.eq_type.into());
-                    setter.end_set_parameter(&params.gain_db);
-                    setter.end_set_parameter(&params.log_frequency);
-                    setter.end_set_parameter(&params.q);
-                    setter.end_set_parameter(&params.eq_type);
                 });
         },
     )
