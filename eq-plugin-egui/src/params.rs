@@ -68,6 +68,50 @@ pub struct EqParams {
 impl EqParams {
     const SMOOTHING_LENGTH_MS: f32 = 20.0;
 
+    fn new(names_suffix: &str) -> Self {
+        Self {
+            gain_db: nih::FloatParam::new(
+                format!("Gain (dB){names_suffix}"),
+                app::DEFAULT_EQ.gain.db() as f32,
+                nih::FloatRange::Linear {
+                    min: app::MIN_GAIN_DB as f32,
+                    max: app::MAX_GAIN_DB as f32,
+                },
+            )
+            .with_smoother(nih::SmoothingStyle::Linear(Self::SMOOTHING_LENGTH_MS))
+            .with_unit(" dB"),
+            log_frequency: nih::FloatParam::new(
+                format!("Frequency (Hz){names_suffix}"),
+                app::DEFAULT_EQ.frequency.log_hz() as f32,
+                nih::FloatRange::Linear {
+                    min: app::MIN_LOG_FREQUENCY as f32,
+                    max: app::MAX_LOG_FREQUENCY as f32,
+                },
+            )
+            .with_smoother(nih::SmoothingStyle::Linear(Self::SMOOTHING_LENGTH_MS))
+            .with_unit(" Hz")
+            .with_value_to_string(sync::Arc::new(
+                eq_plotter_egui::EqPlotter::log_frequency_to_string,
+            ))
+            .with_string_to_value(sync::Arc::new(
+                eq_plotter_egui::EqPlotter::string_to_log_frequency,
+            )),
+            q: nih::FloatParam::new(
+                format!("q{names_suffix}"),
+                app::DEFAULT_EQ.q as f32,
+                nih::FloatRange::Linear {
+                    min: app::MIN_Q as f32,
+                    max: app::MAX_Q as f32,
+                },
+            )
+            .with_smoother(nih::SmoothingStyle::Linear(Self::SMOOTHING_LENGTH_MS)),
+            eq_type: EqTypeParam::new(
+                format!("Eq Type{names_suffix}"),
+                EqTypeWrapper::from(eq::EqType::Bypassed),
+            ),
+        }
+    }
+
     pub fn to_eq<F: audio_lib::utils::Float>(&self) -> eq::Eq<F> {
         eq::Eq {
             gain: eq::Gain::Db(F::from(self.gain_db.value()).unwrap()),
@@ -93,68 +137,13 @@ impl EqParams {
     }
 }
 
-impl Default for EqParams {
-    fn default() -> Self {
-        Self {
-            gain_db: nih::FloatParam::new(
-                "gain (dB)",
-                app::DEFAULT_EQ.gain.db() as f32,
-                nih::FloatRange::Linear {
-                    min: app::MIN_GAIN_DB as f32,
-                    max: app::MAX_GAIN_DB as f32,
-                },
-            )
-            .with_smoother(nih::SmoothingStyle::Linear(Self::SMOOTHING_LENGTH_MS))
-            .with_unit(" dB"),
-            log_frequency: nih::FloatParam::new(
-                "frequency (Hz)",
-                app::DEFAULT_EQ.frequency.log_hz() as f32,
-                nih::FloatRange::Linear {
-                    min: app::MIN_LOG_FREQUENCY as f32,
-                    max: app::MAX_LOG_FREQUENCY as f32,
-                },
-            )
-            .with_smoother(nih::SmoothingStyle::Linear(Self::SMOOTHING_LENGTH_MS))
-            .with_unit(" Hz")
-            .with_value_to_string(sync::Arc::new(
-                eq_plotter_egui::EqPlotter::log_frequency_to_string,
-            ))
-            .with_string_to_value(sync::Arc::new(
-                eq_plotter_egui::EqPlotter::string_to_log_frequency,
-            )),
-            q: nih::FloatParam::new(
-                "q",
-                app::DEFAULT_EQ.q as f32,
-                nih::FloatRange::Linear {
-                    min: app::MIN_Q as f32,
-                    max: app::MAX_Q as f32,
-                },
-            )
-            .with_smoother(nih::SmoothingStyle::Linear(Self::SMOOTHING_LENGTH_MS)),
-            eq_type: EqTypeParam::new("Eq Type", EqTypeWrapper::from(eq::EqType::Bypassed)),
-        }
-    }
-}
-
 #[derive(nih::Params)]
 pub struct PluginParams {
-    #[persist = "editor-state"]
+    #[persist = "editor_state"]
     pub editor_state: sync::Arc<nih_plug_egui::EguiState>,
 
-    #[nested(group = "eq1")]
-    pub eq1: sync::Arc<EqParams>,
-
-    #[nested(group = "eq2")]
-    pub eq2: sync::Arc<EqParams>,
-
-    #[nested(group = "eq3")]
-    pub eq3: sync::Arc<EqParams>,
-
-    #[nested(group = "eq4")]
-    pub eq4: sync::Arc<EqParams>,
-
-    #[nested(group = "eq5")]
-    pub eq5: sync::Arc<EqParams>,
+    #[nested(array, group = "eq_params")]
+    pub eq_params: [EqParams; Self::NUM_BANDS],
 
     pub sample_rate: nih::AtomicF32,
 }
@@ -163,23 +152,7 @@ impl PluginParams {
     pub const NUM_BANDS: usize = 5_usize;
 
     pub fn eqs<F: utils::Float>(&self) -> [eq::Eq<F>; Self::NUM_BANDS] {
-        [
-            self.eq1.to_eq(),
-            self.eq2.to_eq(),
-            self.eq3.to_eq(),
-            self.eq4.to_eq(),
-            self.eq5.to_eq(),
-        ]
-    }
-
-    pub fn eq_params(&self) -> [sync::Arc<EqParams>; Self::NUM_BANDS] {
-        [
-            self.eq1.clone(),
-            self.eq2.clone(),
-            self.eq3.clone(),
-            self.eq4.clone(),
-            self.eq5.clone(),
-        ]
+        array_init::array_init(|index| self.eq_params[index].to_eq())
     }
 }
 
@@ -190,11 +163,9 @@ impl Default for PluginParams {
                 eq_plotter_egui::EqPlotter::WINDOW_SIZE[0],
                 eq_plotter_egui::EqPlotter::WINDOW_SIZE[1],
             ),
-            eq1: sync::Arc::new(EqParams::default()),
-            eq2: sync::Arc::new(EqParams::default()),
-            eq3: sync::Arc::new(EqParams::default()),
-            eq4: sync::Arc::new(EqParams::default()),
-            eq5: sync::Arc::new(EqParams::default()),
+            eq_params: array_init::array_init(|index| {
+                EqParams::new(format!(" [{index}]").as_str())
+            }),
             sample_rate: nih::AtomicF32::new(1_f32),
         }
     }
