@@ -34,8 +34,7 @@ pub fn render_eq_plots(
     let plot_areas = root_area.split_evenly((2, 2));
 
     let coefficients = biquad::coefficients::Coefficients::from_eq(eq, sample_rate);
-    let frequency_response =
-        biquad::utils::make_frequency_response_function(&coefficients, sample_rate);
+    let frequency_response = biquad::utils::make_frequency_response(&coefficients, sample_rate);
 
     draw_gain_chart(&plot_areas[0], &chart_style, &frequency_response);
     draw_phase_chart(&plot_areas[2], &chart_style, &frequency_response);
@@ -182,7 +181,8 @@ fn draw_ir_chart<DB: DrawingBackend>(
     style: &style::ChartStyleData,
     coefficients: &biquad::coefficients::Coefficients<f32>,
 ) {
-    let impulse_response = biquad::utils::impulse_response(&coefficients, 0.001, 10, 1024);
+    let impulse_response =
+        biquad::utils::impulse_response_for_coefficients(&coefficients, 0.001, 10, 1024);
 
     let mut chart = ChartBuilder::on(&area)
         .margin(style.margin_size)

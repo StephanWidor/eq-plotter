@@ -12,6 +12,7 @@ pub enum EqType {
     Peak,
     LowShelf,
     HighShelf,
+    Bypassed,
 }
 
 impl EqType {
@@ -28,14 +29,23 @@ impl EqType {
         "Peak",
         "Low Shelf",
         "High Shelf",
+        "Bypassed",
     ];
     pub fn to_string(&self) -> &str {
         Self::ALL_NAMES[*self as usize]
     }
 
+    pub const fn is_active(&self) -> bool {
+        match self {
+            EqType::Bypassed => false,
+            _ => true,
+        }
+    }
+
     pub const fn has_frequency(&self) -> bool {
         match self {
             EqType::Volume => false,
+            EqType::Bypassed => false,
             _ => true,
         }
     }
@@ -53,6 +63,7 @@ impl EqType {
     pub const fn has_q(&self) -> bool {
         match self {
             EqType::Volume => false,
+            EqType::Bypassed => false,
             _ => true,
         }
     }
