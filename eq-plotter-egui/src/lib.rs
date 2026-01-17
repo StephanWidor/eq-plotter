@@ -29,13 +29,16 @@ impl eframe::App for EqPlotter {
 }
 
 impl EqPlotter {
-    pub const WINDOW_SIZE: [u32; 2] = [1200, 900]; // [width, height]
-    const EQ_COLORS: [egui::Color32; 5] = [
-        egui::Color32::ORANGE,
-        egui::Color32::GREEN,
-        egui::Color32::RED,
-        egui::Color32::YELLOW,
-        egui::Color32::BLUE,
+    pub const WINDOW_SIZE: [u32; 2] = [1250, 1000]; // [width, height]
+    const EQ_COLORS: [egui::Color32; 8] = [
+        egui::Color32::from_rgb(140, 51, 51),
+        egui::Color32::from_rgb(140, 107, 54),
+        egui::Color32::from_rgb(104, 140, 56),
+        egui::Color32::from_rgb(59, 140, 106),
+        egui::Color32::from_rgb(59, 102, 140),
+        egui::Color32::from_rgb(77, 58, 140),
+        egui::Color32::from_rgb(140, 60, 140),
+        egui::Color32::from_rgb(140, 82, 99),
     ];
     const MULTI_BAND_COLOR: egui::Color32 = egui::Color32::LIGHT_GRAY;
     pub const START_EQ: eq::Eq<f64> = eq::Eq {
@@ -101,7 +104,7 @@ impl EqPlotter {
                     max_length_for_impulse,
                 );
 
-            let plot_size = 400.0;
+            let plot_size = 450.0;
 
             ui.vertical(|ui| {
                 Self::gain_plot(
@@ -141,7 +144,7 @@ impl EqPlotter {
             .fill(color)
             .multiply_with_opacity(0.2_f32)
             .corner_radius(5)
-            .outer_margin(20)
+            .outer_margin(10)
             .show(ui, |ui| {
                 ui.vertical(|ui| {
                     egui::ComboBox::from_id_salt(ui.next_auto_id())

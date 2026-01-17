@@ -149,7 +149,7 @@ pub struct PluginParams {
 }
 
 impl PluginParams {
-    pub const NUM_BANDS: usize = 5_usize;
+    pub const NUM_BANDS: usize = 8;
 
     pub fn eqs<F: utils::Float>(&self) -> [eq::Eq<F>; Self::NUM_BANDS] {
         array_init::array_init(|index| self.eq_params[index].to_eq())
