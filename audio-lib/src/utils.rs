@@ -117,7 +117,7 @@ mod tests {
     }
 
     #[test]
-    fn check_explicit_polyom_roots() {
+    fn check_explicit_polynom_roots() {
         let check_solutions = |solutions: PolynomRoots<f64>, expected: &Vec<num::Complex<f64>>| {
             assert_eq!(solutions.len(), expected.len());
             for solution in solutions.iter() {
@@ -148,7 +148,7 @@ mod tests {
     }
 
     #[test]
-    fn validate_some_polyom_roots() {
+    fn validate_some_polynom_roots() {
         let check_solutions = |c2, c1, c0| {
             let solutions = polynom_roots(c2, c1, c0);
             for solution in solutions {
