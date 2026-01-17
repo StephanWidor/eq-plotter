@@ -40,9 +40,11 @@ pub fn create_editor(
                             as f64,
                     );
 
-                    for (index, (new_eq, old_eq)) in new_eqs.iter().zip(eqs).enumerate() {
+                    for ((new_eq, old_eq), band_params) in
+                        new_eqs.iter().zip(eqs).zip(params.eq_params.as_ref())
+                    {
                         if !(*new_eq == old_eq) {
-                            params.update_from_eq(index, &new_eq, setter);
+                            band_params.update_from_eq(&new_eq, setter);
                         }
                     }
                 });
