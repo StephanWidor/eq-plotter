@@ -31,7 +31,6 @@ pub fn create_editor(
                 .show(egui_ctx, |ui| {
                     let eqs = params.eqs();
                     let mut new_eqs = eqs.clone();
-                    let eq_params = params.eq_params();
                     eq_plotter_egui::EqPlotter::draw(
                         ui,
                         &mut new_eqs,
@@ -41,11 +40,9 @@ pub fn create_editor(
                             as f64,
                     );
 
-                    for ((new_eq, old_eq), params) in
-                        new_eqs.iter().zip(eqs).zip(eq_params.as_ref())
-                    {
+                    for (index, (new_eq, old_eq)) in new_eqs.iter().zip(eqs).enumerate() {
                         if !(*new_eq == old_eq) {
-                            params.update_from_eq(&new_eq, setter);
+                            params.update_from_eq(index, &new_eq, setter);
                         }
                     }
                 });

@@ -51,136 +51,56 @@ impl nih::Enum for EqTypeWrapper {
 pub type EqTypeParam = nih::EnumParam<EqTypeWrapper>;
 
 #[derive(nih::Params)]
-pub struct EqParams {
-    #[id = "gain_db"]
-    pub gain_db: nih::FloatParam,
-
-    #[id = "frequency"]
-    pub log_frequency: nih::FloatParam,
-
-    #[id = "q"]
-    pub q: nih::FloatParam,
-
-    #[id = "eq_type"]
-    pub eq_type: EqTypeParam,
-}
-
-impl EqParams {
-    const SMOOTHING_LENGTH_MS: f32 = 20.0;
-
-    pub fn to_eq<F: audio_lib::utils::Float>(&self) -> eq::Eq<F> {
-        eq::Eq {
-            gain: eq::Gain::Db(F::from(self.gain_db.value()).unwrap()),
-            frequency: eq::Frequency::LogHz(F::from(self.log_frequency.value()).unwrap()),
-            q: F::from(self.q.value()).unwrap(),
-            eq_type: self.eq_type.value().into(),
-        }
-    }
-
-    pub fn update_from_eq(&self, eq: &eq::Eq<f64>, setter: &nih::ParamSetter<'_>) {
-        setter.begin_set_parameter(&self.gain_db);
-        setter.begin_set_parameter(&self.log_frequency);
-        setter.begin_set_parameter(&self.q);
-        setter.begin_set_parameter(&self.eq_type);
-        setter.set_parameter(&self.gain_db, eq.gain.db() as f32);
-        setter.set_parameter(&self.log_frequency, eq.frequency.log_hz() as f32);
-        setter.set_parameter(&self.q, eq.q as f32);
-        setter.set_parameter(&self.eq_type, eq.eq_type.into());
-        setter.end_set_parameter(&self.gain_db);
-        setter.end_set_parameter(&self.log_frequency);
-        setter.end_set_parameter(&self.q);
-        setter.end_set_parameter(&self.eq_type);
-    }
-}
-
-impl Default for EqParams {
-    fn default() -> Self {
-        Self {
-            gain_db: nih::FloatParam::new(
-                "gain (dB)",
-                app::DEFAULT_EQ.gain.db() as f32,
-                nih::FloatRange::Linear {
-                    min: app::MIN_GAIN_DB as f32,
-                    max: app::MAX_GAIN_DB as f32,
-                },
-            )
-            .with_smoother(nih::SmoothingStyle::Linear(Self::SMOOTHING_LENGTH_MS))
-            .with_unit(" dB"),
-            log_frequency: nih::FloatParam::new(
-                "frequency (Hz)",
-                app::DEFAULT_EQ.frequency.log_hz() as f32,
-                nih::FloatRange::Linear {
-                    min: app::MIN_LOG_FREQUENCY as f32,
-                    max: app::MAX_LOG_FREQUENCY as f32,
-                },
-            )
-            .with_smoother(nih::SmoothingStyle::Linear(Self::SMOOTHING_LENGTH_MS))
-            .with_unit(" Hz")
-            .with_value_to_string(sync::Arc::new(
-                eq_plotter_egui::EqPlotter::log_frequency_to_string,
-            ))
-            .with_string_to_value(sync::Arc::new(
-                eq_plotter_egui::EqPlotter::string_to_log_frequency,
-            )),
-            q: nih::FloatParam::new(
-                "q",
-                app::DEFAULT_EQ.q as f32,
-                nih::FloatRange::Linear {
-                    min: app::MIN_Q as f32,
-                    max: app::MAX_Q as f32,
-                },
-            )
-            .with_smoother(nih::SmoothingStyle::Linear(Self::SMOOTHING_LENGTH_MS)),
-            eq_type: EqTypeParam::new("Eq Type", EqTypeWrapper::from(eq::EqType::Bypassed)),
-        }
-    }
-}
-
-#[derive(nih::Params)]
 pub struct PluginParams {
     #[persist = "editor-state"]
     pub editor_state: sync::Arc<nih_plug_egui::EguiState>,
 
-    #[nested(group = "eq1")]
-    pub eq1: sync::Arc<EqParams>,
+    #[id = "gain_db_1"]
+    pub gain_db_1: nih::FloatParam,
+    #[id = "frequency_1"]
+    pub log_frequency_1: nih::FloatParam,
+    #[id = "q_1"]
+    pub q_1: nih::FloatParam,
+    #[id = "eq_type_1"]
+    pub eq_type_1: EqTypeParam,
 
-    #[nested(group = "eq2")]
-    pub eq2: sync::Arc<EqParams>,
+    #[id = "gain_db_2"]
+    pub gain_db_2: nih::FloatParam,
+    #[id = "frequency_2"]
+    pub log_frequency_2: nih::FloatParam,
+    #[id = "q_2"]
+    pub q_2: nih::FloatParam,
+    #[id = "eq_type_2"]
+    pub eq_type_2: EqTypeParam,
 
-    #[nested(group = "eq3")]
-    pub eq3: sync::Arc<EqParams>,
+    #[id = "gain_db_3"]
+    pub gain_db_3: nih::FloatParam,
+    #[id = "frequency_3"]
+    pub log_frequency_3: nih::FloatParam,
+    #[id = "q_3"]
+    pub q_3: nih::FloatParam,
+    #[id = "eq_type_3"]
+    pub eq_type_3: EqTypeParam,
 
-    #[nested(group = "eq4")]
-    pub eq4: sync::Arc<EqParams>,
+    #[id = "gain_db_4"]
+    pub gain_db_4: nih::FloatParam,
+    #[id = "frequency_4"]
+    pub log_frequency_4: nih::FloatParam,
+    #[id = "q_4"]
+    pub q_4: nih::FloatParam,
+    #[id = "eq_type_4"]
+    pub eq_type_4: EqTypeParam,
 
-    #[nested(group = "eq5")]
-    pub eq5: sync::Arc<EqParams>,
+    #[id = "gain_db_5"]
+    pub gain_db_5: nih::FloatParam,
+    #[id = "frequency_5"]
+    pub log_frequency_5: nih::FloatParam,
+    #[id = "q_5"]
+    pub q_5: nih::FloatParam,
+    #[id = "eq_type_5"]
+    pub eq_type_5: EqTypeParam,
 
     pub sample_rate: nih::AtomicF32,
-}
-
-impl PluginParams {
-    pub const NUM_BANDS: usize = 5_usize;
-
-    pub fn eqs<F: utils::Float>(&self) -> [eq::Eq<F>; Self::NUM_BANDS] {
-        [
-            self.eq1.to_eq(),
-            self.eq2.to_eq(),
-            self.eq3.to_eq(),
-            self.eq4.to_eq(),
-            self.eq5.to_eq(),
-        ]
-    }
-
-    pub fn eq_params(&self) -> [sync::Arc<EqParams>; Self::NUM_BANDS] {
-        [
-            self.eq1.clone(),
-            self.eq2.clone(),
-            self.eq3.clone(),
-            self.eq4.clone(),
-            self.eq5.clone(),
-        ]
-    }
 }
 
 impl Default for PluginParams {
@@ -190,12 +110,181 @@ impl Default for PluginParams {
                 eq_plotter_egui::EqPlotter::WINDOW_SIZE[0],
                 eq_plotter_egui::EqPlotter::WINDOW_SIZE[1],
             ),
-            eq1: sync::Arc::new(EqParams::default()),
-            eq2: sync::Arc::new(EqParams::default()),
-            eq3: sync::Arc::new(EqParams::default()),
-            eq4: sync::Arc::new(EqParams::default()),
-            eq5: sync::Arc::new(EqParams::default()),
+            gain_db_1: Self::make_gain_param("gain_db_1"),
+            log_frequency_1: Self::make_frequency_param("frequency_1"),
+            q_1: Self::make_q_param("q_1"),
+            eq_type_1: Self::make_eq_type_param("eq_type_1"),
+            gain_db_2: Self::make_gain_param("gain_db_2"),
+            log_frequency_2: Self::make_frequency_param("frequency_2"),
+            q_2: Self::make_q_param("q_2"),
+            eq_type_2: Self::make_eq_type_param("eq_type_2"),
+            gain_db_3: Self::make_gain_param("gain_db_3"),
+            log_frequency_3: Self::make_frequency_param("frequency_3"),
+            q_3: Self::make_q_param("q_3"),
+            eq_type_3: Self::make_eq_type_param("eq_type_3"),
+            gain_db_4: Self::make_gain_param("gain_db_4"),
+            log_frequency_4: Self::make_frequency_param("frequency_4"),
+            q_4: Self::make_q_param("q_4"),
+            eq_type_4: Self::make_eq_type_param("eq_type_4"),
+            gain_db_5: Self::make_gain_param("gain_db_5"),
+            log_frequency_5: Self::make_frequency_param("frequency_5"),
+            q_5: Self::make_q_param("q_5"),
+            eq_type_5: Self::make_eq_type_param("eq_type_5"),
+
             sample_rate: nih::AtomicF32::new(1_f32),
         }
+    }
+}
+
+impl PluginParams {
+    pub const NUM_BANDS: usize = 5_usize;
+    const SMOOTHING_LENGTH_MS: f32 = 20.0;
+
+    fn make_gain_param(name: &str) -> nih::FloatParam {
+        nih::FloatParam::new(
+            name, //,"gain (dB)",
+            app::DEFAULT_EQ.gain.db() as f32,
+            nih::FloatRange::Linear {
+                min: app::MIN_GAIN_DB as f32,
+                max: app::MAX_GAIN_DB as f32,
+            },
+        )
+        .with_smoother(nih::SmoothingStyle::Linear(Self::SMOOTHING_LENGTH_MS))
+        .with_unit(" dB")
+    }
+
+    fn make_frequency_param(name: &str) -> nih::FloatParam {
+        nih::FloatParam::new(
+            name, //"frequency (Hz)",
+            app::DEFAULT_EQ.frequency.log_hz() as f32,
+            nih::FloatRange::Linear {
+                min: app::MIN_LOG_FREQUENCY as f32,
+                max: app::MAX_LOG_FREQUENCY as f32,
+            },
+        )
+        .with_smoother(nih::SmoothingStyle::Linear(Self::SMOOTHING_LENGTH_MS))
+        .with_unit(" Hz")
+        .with_value_to_string(sync::Arc::new(
+            eq_plotter_egui::EqPlotter::log_frequency_to_string,
+        ))
+        .with_string_to_value(sync::Arc::new(
+            eq_plotter_egui::EqPlotter::string_to_log_frequency,
+        ))
+    }
+
+    fn make_q_param(name: &str) -> nih::FloatParam {
+        nih::FloatParam::new(
+            name, //"q",
+            app::DEFAULT_EQ.q as f32,
+            nih::FloatRange::Linear {
+                min: app::MIN_Q as f32,
+                max: app::MAX_Q as f32,
+            },
+        )
+        .with_smoother(nih::SmoothingStyle::Linear(Self::SMOOTHING_LENGTH_MS))
+    }
+
+    fn make_eq_type_param(name: &str) -> EqTypeParam {
+        EqTypeParam::new(
+            name, //"Eq Type",
+            EqTypeWrapper::from(eq::EqType::Bypassed),
+        )
+    }
+
+    fn to_eq<F: audio_lib::utils::Float>(
+        gain_db: f32,
+        log_frequency: f32,
+        q: f32,
+        eq_type: eq::EqType,
+    ) -> eq::Eq<F> {
+        eq::Eq {
+            gain: eq::Gain::Db(F::from(gain_db).unwrap()),
+            frequency: eq::Frequency::LogHz(F::from(log_frequency).unwrap()),
+            q: F::from(q).unwrap(),
+            eq_type: eq_type,
+        }
+    }
+
+    pub fn eqs<F: utils::Float>(&self) -> [eq::Eq<F>; Self::NUM_BANDS] {
+        [
+            Self::to_eq(
+                self.gain_db_1.value(),
+                self.log_frequency_1.value(),
+                self.q_1.value(),
+                self.eq_type_1.value().into(),
+            ),
+            Self::to_eq(
+                self.gain_db_2.value(),
+                self.log_frequency_2.value(),
+                self.q_2.value(),
+                self.eq_type_2.value().into(),
+            ),
+            Self::to_eq(
+                self.gain_db_3.value(),
+                self.log_frequency_3.value(),
+                self.q_3.value(),
+                self.eq_type_3.value().into(),
+            ),
+            Self::to_eq(
+                self.gain_db_4.value(),
+                self.log_frequency_4.value(),
+                self.q_4.value(),
+                self.eq_type_4.value().into(),
+            ),
+            Self::to_eq(
+                self.gain_db_5.value(),
+                self.log_frequency_5.value(),
+                self.q_5.value(),
+                self.eq_type_5.value().into(),
+            ),
+        ]
+    }
+
+    pub fn update_from_eq(&self, index: usize, eq: &eq::Eq<f64>, setter: &nih::ParamSetter<'_>) {
+        let (gain_db, log_frequency, q, eq_type) = match index {
+            0 => (
+                &self.gain_db_1,
+                &self.log_frequency_1,
+                &self.q_1,
+                &self.eq_type_1,
+            ),
+            1 => (
+                &self.gain_db_2,
+                &self.log_frequency_2,
+                &self.q_2,
+                &self.eq_type_2,
+            ),
+            2 => (
+                &self.gain_db_3,
+                &self.log_frequency_3,
+                &self.q_3,
+                &self.eq_type_3,
+            ),
+            3 => (
+                &self.gain_db_4,
+                &self.log_frequency_4,
+                &self.q_4,
+                &self.eq_type_4,
+            ),
+            _ => (
+                &self.gain_db_5,
+                &self.log_frequency_5,
+                &self.q_5,
+                &self.eq_type_5,
+            ),
+        };
+
+        setter.begin_set_parameter(gain_db);
+        setter.begin_set_parameter(log_frequency);
+        setter.begin_set_parameter(q);
+        setter.begin_set_parameter(eq_type);
+        setter.set_parameter(gain_db, eq.gain.db() as f32);
+        setter.set_parameter(log_frequency, eq.frequency.log_hz() as f32);
+        setter.set_parameter(q, eq.q as f32);
+        setter.set_parameter(eq_type, eq.eq_type.into());
+        setter.end_set_parameter(gain_db);
+        setter.end_set_parameter(log_frequency);
+        setter.end_set_parameter(q);
+        setter.end_set_parameter(eq_type);
     }
 }
