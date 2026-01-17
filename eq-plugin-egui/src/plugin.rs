@@ -25,11 +25,20 @@ impl nih::Plugin for Plugin {
     const EMAIL: &'static str = "stephan@widor.online";
     const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
-    const AUDIO_IO_LAYOUTS: &'static [nih::AudioIOLayout] = &[nih::AudioIOLayout {
-        main_input_channels: nih::NonZeroU32::new(1),
-        main_output_channels: nih::NonZeroU32::new(1),
-        ..nih::AudioIOLayout::const_default()
-    }];
+    const AUDIO_IO_LAYOUTS: &'static [nih::AudioIOLayout] = &[
+        nih::AudioIOLayout {
+            main_input_channels: nih::NonZeroU32::new(2),
+            main_output_channels: nih::NonZeroU32::new(2),
+            aux_input_ports: &[],
+            aux_output_ports: &[],
+            names: nih::PortNames::const_default(),
+        },
+        nih::AudioIOLayout {
+            main_input_channels: nih::NonZeroU32::new(1),
+            main_output_channels: nih::NonZeroU32::new(1),
+            ..nih::AudioIOLayout::const_default()
+        },
+    ];
 
     const SAMPLE_ACCURATE_AUTOMATION: bool = true;
 
