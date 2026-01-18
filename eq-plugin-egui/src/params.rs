@@ -164,7 +164,7 @@ impl Default for PluginParams {
                 eq_plotter_egui::EqPlotter::WINDOW_SIZE[1],
             ),
             eq_params: array_init::array_init(|index| {
-                EqParams::new(format!(" [{index}]").as_str())
+                EqParams::new(format!(" [{}]", index + 1).as_str())
             }),
             sample_rate: nih::AtomicF32::new(1_f32),
         }
