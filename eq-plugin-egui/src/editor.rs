@@ -43,8 +43,17 @@ pub fn create_editor(
                     for ((new_eq, old_eq), band_params) in
                         new_eqs.iter().zip(eqs).zip(params.eq_params.as_ref())
                     {
-                        if !(*new_eq == old_eq) {
-                            band_params.update_from_eq(&new_eq, setter);
+                        if new_eq.gain.db() != old_eq.gain.db() {
+                            band_params.set_gain_db(new_eq.gain.db(), setter);
+                        }
+                        if new_eq.frequency.log_hz() != old_eq.frequency.log_hz() {
+                            band_params.set_log_frequency(new_eq.frequency.log_hz(), setter);
+                        }
+                        if new_eq.q != old_eq.q {
+                            band_params.set_q(new_eq.q, setter);
+                        }
+                        if new_eq.eq_type != old_eq.eq_type {
+                            band_params.set_eq_type(new_eq.eq_type, setter);
                         }
                     }
                 });
