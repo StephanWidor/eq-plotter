@@ -172,10 +172,7 @@ impl PluginParams {
 impl Default for PluginParams {
     fn default() -> Self {
         Self {
-            editor_state: nih_plug_egui::EguiState::from_size(
-                eq_plotter_egui::EqPlotter::WINDOW_SIZE[0],
-                eq_plotter_egui::EqPlotter::WINDOW_SIZE[1],
-            ),
+            editor_state: nih_plug_egui::EguiState::from_size(1000, 700),
             eq_params: array_init::array_init(|index| {
                 EqParams::new(format!(" [{}]", index + 1).as_str())
             }),
