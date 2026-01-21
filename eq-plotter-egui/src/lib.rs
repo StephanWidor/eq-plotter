@@ -60,12 +60,26 @@ impl EqPlotter {
     }
 
     pub fn draw(ui: &mut egui::Ui, eqs: &mut [eq::Eq<f64>], sample_rate: f64) {
+        let ui_size = ui.available_size();
+
+        let control_width = 230_f32;
+        let control_outer_margin = 10_f32;
         ui.horizontal(|ui| {
-            ui.vertical(|ui| {
-                for (index, eq) in eqs.iter_mut().enumerate() {
-                    Self::eq_control(ui, Self::EQ_COLORS[index % Self::EQ_COLORS.len()], eq);
-                }
-            });
+            egui::ScrollArea::vertical()
+                .min_scrolled_height(ui_size.y)
+                .show(ui, |ui| {
+                    ui.vertical(|ui| {
+                        for (index, eq) in eqs.iter_mut().enumerate() {
+                            Self::eq_control(
+                                ui,
+                                control_width,
+                                control_outer_margin,
+                                Self::EQ_COLORS[index % Self::EQ_COLORS.len()],
+                                eq,
+                            );
+                        }
+                    });
+                });
 
             let active_eqs = eqs
                 .iter()
@@ -104,52 +118,62 @@ impl EqPlotter {
                     max_length_for_impulse,
                 );
 
-            let plot_size = 450.0;
+            let plot_size = 0.5_f32
+                * (ui_size
+                    .y
+                    .min(ui_size.x - control_width - 2_f32 * control_outer_margin));
+            if plot_size > 50_f32 {
+                ui.vertical(|ui| {
+                    Self::gain_plot(
+                        ui,
+                        &frequency_responses,
+                        &active_eqs,
+                        &multiband_frequency_response,
+                        plot_size,
+                    );
+                    Self::phase_plot(
+                        ui,
+                        &frequency_responses,
+                        &active_eqs,
+                        &multiband_frequency_response,
+                        plot_size,
+                    );
+                });
 
-            ui.vertical(|ui| {
-                Self::gain_plot(
-                    ui,
-                    &frequency_responses,
-                    &active_eqs,
-                    &multiband_frequency_response,
-                    plot_size,
-                );
-                Self::phase_plot(
-                    ui,
-                    &frequency_responses,
-                    &active_eqs,
-                    &multiband_frequency_response,
-                    plot_size,
-                );
-            });
-
-            ui.vertical(|ui| {
-                Self::impulse_response_plot(
-                    ui,
-                    &impulse_responses,
-                    &active_eqs,
-                    &multiband_impulse_response,
-                    plot_size,
-                );
-                Self::poles_and_zeros_plot(ui, &coefficients, &active_eqs, plot_size);
-            });
+                ui.vertical(|ui| {
+                    Self::impulse_response_plot(
+                        ui,
+                        &impulse_responses,
+                        &active_eqs,
+                        &multiband_impulse_response,
+                        plot_size,
+                    );
+                    Self::poles_and_zeros_plot(ui, &coefficients, &active_eqs, plot_size);
+                });
+            }
             eqs
         });
     }
 
-    fn eq_control(ui: &mut egui::Ui, color: egui::Color32, eq: &mut eq::Eq<f64>) {
+    fn eq_control(
+        ui: &mut egui::Ui,
+        width: f32,
+        outer_margin: f32,
+        color: egui::Color32,
+        eq: &mut eq::Eq<f64>,
+    ) {
         let mut gain_db = eq.gain.db();
         let mut log_frequency = eq.frequency.log_hz();
         egui::Frame::group(ui.style())
             .fill(color)
             .multiply_with_opacity(0.2_f32)
             .corner_radius(5)
-            .outer_margin(10)
+            .outer_margin(outer_margin)
             .show(ui, |ui| {
                 ui.vertical(|ui| {
                     egui::ComboBox::from_id_salt(ui.next_auto_id())
                         .selected_text(eq.eq_type.to_string())
-                        .width(250.0)
+                        .width(width)
                         .show_ui(ui, |ui| {
                             for eq_type in eq::EqType::ALL.iter() {
                                 ui.selectable_value(&mut eq.eq_type, *eq_type, eq_type.to_string());
@@ -199,8 +223,8 @@ impl EqPlotter {
             .allow_zoom(false)
             .allow_drag(false)
             .allow_scroll(false)
-            .width(plot_size)
-            .height(plot_size)
+            .width(Self::effective_plot_size(plot_size))
+            .height(Self::effective_plot_size(plot_size))
             .auto_bounds([false, false])
             .custom_x_axes(vec![
                 egui_plot::AxisHints::new_x()
@@ -285,8 +309,8 @@ impl EqPlotter {
             .allow_zoom(false)
             .allow_drag(false)
             .allow_scroll(false)
-            .width(plot_size)
-            .height(plot_size)
+            .width(Self::effective_plot_size(plot_size))
+            .height(Self::effective_plot_size(plot_size))
             .auto_bounds([false, false])
             .custom_x_axes(vec![
                 egui_plot::AxisHints::new_x()
@@ -363,8 +387,8 @@ impl EqPlotter {
             .allow_zoom(false)
             .allow_drag(false)
             .allow_scroll(false)
-            .width(plot_size)
-            .height(plot_size)
+            .width(Self::effective_plot_size(plot_size))
+            .height(Self::effective_plot_size(plot_size))
             .custom_x_axes(vec![
                 egui_plot::AxisHints::new_x()
                     .label("Samples")
@@ -417,8 +441,8 @@ impl EqPlotter {
             .allow_zoom(false)
             .allow_drag(false)
             .allow_scroll(false)
-            .width(plot_size)
-            .height(plot_size)
+            .width(Self::effective_plot_size(plot_size))
+            .height(Self::effective_plot_size(plot_size))
             .custom_x_axes(vec![
                 egui_plot::AxisHints::new_x().placement(egui_plot::VPlacement::Top),
                 egui_plot::AxisHints::new_x()
@@ -494,6 +518,12 @@ impl EqPlotter {
                     );
                 }
             });
+    }
+
+    // Seems like labels etc are not in width and height we give to Plot::new.
+    // Not nice, but then let's just give it width and height made a bit smaller
+    fn effective_plot_size(plot_size: f32) -> f32 {
+        plot_size - 15_f32
     }
 
     pub fn log_frequency_to_string<F: utils::Float + std::fmt::Display>(
