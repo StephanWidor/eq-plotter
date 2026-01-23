@@ -67,7 +67,7 @@ impl nih::Plugin for Plugin {
         &mut self,
         _async_executor: nih::AsyncExecutor<Self>,
     ) -> Option<Box<dyn nih::Editor>> {
-        editor::create_editor(self.params.clone(), self.params.editor_state.size())
+        editor::create_editor(self.params.clone())
     }
 
     fn process(

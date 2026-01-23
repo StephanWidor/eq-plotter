@@ -40,13 +40,13 @@ fn main() -> eframe::Result {
                 EqPlotter::WINDOW_SIZE[1] as f32,
             ])
             .with_clamp_size_to_monitor_size(false)
-            .with_resizable(false),
+            .with_resizable(true),
         ..Default::default()
     };
 
     eframe::run_native(
         "EQ Plotter",
         options,
-        Box::new(|_cc| Ok(Box::new(EqPlotter::new(5)))),
+        Box::new(|_cc| Ok(Box::new(EqPlotter::new(8)))),
     )
 }
