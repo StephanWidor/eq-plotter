@@ -350,7 +350,7 @@ impl EqPlotter {
                         1000,
                     );
                     plot_ui.line(
-                        egui_plot::Line::new(gain_points)
+                        egui_plot::Line::new("", gain_points)
                             .color(Self::EQ_COLORS[index % Self::EQ_COLORS.len()]),
                     );
                 }
@@ -368,9 +368,8 @@ impl EqPlotter {
                         1000,
                     );
                     plot_ui.line(
-                        egui_plot::Line::new(gain_points)
-                            .color(Self::MULTI_BAND_COLOR)
-                            .name("multiband"),
+                        egui_plot::Line::new("multiband", gain_points)
+                            .color(Self::MULTI_BAND_COLOR),
                     );
                 }
             });
@@ -431,7 +430,7 @@ impl EqPlotter {
                         1000,
                     );
                     plot_ui.line(
-                        egui_plot::Line::new(phase_points)
+                        egui_plot::Line::new("", phase_points)
                             .color(Self::EQ_COLORS[index % Self::EQ_COLORS.len()]),
                     );
                 }
@@ -446,9 +445,8 @@ impl EqPlotter {
                         1000,
                     );
                     plot_ui.line(
-                        egui_plot::Line::new(phase_points)
-                            .color(Self::MULTI_BAND_COLOR)
-                            .name("multiband"),
+                        egui_plot::Line::new("multiband", phase_points)
+                            .color(Self::MULTI_BAND_COLOR),
                     );
                 }
             });
@@ -519,18 +517,17 @@ impl EqPlotter {
                     }
                     num_active += 1;
                     plot_ui.line(
-                        egui_plot::Line::new(egui_plot::PlotPoints::from_ys_f64(&response))
+                        egui_plot::Line::new("", egui_plot::PlotPoints::from_ys_f64(&response))
                             .color(Self::EQ_COLORS[index % Self::EQ_COLORS.len()]),
                     );
                 }
                 if num_active > 1 {
                     plot_ui.line(
-                        egui_plot::Line::new(egui_plot::PlotPoints::from_ys_f64(
-                            &multiband_impulse_responses,
-                        ))
-                        .name("Impulse Response")
-                        .color(Self::MULTI_BAND_COLOR)
-                        .name("multiband"),
+                        egui_plot::Line::new(
+                            "multiband",
+                            egui_plot::PlotPoints::from_ys_f64(&multiband_impulse_responses),
+                        )
+                        .color(Self::MULTI_BAND_COLOR),
                     );
                 }
             });
@@ -575,7 +572,7 @@ impl EqPlotter {
                     100,
                 );
                 plot_ui.line(
-                    egui_plot::Line::new(unit_circle)
+                    egui_plot::Line::new("", unit_circle)
                         .width(1_f32)
                         .color(egui::Color32::GRAY),
                 );
@@ -589,8 +586,7 @@ impl EqPlotter {
                         .map(|pole| [pole.re, pole.im])
                         .collect::<Vec<_>>();
                     plot_ui.points(
-                        egui_plot::Points::new(poles)
-                            .name("Poles")
+                        egui_plot::Points::new("Poles", poles)
                             .color(Self::EQ_COLORS[index % Self::EQ_COLORS.len()])
                             .shape(egui_plot::MarkerShape::Cross)
                             .radius(4.0),
@@ -601,8 +597,7 @@ impl EqPlotter {
                         .map(|zero| [zero.re, zero.im])
                         .collect::<Vec<_>>();
                     plot_ui.points(
-                        egui_plot::Points::new(zeros)
-                            .name("Zeros")
+                        egui_plot::Points::new("Zeros", zeros)
                             .color(Self::EQ_COLORS[index % Self::EQ_COLORS.len()])
                             .shape(egui_plot::MarkerShape::Circle)
                             .filled(false)
@@ -616,6 +611,7 @@ impl EqPlotter {
                 if unstable_biquad {
                     plot_ui.text(
                         egui_plot::Text::new(
+                            "",
                             egui_plot::PlotPoint::new(0.0, 0.5),
                             "Biquad is not stable!",
                         )

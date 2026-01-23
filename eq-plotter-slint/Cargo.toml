@@ -15,7 +15,7 @@ array-init = { workspace = true }
 audio-lib = { workspace = true }
 
 plotters = "0.3"
-slint = { version = "1.14.1" }
+slint = { version = "1.14" }
 
 # this fixes compiler errors caused by depending on slint and plotters crate together
 [dependencies.font-kit]
@@ -24,4 +24,4 @@ features = ["source-fontconfig-dlopen"]
 
 
 [build-dependencies]
-slint-build = "1.14.1"
+slint-build = "1.14"
