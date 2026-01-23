@@ -4,3 +4,4 @@ wasm_out/
 Cargo.lock
 **/*.rs.bk
 *.pdb
+.vscode/
