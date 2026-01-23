@@ -7,6 +7,7 @@ edition = "2024"
 eframe = { workspace = true }
 egui = { workspace = true }
 egui_plot = { workspace = true }
+enum-table = { workspace = true }
 num = { workspace = true }
 num-traits = { workspace = true }
 
@@ -14,8 +15,8 @@ app-lib = { workspace = true }
 audio-lib = { workspace = true }
 
 console_error_panic_hook = "0.1"
-wasm-bindgen-futures = { version = "0.4"}
-web-sys = { version = "0.3", features = ["Window", "HtmlCanvasElement"]}
+wasm-bindgen-futures = { version = "0.4" }
+web-sys = { version = "0.3", features = ["Window", "HtmlCanvasElement"] }
 
 [build-dependencies]
 wasm-bindgen = { version = "0.2", optional = true }

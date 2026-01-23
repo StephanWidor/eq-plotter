@@ -2,12 +2,50 @@ use app_lib as app;
 use audio_lib::biquad;
 use audio_lib::eq;
 use audio_lib::utils;
+use enum_table::Enumable;
 use num::complex::ComplexFloat;
 use num_traits::Pow;
+use std::sync::atomic;
+
+#[derive(Clone, Copy, enum_table::Enumable)]
+pub enum ShowOptionType {
+    Gain,
+    Phase,
+    ImpulseResponse,
+    PolesAndZeros,
+}
+
+pub struct ShowOptions {
+    options: [atomic::AtomicBool; ShowOptionType::COUNT],
+}
+
+impl Default for ShowOptions {
+    fn default() -> Self {
+        Self {
+            options: [
+                atomic::AtomicBool::new(true),
+                atomic::AtomicBool::new(false),
+                atomic::AtomicBool::new(false),
+                atomic::AtomicBool::new(false),
+            ],
+        }
+    }
+}
+
+impl ShowOptions {
+    pub fn load_relaxed(&self, option_type: ShowOptionType) -> bool {
+        self.options[option_type as usize].load(atomic::Ordering::Relaxed)
+    }
+
+    pub fn store_relaxed(&self, option_type: ShowOptionType, show: bool) {
+        self.options[option_type as usize].store(show, atomic::Ordering::Relaxed);
+    }
+}
 
 pub struct EqPlotter {
-    sample_rate: f64,
     eqs: Vec<eq::Eq<f64>>,
+    sample_rate: f64,
+    show_options: ShowOptions,
 }
 
 impl eframe::App for EqPlotter {
@@ -23,7 +61,7 @@ impl eframe::App for EqPlotter {
                     )),
             )
             .show(ctx, |ui| {
-                EqPlotter::draw(ui, &mut self.eqs, self.sample_rate);
+                EqPlotter::draw(ui, &mut self.eqs, self.sample_rate, &mut self.show_options);
             });
     }
 }
@@ -49,37 +87,83 @@ impl EqPlotter {
     };
 
     pub fn new(num_bands: usize) -> Self {
+        assert!(num_bands > 0);
         let mut eq_plotter = Self {
-            sample_rate: 48000.0,
             eqs: vec![Self::START_EQ; num_bands],
+            sample_rate: 48000.0,
+            show_options: ShowOptions::default(),
         };
-        if num_bands > 0 {
-            eq_plotter.eqs[0] = app::DEFAULT_EQ;
-        }
+        eq_plotter.eqs[0] = app::DEFAULT_EQ;
         eq_plotter
     }
 
-    pub fn draw(ui: &mut egui::Ui, eqs: &mut [eq::Eq<f64>], sample_rate: f64) {
+    pub fn draw(
+        ui: &mut egui::Ui,
+        eqs: &mut [eq::Eq<f64>],
+        sample_rate: f64,
+        show_options: &ShowOptions,
+    ) {
         let ui_size = ui.available_size();
 
-        let control_width = 230_f32;
-        let control_outer_margin = 10_f32;
         ui.horizontal(|ui| {
-            egui::ScrollArea::vertical()
-                .min_scrolled_height(ui_size.y)
-                .show(ui, |ui| {
-                    ui.vertical(|ui| {
-                        for (index, eq) in eqs.iter_mut().enumerate() {
-                            Self::eq_control(
-                                ui,
-                                control_width,
-                                control_outer_margin,
-                                Self::EQ_COLORS[index % Self::EQ_COLORS.len()],
-                                eq,
-                            );
-                        }
+            let mut show_gain = show_options.load_relaxed(ShowOptionType::Gain);
+            let mut show_phase = show_options.load_relaxed(ShowOptionType::Phase);
+            let mut show_impulse_response =
+                show_options.load_relaxed(ShowOptionType::ImpulseResponse);
+            let mut show_poles_and_zeros = show_options.load_relaxed(ShowOptionType::PolesAndZeros);
+
+            let control_width = 230_f32;
+            let control_outer_margin = 10_f32;
+            egui::Frame::group(ui.style()).show(ui, |ui| {
+                egui::ScrollArea::vertical()
+                    .min_scrolled_height(ui_size.y)
+                    .show(ui, |ui| {
+                        ui.vertical(|ui| {
+                            egui::CollapsingHeader::new("Show").show(ui, |ui| {
+                                ui.checkbox(&mut show_gain, "Gain");
+                                ui.checkbox(&mut show_phase, "Phase");
+                                ui.checkbox(&mut show_impulse_response, "Impulse Response");
+                                ui.checkbox(&mut show_poles_and_zeros, "Poles And Zeros");
+                            });
+                            for (index, eq) in eqs.iter_mut().enumerate() {
+                                Self::eq_control(
+                                    ui,
+                                    control_width,
+                                    control_outer_margin,
+                                    Self::EQ_COLORS[index % Self::EQ_COLORS.len()],
+                                    eq,
+                                );
+                            }
+                        });
                     });
-                });
+            });
+
+            show_options.store_relaxed(ShowOptionType::Gain, show_gain);
+            show_options.store_relaxed(ShowOptionType::Phase, show_phase);
+            show_options.store_relaxed(ShowOptionType::ImpulseResponse, show_impulse_response);
+            show_options.store_relaxed(ShowOptionType::PolesAndZeros, show_poles_and_zeros);
+
+            if !(show_gain || show_phase || show_impulse_response || show_poles_and_zeros) {
+                return;
+            }
+
+            let num_rows = (((show_gain && show_phase)
+                || (show_impulse_response && show_poles_and_zeros))
+                as usize
+                + 1) as f32;
+            let num_columns = (((show_gain || show_phase)
+                && (show_impulse_response || show_poles_and_zeros))
+                as usize
+                + 1) as f32;
+            let available_size = egui::Vec2::new(
+                ui_size.x - control_width - 2_f32 * control_outer_margin - 20_f32,
+                ui_size.y,
+            );
+            let plot_size = (available_size.x / num_columns).min(available_size.y / num_rows);
+
+            if plot_size < 50_f32 {
+                return;
+            }
 
             let active_eqs = eqs
                 .iter()
@@ -96,62 +180,56 @@ impl EqPlotter {
             let multiband_frequency_response =
                 biquad::utils::multiband::make_frequency_response(&coefficients, sample_rate);
 
-            let eps_for_impulse = 0.001;
-            let hold_for_impulse = 10;
-            let max_length_for_impulse = 1024;
-            let impulse_responses = coefficients
-                .iter()
-                .map(|c| {
-                    biquad::utils::impulse_response_for_coefficients(
-                        &c,
-                        eps_for_impulse,
-                        hold_for_impulse,
-                        max_length_for_impulse,
-                    )
-                })
-                .collect::<Vec<_>>();
-            let multiband_impulse_response =
-                biquad::utils::multiband::impulse_response_for_coefficients(
-                    &coefficients,
-                    eps_for_impulse,
-                    hold_for_impulse,
-                    max_length_for_impulse,
-                );
+            egui::Frame::group(ui.style())
+                .outer_margin(0_f32)
+                .show(ui, |ui| {
+                    ui.vertical(|ui| {
+                        ui.horizontal(|ui| {
+                            ui.vertical(|ui| {
+                                if show_gain {
+                                    Self::gain_plot(
+                                        ui,
+                                        &frequency_responses,
+                                        &active_eqs,
+                                        &multiband_frequency_response,
+                                        plot_size,
+                                    );
+                                }
+                                if show_phase {
+                                    Self::phase_plot(
+                                        ui,
+                                        &frequency_responses,
+                                        &active_eqs,
+                                        &multiband_frequency_response,
+                                        plot_size,
+                                    );
+                                }
+                            });
 
-            let plot_size = 0.5_f32
-                * (ui_size
-                    .y
-                    .min(ui_size.x - control_width - 2_f32 * control_outer_margin));
-            if plot_size > 50_f32 {
-                ui.vertical(|ui| {
-                    Self::gain_plot(
-                        ui,
-                        &frequency_responses,
-                        &active_eqs,
-                        &multiband_frequency_response,
-                        plot_size,
-                    );
-                    Self::phase_plot(
-                        ui,
-                        &frequency_responses,
-                        &active_eqs,
-                        &multiband_frequency_response,
-                        plot_size,
-                    );
+                            ui.vertical(|ui| {
+                                if show_impulse_response {
+                                    let (impulse_responses, multiband_impulse_response) =
+                                        Self::impulse_responses(&coefficients);
+                                    Self::impulse_response_plot(
+                                        ui,
+                                        &impulse_responses,
+                                        &active_eqs,
+                                        &multiband_impulse_response,
+                                        plot_size,
+                                    );
+                                }
+                                if show_poles_and_zeros {
+                                    Self::poles_and_zeros_plot(
+                                        ui,
+                                        &coefficients,
+                                        &active_eqs,
+                                        plot_size,
+                                    );
+                                }
+                            });
+                        });
+                    });
                 });
-
-                ui.vertical(|ui| {
-                    Self::impulse_response_plot(
-                        ui,
-                        &impulse_responses,
-                        &active_eqs,
-                        &multiband_impulse_response,
-                        plot_size,
-                    );
-                    Self::poles_and_zeros_plot(ui, &coefficients, &active_eqs, plot_size);
-                });
-            }
-            eqs
         });
     }
 
@@ -374,6 +452,33 @@ impl EqPlotter {
                     );
                 }
             });
+    }
+
+    fn impulse_responses(
+        coefficients: &[biquad::coefficients::Coefficients<f64>],
+    ) -> (Vec<Vec<f64>>, Vec<f64>) {
+        let eps_for_impulse = 0.001;
+        let hold_for_impulse = 10;
+        let max_length_for_impulse = 1024;
+        let impulse_responses = coefficients
+            .iter()
+            .map(|c| {
+                biquad::utils::impulse_response_for_coefficients(
+                    &c,
+                    eps_for_impulse,
+                    hold_for_impulse,
+                    max_length_for_impulse,
+                )
+            })
+            .collect::<Vec<_>>();
+        let multiband_impulse_response =
+            biquad::utils::multiband::impulse_response_for_coefficients(
+                &coefficients,
+                eps_for_impulse,
+                hold_for_impulse,
+                max_length_for_impulse,
+            );
+        (impulse_responses, multiband_impulse_response)
     }
 
     fn impulse_response_plot(

@@ -1,4 +1,4 @@
-use app_lib as app;
+use app_lib::{self as app, DEFAULT_EQ};
 use audio_lib::*;
 use eq_plotter_egui;
 use nih_plug::prelude as nih;
@@ -68,7 +68,7 @@ pub struct EqParams {
 impl EqParams {
     const SMOOTHING_LENGTH_MS: f32 = 20.0;
 
-    fn new(names_suffix: &str) -> Self {
+    fn new(names_suffix: &str, bypassed: bool) -> Self {
         Self {
             gain_db: nih::FloatParam::new(
                 format!("Gain (dB){names_suffix}"),
@@ -107,7 +107,11 @@ impl EqParams {
             .with_smoother(nih::SmoothingStyle::Linear(Self::SMOOTHING_LENGTH_MS)),
             eq_type: EqTypeParam::new(
                 format!("Eq Type{names_suffix}"),
-                EqTypeWrapper::from(eq::EqType::Bypassed),
+                EqTypeWrapper::from(if bypassed {
+                    eq::EqType::Bypassed
+                } else {
+                    DEFAULT_EQ.eq_type
+                }),
             ),
         }
     }
@@ -159,6 +163,8 @@ pub struct PluginParams {
     pub eq_params: [EqParams; Self::NUM_BANDS],
 
     pub sample_rate: nih::AtomicF32,
+
+    pub show_options: eq_plotter_egui::ShowOptions,
 }
 
 impl PluginParams {
@@ -174,9 +180,10 @@ impl Default for PluginParams {
         Self {
             editor_state: nih_plug_egui::EguiState::from_size(1000, 700),
             eq_params: array_init::array_init(|index| {
-                EqParams::new(format!(" [{}]", index + 1).as_str())
+                EqParams::new(format!(" [{}]", index + 1).as_str(), index != 0)
             }),
             sample_rate: nih::AtomicF32::new(1_f32),
+            show_options: eq_plotter_egui::ShowOptions::default(),
         }
     }
 }
