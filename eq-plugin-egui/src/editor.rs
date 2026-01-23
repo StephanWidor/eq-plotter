@@ -38,6 +38,7 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                                     .sample_rate
                                     .load(std::sync::atomic::Ordering::Relaxed)
                                     as f64,
+                                &params.show_options,
                             );
 
                             for ((new_eq, old_eq), band_params) in

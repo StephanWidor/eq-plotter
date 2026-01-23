@@ -159,6 +159,8 @@ pub struct PluginParams {
     pub eq_params: [EqParams; Self::NUM_BANDS],
 
     pub sample_rate: nih::AtomicF32,
+
+    pub show_options: eq_plotter_egui::ShowOptions,
 }
 
 impl PluginParams {
@@ -177,6 +179,7 @@ impl Default for PluginParams {
                 EqParams::new(format!(" [{}]", index + 1).as_str())
             }),
             sample_rate: nih::AtomicF32::new(1_f32),
+            show_options: eq_plotter_egui::ShowOptions::default(),
         }
     }
 }
