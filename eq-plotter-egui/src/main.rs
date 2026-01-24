@@ -1,9 +1,9 @@
-use eq_plotter_egui::EqPlotter;
-
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::JsCast;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen_futures::wasm_bindgen;
+
+use eq_plotter_egui::*;
 
 #[cfg(target_arch = "wasm32")]
 fn main() -> eframe::Result {
@@ -36,8 +36,8 @@ fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([
-                EqPlotter::WINDOW_SIZE[0] as f32,
-                EqPlotter::WINDOW_SIZE[1] as f32,
+                constants::INIT_WINDOW_SIZE[0] as f32,
+                constants::INIT_WINDOW_SIZE[1] as f32,
             ])
             .with_clamp_size_to_monitor_size(false)
             .with_resizable(true),
@@ -47,6 +47,6 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "EQ Plotter",
         options,
-        Box::new(|_cc| Ok(Box::new(EqPlotter::new(8)))),
+        Box::new(|_cc| Ok(Box::new(eq_plotter::EqPlotter::new(8)))),
     )
 }

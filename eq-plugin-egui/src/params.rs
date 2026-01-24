@@ -1,8 +1,8 @@
 use app_lib::{self as app, DEFAULT_EQ};
 use audio_lib::*;
-use eq_plotter_egui;
+use eq_plotter_egui::options;
 use nih_plug::prelude as nih;
-use std::sync;
+use std::sync::{self, atomic};
 
 // hm, can we somehow get rid of this without destroying the nih::Enum and nih::Params derive?
 use nih_plug::params::Params;
@@ -91,10 +91,10 @@ impl EqParams {
             .with_smoother(nih::SmoothingStyle::Linear(Self::SMOOTHING_LENGTH_MS))
             .with_unit(" Hz")
             .with_value_to_string(sync::Arc::new(
-                eq_plotter_egui::EqPlotter::log_frequency_to_string,
+                eq_plotter_egui::utils::log_frequency_to_string,
             ))
             .with_string_to_value(sync::Arc::new(
-                eq_plotter_egui::EqPlotter::string_to_log_frequency,
+                eq_plotter_egui::utils::string_to_log_frequency,
             )),
             q: nih::FloatParam::new(
                 format!("q{names_suffix}"),
@@ -164,7 +164,10 @@ pub struct PluginParams {
 
     pub sample_rate: nih::AtomicF32,
 
-    pub show_options: eq_plotter_egui::ShowOptions,
+    pub show_gain: atomic::AtomicBool,
+    pub show_phase: atomic::AtomicBool,
+    pub show_impulse_response: atomic::AtomicBool,
+    pub show_poles_and_zeros: atomic::AtomicBool,
 }
 
 impl PluginParams {
@@ -172,6 +175,26 @@ impl PluginParams {
 
     pub fn eqs<F: utils::Float>(&self) -> [eq::Eq<F>; Self::NUM_BANDS] {
         array_init::array_init(|index| self.eq_params[index].to_eq())
+    }
+
+    pub fn show_options(&self) -> options::ShowOptions {
+        options::ShowOptions {
+            gain: self.show_gain.load(atomic::Ordering::Relaxed),
+            phase: self.show_phase.load(atomic::Ordering::Relaxed),
+            impulse_response: self.show_impulse_response.load(atomic::Ordering::Relaxed),
+            poles_and_zeros: self.show_poles_and_zeros.load(atomic::Ordering::Relaxed),
+        }
+    }
+
+    pub fn set_show_options(&self, options: &options::ShowOptions) {
+        self.show_gain
+            .store(options.gain, atomic::Ordering::Relaxed);
+        self.show_phase
+            .store(options.phase, atomic::Ordering::Relaxed);
+        self.show_impulse_response
+            .store(options.impulse_response, atomic::Ordering::Relaxed);
+        self.show_poles_and_zeros
+            .store(options.poles_and_zeros, atomic::Ordering::Relaxed);
     }
 }
 
@@ -183,7 +206,10 @@ impl Default for PluginParams {
                 EqParams::new(format!(" [{}]", index + 1).as_str(), index != 0)
             }),
             sample_rate: nih::AtomicF32::new(1_f32),
-            show_options: eq_plotter_egui::ShowOptions::default(),
+            show_gain: atomic::AtomicBool::new(true),
+            show_phase: atomic::AtomicBool::new(false),
+            show_impulse_response: atomic::AtomicBool::new(false),
+            show_poles_and_zeros: atomic::AtomicBool::new(false),
         }
     }
 }

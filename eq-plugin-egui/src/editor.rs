@@ -1,7 +1,7 @@
 use crate::params;
-use app_lib as app;
+use eq_plotter_egui::*;
 use nih_plug::prelude as nih;
-use std::sync;
+use std::sync::{self, atomic};
 
 pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn nih::Editor>> {
     let editor_state = params.editor_state.clone();
@@ -21,24 +21,23 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                     // ResizableWindow already has a CentralPanel, so this is a bit weird. But I couldn't find out a better way
                     // to set the global background color.
                     egui::CentralPanel::default()
-                        .frame(egui::Frame::default().inner_margin(20).fill(
-                            egui::Color32::from_rgb(
-                                app::UI_BACKGROUND_COLOR[0],
-                                app::UI_BACKGROUND_COLOR[1],
-                                app::UI_BACKGROUND_COLOR[2],
-                            ),
-                        ))
+                        .frame(
+                            egui::Frame::default()
+                                .inner_margin(20)
+                                .fill(constants::BACKGROUND_COLOR),
+                        )
                         .show(egui_ctx, |ui| {
                             let eqs = params.eqs();
                             let mut new_eqs = eqs.clone();
-                            eq_plotter_egui::EqPlotter::draw(
+                            let mut show_options = params.show_options();
+                            eq_plotter::draw(
                                 ui,
                                 &mut new_eqs,
+                                &mut show_options,
                                 params
                                     .sample_rate
                                     .load(std::sync::atomic::Ordering::Relaxed)
                                     as f64,
-                                &params.show_options,
                             );
 
                             for ((new_eq, old_eq), band_params) in
@@ -58,6 +57,8 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                                     band_params.set_eq_type(new_eq.eq_type, setter);
                                 }
                             }
+
+                            params.set_show_options(&show_options);
                         });
                 });
         },

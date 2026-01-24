@@ -1,5 +1,4 @@
-#[cfg(test)]
-use assert_approx_eq::assert_approx_eq;
+use num::complex::ComplexFloat;
 
 pub trait Float:
     num_traits::Float + num_traits::ConstZero + num_traits::ConstOne + num_traits::FloatConst
@@ -73,6 +72,18 @@ pub fn omega<F: Float>(frequency: F, sample_rate: F) -> F {
     F::TWO_PI * (frequency / sample_rate)
 }
 
+pub fn make_gain_db_response<F: Float>(
+    complex_frequency_response: &impl Fn(F) -> num::Complex<F>,
+) -> impl Fn(F) -> F {
+    |frequency| amplitude_to_db(complex_frequency_response(frequency).abs())
+}
+
+pub fn make_phase_response<F: Float>(
+    complex_frequency_response: &impl Fn(F) -> num::Complex<F>,
+) -> impl Fn(F) -> F {
+    |frequency| complex_frequency_response(frequency).arg()
+}
+
 /// complex roots of polynom c2*x^2 + c1*x + c0
 pub fn polynom_roots<F: Float>(c2: F, c1: F, c0: F) -> PolynomRoots<F> {
     if c2 == F::ZERO {
@@ -99,6 +110,7 @@ pub fn polynom_roots<F: Float>(c2: F, c1: F, c0: F) -> PolynomRoots<F> {
 
 #[cfg(test)]
 mod tests {
+    use assert_approx_eq::assert_approx_eq;
     use more_asserts::assert_le;
     use num::complex::ComplexFloat;
 
