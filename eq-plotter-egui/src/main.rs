@@ -23,7 +23,7 @@ fn main() -> eframe::Result {
             .start(
                 canvas,
                 web_options,
-                Box::new(|_cc| Ok(Box::<EqPlotter>::default())),
+                Box::new(|_cc| Ok(Box::new(<EqPlotter>::new(8)))),
             )
             .await
             .expect("failed to start WebRunner");
