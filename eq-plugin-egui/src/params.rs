@@ -168,6 +168,8 @@ pub struct PluginParams {
     pub show_phase: atomic::AtomicBool,
     pub show_impulse_response: atomic::AtomicBool,
     pub show_poles_and_zeros: atomic::AtomicBool,
+
+    pub selected_eq_index: atomic::AtomicUsize,
 }
 
 impl PluginParams {
@@ -210,6 +212,7 @@ impl Default for PluginParams {
             show_phase: atomic::AtomicBool::new(false),
             show_impulse_response: atomic::AtomicBool::new(false),
             show_poles_and_zeros: atomic::AtomicBool::new(false),
+            selected_eq_index: atomic::AtomicUsize::new(usize::MAX),
         }
     }
 }

@@ -19,8 +19,9 @@ fn plot_size(show_options: &options::ShowOptions, available_size: &egui::Vec2) -
 pub fn add_plots(
     ui: &mut egui::Ui,
     available_size: &egui::Vec2,
-    show_options: &options::ShowOptions,
     eqs: &mut [eq::Eq<f64>],
+    selected_eq_index: &mut usize,
+    show_options: &options::ShowOptions,
     sample_rate: f64,
 ) {
     let plot_size = plot_size(show_options, available_size);
@@ -51,8 +52,9 @@ pub fn add_plots(
                         if show_options.gain {
                             add_gain(
                                 ui,
+                                eqs,
+                                selected_eq_index,
                                 &frequency_responses,
-                                &active_eqs,
                                 &multiband_frequency_response,
                                 plot_size,
                             );
@@ -91,12 +93,16 @@ pub fn add_plots(
 
 fn add_gain(
     ui: &mut egui::Ui,
+    eqs: &mut [eq::Eq<f64>],
+    selected_eq_index: &mut usize,
     frequency_responses: &[impl Fn(f64) -> num::Complex<f64>],
-    active_eqs: &[bool],
     multiband_frequency_response: &impl Fn(f64) -> num::Complex<f64>,
     plot_size: f32,
 ) {
-    egui_plot::Plot::new("Gain (dB)")
+    assert!(eqs.len() == frequency_responses.len());
+    let gain_plot_id = ui.make_persistent_id("gain_plot_id");
+    let plot = egui_plot::Plot::new("Gain (dB)")
+        .id(gain_plot_id)
         .allow_zoom(false)
         .allow_drag(false)
         .allow_scroll(false)
@@ -123,38 +129,66 @@ fn add_gain(
                 point.y
             )
         })
-        .legend(egui_plot::Legend::default())
-        .show(ui, |plot_ui| {
-            plot_ui.set_plot_bounds(egui_plot::PlotBounds::from_min_max(
-                [app::MIN_LOG_FREQUENCY, app::MIN_GAIN_DB],
-                [app::MAX_LOG_FREQUENCY, app::MAX_GAIN_DB],
-            ));
+        .legend(egui_plot::Legend::default());
 
-            let mut num_active = 0;
-            for ((index, response), active) in
-                frequency_responses.iter().enumerate().zip(active_eqs)
-            {
-                if !*active {
-                    continue;
-                }
-                num_active += 1;
-                let gain_points =
-                    utils::make_log_frequency_points(audio_utils::make_gain_db_response(response));
-                plot_ui.line(
-                    egui_plot::Line::new("", gain_points)
-                        .color(constants::EQ_COLORS[index % constants::EQ_COLORS.len()]),
-                );
-                if num_active > 1 {
-                    let gain_points = utils::make_log_frequency_points(
-                        audio_utils::make_gain_db_response(multiband_frequency_response),
-                    );
-                    plot_ui.line(
-                        egui_plot::Line::new("multiband", gain_points)
-                            .color(constants::MULTI_BAND_COLOR),
-                    );
-                }
+    let eq_ids = (0..eqs.len())
+        .map(|i| ui.make_persistent_id(format!("eq_id_{}", i)))
+        .collect::<Vec<egui::Id>>();
+    let eq_id_to_index = |id: egui::Id| eq_ids.iter().position(|eq_id| eq_id.value() == id.value());
+
+    let plot_response = plot.show(ui, |plot_ui| {
+        plot_ui.set_plot_bounds(egui_plot::PlotBounds::from_min_max(
+            [app::MIN_LOG_FREQUENCY, app::MIN_GAIN_DB],
+            [app::MAX_LOG_FREQUENCY, app::MAX_GAIN_DB],
+        ));
+        let mut num_active = 0;
+        for index in 0..eqs.len() {
+            let eq = &eqs[index];
+            let eq_id = eq_ids[index];
+            let response = &frequency_responses[index];
+            if eq.eq_type == eq::EqType::Bypassed {
+                continue;
             }
-        });
+            num_active += 1;
+            let gain_points =
+                utils::make_log_frequency_points(audio_utils::make_gain_db_response(response));
+            plot_ui.line(
+                egui_plot::Line::new("", gain_points)
+                    .id(eq_id)
+                    .color(constants::EQ_COLORS[index % constants::EQ_COLORS.len()]),
+            );
+        }
+        if num_active > 1 {
+            let gain_points = utils::make_log_frequency_points(audio_utils::make_gain_db_response(
+                multiband_frequency_response,
+            ));
+            plot_ui.line(
+                egui_plot::Line::new("multiband", gain_points)
+                    .fill_alpha(0.5)
+                    .color(constants::MULTI_BAND_COLOR),
+            );
+        }
+        plot_ui.pointer_coordinate_drag_delta()
+    });
+
+    if plot_response.response.is_pointer_button_down_on() {
+        if *selected_eq_index >= eqs.len()
+            && let Some(hovered_item) = plot_response.hovered_plot_item
+        {
+            if let Some(hovered_eq_index) = eq_id_to_index(hovered_item) {
+                *selected_eq_index = hovered_eq_index;
+            }
+        }
+    } else {
+        *selected_eq_index = usize::MAX;
+    }
+
+    if *selected_eq_index < eqs.len() {
+        let drag_delta = plot_response.inner;
+        let eq = &mut eqs[*selected_eq_index];
+        eq.frequency = eq::Frequency::LogHz(eq.frequency.log_hz() + drag_delta.x as f64);
+        eq.gain = eq::Gain::Db(eq.gain.db() + drag_delta.y as f64);
+    }
 }
 
 fn add_phase(

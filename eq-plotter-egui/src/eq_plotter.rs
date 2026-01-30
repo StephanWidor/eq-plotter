@@ -5,6 +5,7 @@ use audio_lib::eq;
 pub fn draw(
     ui: &mut egui::Ui,
     eqs: &mut [eq::Eq<f64>],
+    selected_eq_index: &mut usize,
     show_options: &mut options::ShowOptions,
     sample_rate: f64,
 ) {
@@ -27,12 +28,20 @@ pub fn draw(
             return;
         }
         let available_size = egui::Vec2::new(0.96_f32 * (ui_size.x - control_width), ui_size.y);
-        plotter::add_plots(ui, &available_size, show_options, eqs, sample_rate);
+        plotter::add_plots(
+            ui,
+            &available_size,
+            eqs,
+            selected_eq_index,
+            show_options,
+            sample_rate,
+        );
     });
 }
 
 pub struct EqPlotter {
     eqs: Vec<eq::Eq<f64>>,
+    selected_eq_index: usize,
     sample_rate: f64,
     show_options: options::ShowOptions,
 }
@@ -46,7 +55,13 @@ impl eframe::App for EqPlotter {
                     .fill(constants::BACKGROUND_COLOR),
             )
             .show(ctx, |ui| {
-                draw(ui, &mut self.eqs, &mut self.show_options, self.sample_rate);
+                draw(
+                    ui,
+                    &mut self.eqs,
+                    &mut self.selected_eq_index,
+                    &mut self.show_options,
+                    self.sample_rate,
+                );
             });
     }
 }
@@ -56,6 +71,7 @@ impl EqPlotter {
         assert!(num_bands > 0);
         let mut eq_plotter = Self {
             eqs: vec![constants::INIT_EQ; num_bands],
+            selected_eq_index: usize::MAX,
             sample_rate: 48000.0,
             show_options: options::ShowOptions::new_all_enabled(),
         };
