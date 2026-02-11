@@ -1,7 +1,11 @@
 use num::complex::ComplexFloat;
 
 pub trait Float:
-    num_traits::Float + num_traits::ConstZero + num_traits::ConstOne + num_traits::FloatConst
+    num_traits::Float
+    + num_traits::ConstZero
+    + num_traits::ConstOne
+    + num_traits::FloatConst
+    + std::ops::AddAssign
 {
     const TWO: Self;
     const FOUR: Self;
