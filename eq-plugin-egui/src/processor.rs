@@ -78,9 +78,13 @@ impl Processor {
             params.sample_rate.load(sync::atomic::Ordering::Relaxed),
             false,
         );
-        for left_and_right in buffer.iter_samples() {
-            for (filters, sample) in self.filters.iter_mut().zip(left_and_right) {
-                *sample = biquad::utils::process_sequential(filters, *sample);
+
+        assert!(buffer.channels() == 2);
+        for channel in 0..buffer.channels() {
+            let channel_samples = buffer.as_slice().get_mut(channel).unwrap();
+            let channel_filters = &mut self.filters[channel];
+            for sample in (*channel_samples).iter_mut() {
+                *sample = biquad::utils::process_sequential(channel_filters, *sample);
             }
         }
 
