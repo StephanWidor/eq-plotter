@@ -30,7 +30,7 @@ impl Processor {
     };
 
     fn init_channel_filters() -> ChannelFilters {
-        array_init::array_init(|_| biquad::filter::Filter::new(&Self::INIT_FILTER_COEFFICIENTS))
+        std::array::from_fn(|_| biquad::filter::Filter::new(&Self::INIT_FILTER_COEFFICIENTS))
     }
 
     pub fn initialize(&mut self, params: sync::Arc<params::PluginParams>) -> bool {

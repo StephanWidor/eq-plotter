@@ -39,12 +39,7 @@ impl EqPlotter {
         let ui_eq = self.ui.global::<Eq>();
 
         let eq_type_strings: [slint::SharedString; eq::EqType::VARIANT_COUNT] =
-            array_init::from_iter(
-                eq::EqType::ALL
-                    .iter()
-                    .map(|eq_type: &eq::EqType| eq_type.to_string().into()),
-            )
-            .unwrap();
+            std::array::from_fn(|i| eq::EqType::ALL[i].to_string().into());
         ui_eq.set_eq_types(slint::VecModel::from_slice(&eq_type_strings));
         ui_eq.set_eq_type(read_eq.eq_type.to_string().into());
 

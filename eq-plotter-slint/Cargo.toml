@@ -11,7 +11,6 @@ num = { workspace = true }
 num-traits = { workspace = true }
 
 app-lib = { workspace = true }
-array-init = { workspace = true }
 audio-lib = { workspace = true }
 
 plotters = "0.3"

@@ -176,7 +176,7 @@ impl PluginParams {
     pub const NUM_BANDS: usize = 8;
 
     pub fn eqs<F: utils::Float>(&self) -> [eq::Eq<F>; Self::NUM_BANDS] {
-        array_init::array_init(|index| self.eq_params[index].to_eq())
+        std::array::from_fn(|index| self.eq_params[index].to_eq())
     }
 
     pub fn show_options(&self) -> options::ShowOptions {
@@ -204,7 +204,7 @@ impl Default for PluginParams {
     fn default() -> Self {
         Self {
             editor_state: nih_plug_egui::EguiState::from_size(1000, 700),
-            eq_params: array_init::array_init(|index| {
+            eq_params: std::array::from_fn(|index| {
                 EqParams::new(format!(" [{}]", index + 1).as_str(), index != 0)
             }),
             sample_rate: nih::AtomicF32::new(1_f32),
