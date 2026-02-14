@@ -1,5 +1,4 @@
-use crate::biquad::coefficients::Coefficients;
-use crate::biquad::filter::Filter;
+use crate::biquad::{coefficients::Coefficients, filter::*};
 use crate::utils;
 use num::Complex;
 
