@@ -5,6 +5,7 @@ pub trait Float:
     + num_traits::ConstZero
     + num_traits::ConstOne
     + num_traits::FloatConst
+    + num::FromPrimitive
     + std::ops::AddAssign
 {
     const TWO: Self;
