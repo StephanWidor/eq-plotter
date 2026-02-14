@@ -73,12 +73,12 @@ impl Processor {
         params: sync::Arc<params::PluginParams>,
         buffer: &mut nih::Buffer,
     ) -> nih::ProcessStatus {
+        self.update_filters(
+            &params.eqs(),
+            params.sample_rate.load(sync::atomic::Ordering::Relaxed),
+            false,
+        );
         for left_and_right in buffer.iter_samples() {
-            self.update_filters(
-                &params.eqs(),
-                params.sample_rate.load(sync::atomic::Ordering::Relaxed),
-                false,
-            );
             for (filters, sample) in self.filters.iter_mut().zip(left_and_right) {
                 *sample = biquad::utils::process_sequential(filters, *sample);
             }
