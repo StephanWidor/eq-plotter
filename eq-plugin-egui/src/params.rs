@@ -174,6 +174,7 @@ pub struct PluginParams {
 
 impl PluginParams {
     pub const NUM_BANDS: usize = 8;
+    pub const MAX_NUM_CHANNELS: usize = 2;
 
     pub fn eqs<F: utils::Float>(&self) -> [eq::Eq<F>; Self::NUM_BANDS] {
         std::array::from_fn(|index| self.eq_params[index].to_eq())

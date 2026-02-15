@@ -1,25 +1,24 @@
-use crate::*;
 use audio_lib::*;
-use nih_plug::prelude as nih;
-use std::sync;
 
-type ChannelFilters = [biquad::filter::Filter<f32>; params::PluginParams::NUM_BANDS];
+type PerChannelFilters<const NUM_BANDS: usize> = [biquad::filter::Filter<f32>; NUM_BANDS];
 
-pub struct Processor {
-    eqs: [eq::Eq<f32>; params::PluginParams::NUM_BANDS],
-    filters: [ChannelFilters; 2],
+pub struct Processor<const NUM_CHANNELS: usize, const NUM_BANDS: usize> {
+    eqs: [eq::Eq<f32>; NUM_BANDS],
+    filters: [PerChannelFilters<NUM_BANDS>; NUM_CHANNELS],
 }
 
-impl Default for Processor {
+impl<const NUM_CHANNELS: usize, const NUM_BANDS: usize> Default
+    for Processor<NUM_CHANNELS, NUM_BANDS>
+{
     fn default() -> Self {
         Self {
-            eqs: [Self::INIT_EQ; params::PluginParams::NUM_BANDS],
-            filters: [Self::init_channel_filters(), Self::init_channel_filters()],
+            eqs: [Self::INIT_EQ; NUM_BANDS],
+            filters: std::array::from_fn(|_| Self::init_channel_filters()),
         }
     }
 }
 
-impl Processor {
+impl<const NUM_CHANNELS: usize, const NUM_BANDS: usize> Processor<NUM_CHANNELS, NUM_BANDS> {
     const INIT_FILTER_COEFFICIENTS: biquad::coefficients::Coefficients<f32> =
         biquad::coefficients::Coefficients::muted();
     const INIT_EQ: eq::Eq<f32> = eq::Eq {
@@ -29,16 +28,12 @@ impl Processor {
         eq_type: eq::EqType::Volume,
     };
 
-    fn init_channel_filters() -> ChannelFilters {
+    fn init_channel_filters() -> PerChannelFilters<NUM_BANDS> {
         std::array::from_fn(|_| biquad::filter::Filter::new(&Self::INIT_FILTER_COEFFICIENTS))
     }
 
-    pub fn initialize(&mut self, params: sync::Arc<params::PluginParams>) -> bool {
-        self.update_filters(
-            &params.eqs(),
-            params.sample_rate.load(sync::atomic::Ordering::Relaxed),
-            true,
-        )
+    pub fn initialize(&mut self, eqs: &[eq::Eq<f32>], sample_rate: f32) -> bool {
+        self.update_filters(eqs, sample_rate, true)
     }
 
     fn update_filters(
@@ -47,9 +42,9 @@ impl Processor {
         sample_rate: f32,
         reset_state: bool,
     ) -> bool {
-        assert!(new_eqs.len() >= params::PluginParams::NUM_BANDS);
+        assert!(new_eqs.len() >= NUM_BANDS);
         let mut success = true;
-        for i in 0..params::PluginParams::NUM_BANDS {
+        for i in 0..NUM_BANDS {
             let eq = &mut self.eqs[i];
             let new_eq = &new_eqs[i];
             if *new_eq != *eq {
@@ -68,26 +63,16 @@ impl Processor {
         success
     }
 
-    pub fn process(
-        &mut self,
-        params: sync::Arc<params::PluginParams>,
-        buffer: &mut nih::Buffer,
-    ) -> nih::ProcessStatus {
-        self.update_filters(
-            &params.eqs(),
-            params.sample_rate.load(sync::atomic::Ordering::Relaxed),
-            false,
-        );
+    pub fn process(&mut self, eqs: &[eq::Eq<f32>], sample_rate: f32, buffer: &mut [&'_ mut [f32]]) {
+        self.update_filters(eqs, sample_rate, false);
 
-        assert!(buffer.channels() == 2);
-        for channel in 0..buffer.channels() {
-            let channel_samples = buffer.as_slice().get_mut(channel).unwrap();
+        assert!(buffer.len() <= NUM_CHANNELS);
+        for channel in 0..buffer.len() {
+            let channel_samples = buffer.get_mut(channel).unwrap();
             let channel_filters = &mut self.filters[channel];
             for sample in (*channel_samples).iter_mut() {
                 *sample = biquad::utils::process_sequential(channel_filters, *sample);
             }
         }
-
-        nih::ProcessStatus::Normal
     }
 }

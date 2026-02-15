@@ -1,12 +1,15 @@
 use crate::*;
+use nih::Plugin as NihPlugin;
 use nih_plug::prelude as nih;
 use std::sync;
-
-use nih::Plugin as NihPlugin;
+use std::sync::atomic::Ordering;
 
 pub struct Plugin {
     params: sync::Arc<params::PluginParams>,
-    processor: processor::Processor,
+    processor: processor::Processor<
+        { params::PluginParams::MAX_NUM_CHANNELS },
+        { params::PluginParams::NUM_BANDS },
+    >,
 }
 
 impl Default for Plugin {
@@ -18,6 +21,21 @@ impl Default for Plugin {
     }
 }
 
+const AUDIO_LAYOUTS: [nih::AudioIOLayout; params::PluginParams::MAX_NUM_CHANNELS] = {
+    const MAX_NUM_CHANNELS: usize = params::PluginParams::MAX_NUM_CHANNELS;
+    // seems like std::array::from_fn doesn't work as const :-(
+    let mut layouts: [nih::AudioIOLayout; MAX_NUM_CHANNELS] =
+        [nih::AudioIOLayout::const_default(); MAX_NUM_CHANNELS];
+    let mut i = 0;
+    while i < MAX_NUM_CHANNELS {
+        let num_channels = (MAX_NUM_CHANNELS - i) as u32;
+        layouts[i].main_input_channels = nih::NonZeroU32::new(num_channels);
+        layouts[i].main_output_channels = nih::NonZeroU32::new(num_channels);
+        i += 1;
+    }
+    layouts
+};
+
 impl nih::Plugin for Plugin {
     const NAME: &'static str = "EqPlugin";
     const VENDOR: &'static str = "Stephan Widor";
@@ -25,20 +43,7 @@ impl nih::Plugin for Plugin {
     const EMAIL: &'static str = "stephan@widor.online";
     const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
-    const AUDIO_IO_LAYOUTS: &'static [nih::AudioIOLayout] = &[
-        nih::AudioIOLayout {
-            main_input_channels: nih::NonZeroU32::new(2),
-            main_output_channels: nih::NonZeroU32::new(2),
-            aux_input_ports: &[],
-            aux_output_ports: &[],
-            names: nih::PortNames::const_default(),
-        },
-        nih::AudioIOLayout {
-            main_input_channels: nih::NonZeroU32::new(1),
-            main_output_channels: nih::NonZeroU32::new(1),
-            ..nih::AudioIOLayout::const_default()
-        },
-    ];
+    const AUDIO_IO_LAYOUTS: &'static [nih::AudioIOLayout] = &AUDIO_LAYOUTS;
 
     const SAMPLE_ACCURATE_AUTOMATION: bool = true;
 
@@ -60,7 +65,10 @@ impl nih::Plugin for Plugin {
             std::sync::atomic::Ordering::Relaxed,
         );
 
-        self.processor.initialize(self.params.clone())
+        self.processor.initialize(
+            &self.params.eqs(),
+            self.params.sample_rate.load(Ordering::Relaxed),
+        )
     }
 
     fn editor(
@@ -76,7 +84,12 @@ impl nih::Plugin for Plugin {
         _aux: &mut nih::AuxiliaryBuffers,
         _context: &mut impl nih::ProcessContext<Self>,
     ) -> nih::ProcessStatus {
-        self.processor.process(self.params.clone(), buffer)
+        self.processor.process(
+            &self.params.eqs(),
+            self.params.sample_rate.load(Ordering::Relaxed),
+            buffer.as_slice(),
+        );
+        nih::ProcessStatus::Normal
     }
 }
 
