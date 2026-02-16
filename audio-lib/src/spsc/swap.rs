@@ -4,14 +4,25 @@ use std::sync::Arc;
 use std::sync::atomic::Ordering;
 
 /// Create a swap instance, and return a Producer and Consumer pair, that share the swap for data exchange.
-pub fn make_swap<T: Send + Clone>(init: &T) -> (Producer<T>, Consumer<T>) {
+/// \param init_value The initial value for the swap data. This will be cloned for each page.
+///        Note that cloning a Vec::from_capacity() will not clone the capacity, so if you want to have a specific capacity for the swap data,
+///        you should use make_swap_with_init_function instead.
+pub fn make_swap_with_init_value<T: Send + Clone>(init_value: &T) -> (Producer<T>, Consumer<T>) {
+    make_swap_with_init_function(&|| init_value.clone())
+}
+
+/// Create a swap instance, and return a Producer and Consumer pair, that share the swap for data exchange.
+/// \param init_function A function that will be called to create the initial data for each page.
+pub fn make_swap_with_init_function<T: Send + Clone>(
+    init_function: &impl Fn() -> T,
+) -> (Producer<T>, Consumer<T>) {
     let shared = Arc::new(Shared {
         states: [
             AtomicDataState::new(DataState::Writing),
             AtomicDataState::new(DataState::Reading),
             AtomicDataState::new(DataState::Free),
         ],
-        data: std::array::from_fn(|_| UnsafeCell::new(init.clone())),
+        data: std::array::from_fn(|_| UnsafeCell::new(init_function())),
     });
 
     let producer = Producer {
@@ -43,12 +54,12 @@ impl<T: Clone + Send> Producer<T> {
 
     /// Manipulate the current producer value.
     /// After this, you still need to call push() to get it over to the consumer side.
-    pub fn manipulate(&self, callback: &mut impl FnMut(&mut T)) {
+    pub fn manipulate(&self, callback: &impl Fn(&mut T)) {
         callback(self.acquire_writing_data());
     }
 
     /// Manipulate the current producer value, and push it to the consumer side
-    pub fn manipulate_and_push(&self, callback: &mut impl FnMut(&mut T)) {
+    pub fn manipulate_and_push(&self, callback: &impl Fn(&mut T)) {
         self.manipulate(callback);
         self.push();
     }
@@ -185,11 +196,13 @@ pub struct Producer<T: Send> {
     writing_page: Cell<usize>,
     written_page: Cell<usize>,
 }
+unsafe impl<T: Send> Sync for Producer<T> {}
 
 pub struct Consumer<T: Send> {
     shared: Arc<Shared<T>>,
     reading_page: Cell<usize>,
 }
+unsafe impl<T: Send> Sync for Consumer<T> {}
 
 #[cfg(test)]
 mod tests {
@@ -203,7 +216,7 @@ mod tests {
         run_time: std::time::Duration,
     ) {
         const ARRAY_SIZE: usize = 50;
-        let (producer, consumer) = make_swap(&[0; ARRAY_SIZE]);
+        let (producer, consumer) = make_swap_with_init_value(&[0; ARRAY_SIZE]);
         let keep_running = Arc::new(AtomicBool::new(true));
 
         let keep_running_for_feeding = keep_running.clone();
