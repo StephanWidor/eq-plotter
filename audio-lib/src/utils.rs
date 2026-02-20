@@ -38,6 +38,10 @@ impl Float for f64 {
     const ONE_TWENTIETH: Self = 0.05;
 }
 
+pub fn is_power_of_two(i: usize) -> bool {
+    i != 0 && (i & (i - 1)) == 0
+}
+
 #[allow(type_alias_bounds)]
 pub type PolynomRoots<F: Float> = smallvec::SmallVec<[num::Complex<F>; 2]>;
 
