@@ -23,9 +23,34 @@ impl<F: utils::Float> Coefficients<F> {
     }
 }
 
+pub struct State<F: utils::Float> {
+    value: F,
+}
+
+impl<F: utils::Float> State<F> {
+    pub const fn new() -> Self {
+        Self { value: F::ZERO }
+    }
+
+    pub fn process(&mut self, sample: F, coefficients: &Coefficients<F>) -> F {
+        let coefficient = if sample > self.value {
+            coefficients.attack
+        } else {
+            coefficients.release
+        };
+
+        self.value += coefficient * (sample - self.value);
+        self.value
+    }
+
+    pub fn reset(&mut self, value: F) {
+        self.value = value;
+    }
+}
+
 pub struct EnvelopeFollower<F: utils::Float> {
     coefficients: Coefficients<F>,
-    out_state: F,
+    state: State<F>,
 }
 
 impl<F: utils::Float> EnvelopeFollower<F> {
@@ -36,23 +61,16 @@ impl<F: utils::Float> EnvelopeFollower<F> {
     pub fn from_coefficients(coefficients: &Coefficients<F>) -> Self {
         Self {
             coefficients: *coefficients,
-            out_state: F::zero(),
+            state: State::new(),
         }
     }
 
     pub fn process(&mut self, sample: F) -> F {
-        let coefficient = if sample > self.out_state {
-            self.coefficients.attack
-        } else {
-            self.coefficients.release
-        };
-
-        self.out_state += coefficient * (sample - self.out_state);
-        self.out_state
+        self.state.process(sample, &self.coefficients)
     }
 
     pub fn reset(&mut self, value: F) {
-        self.out_state = value;
+        self.state.reset(value);
     }
 }
 
@@ -79,16 +97,16 @@ mod tests {
     fn reaches_time_constant() {
         let sample_rate = 48000.0;
         let attack_time = 0.05;
-        let mut env = EnvelopeFollower::new(attack_time, 0.1, sample_rate);
+        let mut envelope = EnvelopeFollower::new(attack_time, 0.1, sample_rate);
 
         let num_samples = (attack_time * sample_rate) as usize;
         for _ in 0..num_samples {
-            env.process(1.0);
+            envelope.process(1.0);
         }
 
         let expected = 1.0 - (-1.0_f64).exp();
 
-        assert_approx_eq!(env.out_state, expected, 1e-3);
+        assert_approx_eq!(envelope.state.value, expected, 1e-3);
     }
 
     #[test]
