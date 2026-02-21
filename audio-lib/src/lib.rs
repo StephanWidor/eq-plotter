@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 pub mod biquad;
 pub mod envelope_follower;
 pub mod eq;
