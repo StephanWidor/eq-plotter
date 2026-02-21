@@ -1,7 +1,8 @@
 use atomic_enum::*;
-use std::cell::{Cell, UnsafeCell};
-use std::sync::Arc;
-use std::sync::atomic::Ordering;
+use std::{
+    cell::{Cell, UnsafeCell},
+    sync::{Arc, atomic::Ordering},
+};
 
 /// Create a swap instance, and return a Producer and Consumer pair, that share the swap for data exchange.
 /// \param init_value The initial value for the swap data. This will be cloned for each page.
@@ -25,18 +26,34 @@ pub fn make_swap_with_init_function<T: Send + Clone>(
         data: std::array::from_fn(|_| UnsafeCell::new(init_function())),
     });
 
-    let producer = Producer {
-        shared: shared.clone(),
-        writing_page: Cell::new(0),
-        written_page: Cell::new(1),
-    };
+    (
+        Producer {
+            shared: shared.clone(),
+            writing_page: Cell::new(0),
+            written_page: Cell::new(1),
+        },
+        Consumer {
+            shared: shared.clone(),
+            reading_page: Cell::new(1),
+        },
+    )
+}
 
-    let consumer = Consumer {
-        shared: shared.clone(),
-        reading_page: Cell::new(1),
-    };
+pub struct Swap<T: Send + Clone> {
+    pub producer: Producer<T>,
+    pub consumer: Consumer<T>,
+}
 
-    (producer, consumer)
+impl<T: Send + Clone> Swap<T> {
+    pub fn from_init_function(init_function: &impl Fn() -> T) -> Self {
+        let (producer, consumer) = make_swap_with_init_function(init_function);
+        Self { producer, consumer }
+    }
+
+    pub fn from_init_value(init_value: &T) -> Self {
+        let (producer, consumer) = make_swap_with_init_value(init_value);
+        Self { producer, consumer }
+    }
 }
 
 impl<T: Clone + Send> Producer<T> {
@@ -131,7 +148,8 @@ impl<T: Clone + Send> Producer<T> {
 
 impl<T: Clone + Send> Consumer<T> {
     /// Pull new data that has been sent/pushed from producer side.
-    pub fn pull(&self) {
+    /// \return `true` if there is new data, otherwise false.
+    pub fn pull(&self) -> bool {
         let old_reading_page = self.reading_page.get();
         for i in 0..3 {
             if self.shared.states[i]
@@ -145,9 +163,10 @@ impl<T: Clone + Send> Consumer<T> {
             {
                 self.shared.states[old_reading_page].store(DataState::Free, Ordering::Release);
                 self.reading_page.set(i);
-                break;
+                return true;
             }
         }
+        return false;
     }
 
     /// Read (copy of) the current consumer value.
