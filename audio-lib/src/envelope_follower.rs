@@ -43,6 +43,10 @@ impl<F: utils::Float> State<F> {
         self.value
     }
 
+    pub fn value(&self) -> F {
+        self.value
+    }
+
     pub fn reset(&mut self, value: F) {
         self.value = value;
     }
@@ -67,6 +71,14 @@ impl<F: utils::Float> EnvelopeFollower<F> {
 
     pub fn process(&mut self, sample: F) -> F {
         self.state.process(sample, &self.coefficients)
+    }
+
+    pub fn value(&self) -> F {
+        self.state.value()
+    }
+
+    pub fn set_coefficients(&mut self, coefficients: &Coefficients<F>) {
+        self.coefficients = *coefficients;
     }
 
     pub fn reset(&mut self, value: F) {
@@ -106,7 +118,7 @@ mod tests {
 
         let expected = 1.0 - (-1.0_f64).exp();
 
-        assert_approx_eq!(envelope.state.value, expected, 1e-3);
+        assert_approx_eq!(envelope.value(), expected, 1e-3);
     }
 
     #[test]
