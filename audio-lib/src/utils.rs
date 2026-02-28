@@ -6,7 +6,9 @@ pub trait Float:
     + num_traits::ConstOne
     + num_traits::FloatConst
     + num::FromPrimitive
+    + num::ToPrimitive
     + std::ops::AddAssign
+    + std::ops::MulAssign
 {
     const TWO: Self;
     const FOUR: Self;
