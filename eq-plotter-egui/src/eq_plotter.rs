@@ -1,11 +1,13 @@
 use crate::*;
 use app_lib as app;
 use audio_lib::eq;
+pub use plotter::SpectrumData;
 
-pub fn draw(
+pub fn draw<const NUM_SPECTRUM_BINS: usize, const NUM_SPECTRUM_CHANNELS: usize>(
     ui: &mut egui::Ui,
     eqs: &mut [eq::Eq<f64>],
     selected_eq_index: &mut usize,
+    spectrum_data: &Option<SpectrumData<NUM_SPECTRUM_BINS, NUM_SPECTRUM_CHANNELS>>,
     show_options: &mut options::ShowOptions,
     sample_rate: f64,
 ) {
@@ -28,11 +30,17 @@ pub fn draw(
             return;
         }
         let available_size = egui::Vec2::new(0.96_f32 * (ui_size.x - control_width), ui_size.y);
-        plotter::add_plots(
+        let plot_spectrum_data = if show_options.signal_gain_spectrum {
+            spectrum_data
+        } else {
+            &None
+        };
+        plotter::add_plots::<NUM_SPECTRUM_BINS, NUM_SPECTRUM_CHANNELS>(
             ui,
             &available_size,
             eqs,
             selected_eq_index,
+            plot_spectrum_data,
             show_options,
             sample_rate,
         );
@@ -55,10 +63,11 @@ impl eframe::App for EqPlotter {
                     .fill(constants::BACKGROUND_COLOR),
             )
             .show(ctx, |ui| {
-                draw(
+                draw::<1, 1>(
                     ui,
                     &mut self.eqs,
                     &mut self.selected_eq_index,
+                    &None,
                     &mut self.show_options,
                     self.sample_rate,
                 );

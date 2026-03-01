@@ -41,7 +41,7 @@ impl<const NUM_CHANNELS: usize, const NUM_BANDS: usize> Processor<NUM_CHANNELS, 
         self.update_coefficients(eqs, sample_rate)
     }
 
-    pub fn process(&mut self, eqs: &[eq::Eq<f32>], sample_rate: f32, buffer: &mut [&'_ mut [f32]]) {
+    pub fn process(&mut self, eqs: &[eq::Eq<f32>], sample_rate: f32, buffer: &mut [&mut [f32]]) {
         self.update_coefficients(eqs, sample_rate);
 
         assert!(buffer.len() <= NUM_CHANNELS);

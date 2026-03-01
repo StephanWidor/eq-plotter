@@ -21,6 +21,12 @@ pub const EQ_COLORS: [egui::Color32; 8] = [
 ];
 
 pub const MULTI_BAND_COLOR: egui::Color32 = egui::Color32::LIGHT_GRAY;
+pub const SPECTRUM_COLOR: egui::Color32 = egui::Color32::from_rgba_premultiplied(
+    app::UI_BACKGROUND_COLOR[0] / 2,
+    app::UI_BACKGROUND_COLOR[1] / 2,
+    app::UI_BACKGROUND_COLOR[2] / 2,
+    50,
+);
 
 pub const INIT_EQ: eq::Eq<f64> = eq::Eq {
     gain: eq::Gain::Db(3.0),

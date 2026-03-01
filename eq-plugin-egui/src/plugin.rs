@@ -1,4 +1,5 @@
 use crate::*;
+use audio_lib::*;
 use nih::Plugin as NihPlugin;
 use nih_plug::prelude as nih;
 use std::sync;
@@ -6,10 +7,8 @@ use std::sync::atomic::Ordering;
 
 pub struct Plugin {
     params: sync::Arc<params::PluginParams>,
-    processor: processor::Processor<
-        { params::PluginParams::MAX_NUM_CHANNELS },
-        { params::PluginParams::NUM_BANDS },
-    >,
+    processor: processor::Processor<{ params::MAX_NUM_CHANNELS }, { params::NUM_BANDS }>,
+    analyzer: fft::SignalAnalyzer<f32, { params::ANALYZER_NUM_BINS }, { params::MAX_NUM_CHANNELS }>,
 }
 
 impl Default for Plugin {
@@ -17,12 +16,13 @@ impl Default for Plugin {
         Self {
             params: sync::Arc::new(params::PluginParams::default()),
             processor: processor::Processor::default(),
+            analyzer: fft::SignalAnalyzer::new(&params::DEFAULT_ANALYZER_COEFFICIENTS),
         }
     }
 }
 
-const AUDIO_LAYOUTS: [nih::AudioIOLayout; params::PluginParams::MAX_NUM_CHANNELS] = {
-    const MAX_NUM_CHANNELS: usize = params::PluginParams::MAX_NUM_CHANNELS;
+const AUDIO_LAYOUTS: [nih::AudioIOLayout; params::MAX_NUM_CHANNELS] = {
+    const MAX_NUM_CHANNELS: usize = params::MAX_NUM_CHANNELS;
     // seems like std::array::from_fn doesn't work as const :-(
     let mut layouts: [nih::AudioIOLayout; MAX_NUM_CHANNELS] =
         [nih::AudioIOLayout::const_default(); MAX_NUM_CHANNELS];
@@ -60,15 +60,24 @@ impl nih::Plugin for Plugin {
         _buffer_config: &nih::BufferConfig,
         _context: &mut impl nih::InitContext<Self>,
     ) -> bool {
-        self.params.sample_rate.store(
-            _buffer_config.sample_rate as f32,
-            std::sync::atomic::Ordering::Relaxed,
-        );
+        let sample_rate = _buffer_config.sample_rate as f32;
+        self.params
+            .sample_rate
+            .store(sample_rate, std::sync::atomic::Ordering::Relaxed);
 
-        self.processor.initialize(
-            &self.params.eqs(),
-            self.params.sample_rate.load(Ordering::Relaxed),
-        )
+        if sample_rate
+            != self
+                .params
+                .analyzer_data
+                .frequency_bins
+                .read()
+                .unwrap()
+                .sample_rate()
+        {
+            self.params.analyzer_data.reset(sample_rate);
+        }
+
+        self.processor.initialize(&self.params.eqs(), sample_rate)
     }
 
     fn editor(
@@ -89,6 +98,18 @@ impl nih::Plugin for Plugin {
             self.params.sample_rate.load(Ordering::Relaxed),
             buffer.as_slice(),
         );
+        if self
+            .params
+            .show_signal_gain_spectrum
+            .load(Ordering::Relaxed)
+        {
+            let analyzer_data = &self.params.analyzer_data;
+            self.analyzer.push(
+                buffer.as_slice_immutable(),
+                &analyzer_data.frequency_bins.read().unwrap(),
+                &analyzer_data.linear_gains.producer,
+            );
+        }
         nih::ProcessStatus::Normal
     }
 }

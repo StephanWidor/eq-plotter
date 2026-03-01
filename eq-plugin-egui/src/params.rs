@@ -154,35 +154,49 @@ impl EqParams {
     }
 }
 
+pub const NUM_BANDS: usize = 8;
+pub const MAX_NUM_CHANNELS: usize = 2;
+pub const ANALYZER_NUM_BINS: usize = 12;
+pub const DEFAULT_ANALYZER_COEFFICIENTS: fft::signal_analyzer::Coefficients<f32> =
+    fft::signal_analyzer::Coefficients {
+        sample_rate: 48000.0,
+        attack_time: 0.01,
+        release_time: 0.1,
+        window_type: windows::WindowType::VonHann,
+    };
+
 #[derive(nih::Params)]
 pub struct PluginParams {
     #[persist = "editor_state"]
     pub editor_state: sync::Arc<nih_plug_egui::EguiState>,
 
     #[nested(array, group = "eq_params")]
-    pub eq_params: [EqParams; Self::NUM_BANDS],
+    pub eq_params: [EqParams; NUM_BANDS],
 
     pub sample_rate: nih::AtomicF32,
 
     pub show_gain: atomic::AtomicBool,
+    pub show_signal_gain_spectrum: atomic::AtomicBool,
     pub show_phase: atomic::AtomicBool,
     pub show_impulse_response: atomic::AtomicBool,
     pub show_poles_and_zeros: atomic::AtomicBool,
 
     pub selected_eq_index: atomic::AtomicUsize,
+
+    pub analyzer_data: fft::signal_analyzer::SharedData<ANALYZER_NUM_BINS, MAX_NUM_CHANNELS>,
 }
 
 impl PluginParams {
-    pub const NUM_BANDS: usize = 8;
-    pub const MAX_NUM_CHANNELS: usize = 2;
-
-    pub fn eqs<F: utils::Float>(&self) -> [eq::Eq<F>; Self::NUM_BANDS] {
+    pub fn eqs<F: utils::Float>(&self) -> [eq::Eq<F>; NUM_BANDS] {
         std::array::from_fn(|index| self.eq_params[index].to_eq())
     }
 
     pub fn show_options(&self) -> options::ShowOptions {
         options::ShowOptions {
             gain: self.show_gain.load(atomic::Ordering::Relaxed),
+            signal_gain_spectrum: self
+                .show_signal_gain_spectrum
+                .load(atomic::Ordering::Relaxed),
             phase: self.show_phase.load(atomic::Ordering::Relaxed),
             impulse_response: self.show_impulse_response.load(atomic::Ordering::Relaxed),
             poles_and_zeros: self.show_poles_and_zeros.load(atomic::Ordering::Relaxed),
@@ -192,12 +206,23 @@ impl PluginParams {
     pub fn set_show_options(&self, options: &options::ShowOptions) {
         self.show_gain
             .store(options.gain, atomic::Ordering::Relaxed);
+        self.show_signal_gain_spectrum
+            .store(options.signal_gain_spectrum, atomic::Ordering::Relaxed);
         self.show_phase
             .store(options.phase, atomic::Ordering::Relaxed);
         self.show_impulse_response
             .store(options.impulse_response, atomic::Ordering::Relaxed);
         self.show_poles_and_zeros
             .store(options.poles_and_zeros, atomic::Ordering::Relaxed);
+    }
+
+    pub fn analyzer_coefficients_with_sample_rate(
+        sample_rate: f32,
+    ) -> fft::signal_analyzer::Coefficients<f32> {
+        fft::signal_analyzer::Coefficients {
+            sample_rate,
+            ..DEFAULT_ANALYZER_COEFFICIENTS
+        }
     }
 }
 
@@ -210,10 +235,14 @@ impl Default for PluginParams {
             }),
             sample_rate: nih::AtomicF32::new(1_f32),
             show_gain: atomic::AtomicBool::new(true),
+            show_signal_gain_spectrum: atomic::AtomicBool::new(true),
             show_phase: atomic::AtomicBool::new(false),
             show_impulse_response: atomic::AtomicBool::new(false),
             show_poles_and_zeros: atomic::AtomicBool::new(false),
             selected_eq_index: atomic::AtomicUsize::new(usize::MAX),
+            analyzer_data: fft::signal_analyzer::SharedData::new(
+                DEFAULT_ANALYZER_COEFFICIENTS.sample_rate,
+            ),
         }
     }
 }

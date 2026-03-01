@@ -1,9 +1,9 @@
-use crate::params;
+use crate::*;
 use eq_plotter_egui::*;
 use nih_plug::prelude as nih;
 use std::sync::{self, atomic};
 
-pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn nih::Editor>> {
+pub fn create_editor<'a>(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn nih::Editor>> {
     let editor_state = params.editor_state.clone();
     nih_plug_egui::create_egui_editor(
         params.editor_state.clone(),
@@ -15,7 +15,7 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
             if !editor_state.is_open() {
                 return;
             }
-            nih_plug_egui::resizable_window::ResizableWindow::new("resource-window")
+            nih_plug_egui::resizable_window::ResizableWindow::new("plugin-window")
                 .min_size(egui::Vec2::new(128.0, 128.0))
                 .show(egui_ctx, editor_state.as_ref(), |_ui| {
                     // ResizableWindow already has a CentralPanel, so this is a bit weird. But I couldn't find out a better way
@@ -32,10 +32,21 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                             let mut show_options = params.show_options();
                             let mut selected_eq_index =
                                 params.selected_eq_index.load(atomic::Ordering::Relaxed);
+                            let spectrum_gains =
+                                params.analyzer_data.linear_gains.consumer.pull_and_read();
+                            let spectrum_data = Option::Some(eq_plotter::SpectrumData {
+                                frequency_bins: &params
+                                    .analyzer_data
+                                    .frequency_bins
+                                    .read()
+                                    .unwrap(),
+                                linear_gains: &spectrum_gains,
+                            });
                             eq_plotter::draw(
                                 ui,
                                 &mut new_eqs,
                                 &mut selected_eq_index,
+                                &spectrum_data,
                                 &mut show_options,
                                 params
                                     .sample_rate

@@ -16,7 +16,17 @@ pub fn add_eq_controls(
             .show(ui, |ui| {
                 ui.vertical(|ui| {
                     egui::CollapsingHeader::new("Show").show(ui, |ui| {
-                        ui.checkbox(&mut show_options.gain, "Gain");
+                        if show_options.gain {
+                            ui.horizontal(|ui| {
+                                ui.checkbox(&mut show_options.gain, "Gain");
+                                ui.checkbox(
+                                    &mut show_options.signal_gain_spectrum,
+                                    "Analyze Signal",
+                                );
+                            });
+                        } else {
+                            ui.checkbox(&mut show_options.gain, "Gain");
+                        }
                         ui.checkbox(&mut show_options.phase, "Phase");
                         ui.checkbox(&mut show_options.impulse_response, "Impulse Response");
                         ui.checkbox(&mut show_options.poles_and_zeros, "Poles And Zeros");
