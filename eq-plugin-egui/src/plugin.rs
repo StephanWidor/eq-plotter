@@ -7,8 +7,8 @@ use std::sync::atomic::Ordering;
 
 pub struct Plugin {
     params: sync::Arc<params::PluginParams>,
-    processor: processor::Processor<{ params::MAX_NUM_CHANNELS }, { params::NUM_BANDS }>,
-    analyzer: fft::SignalAnalyzer<f32, { params::ANALYZER_NUM_BINS }, { params::MAX_NUM_CHANNELS }>,
+    processor: processor::Processor<{ config::MAX_NUM_CHANNELS }, { config::NUM_BANDS }>,
+    analyzer: fft::SignalAnalyzer<f32, { config::ANALYZER_NUM_BINS }, { config::MAX_NUM_CHANNELS }>,
 }
 
 impl Default for Plugin {
@@ -16,13 +16,13 @@ impl Default for Plugin {
         Self {
             params: sync::Arc::new(params::PluginParams::default()),
             processor: processor::Processor::default(),
-            analyzer: fft::SignalAnalyzer::new(&params::DEFAULT_ANALYZER_COEFFICIENTS),
+            analyzer: fft::SignalAnalyzer::new(&config::DEFAULT_ANALYZER_COEFFICIENTS),
         }
     }
 }
 
-const AUDIO_LAYOUTS: [nih::AudioIOLayout; params::MAX_NUM_CHANNELS] = {
-    const MAX_NUM_CHANNELS: usize = params::MAX_NUM_CHANNELS;
+const AUDIO_LAYOUTS: [nih::AudioIOLayout; config::MAX_NUM_CHANNELS] = {
+    const MAX_NUM_CHANNELS: usize = config::MAX_NUM_CHANNELS;
     // seems like std::array::from_fn doesn't work as const :-(
     let mut layouts: [nih::AudioIOLayout; MAX_NUM_CHANNELS] =
         [nih::AudioIOLayout::const_default(); MAX_NUM_CHANNELS];

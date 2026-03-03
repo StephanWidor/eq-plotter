@@ -1,13 +1,14 @@
 use crate::*;
-use app_lib as app;
 use audio_lib::utils as audio_utils;
 
 pub fn add_plot(
     ui: &mut egui::Ui,
     frequency_responses: &[impl Fn(f64) -> num::Complex<f64>],
+    log_frequency_range: &std::ops::RangeInclusive<f64>,
     active_eqs: &[bool],
     multiband_frequency_response: &impl Fn(f64) -> num::Complex<f64>,
     plot_size: f32,
+    color_palette: &colors::ColorPalette,
 ) {
     egui_plot::Plot::new("Phase")
         .allow_zoom(false)
@@ -41,8 +42,8 @@ pub fn add_plot(
         .legend(egui_plot::Legend::default())
         .show(ui, |plot_ui| {
             plot_ui.set_plot_bounds(egui_plot::PlotBounds::from_min_max(
-                [app::MIN_LOG_FREQUENCY, -std::f64::consts::PI],
-                [app::MAX_LOG_FREQUENCY, std::f64::consts::PI],
+                [*log_frequency_range.start(), -std::f64::consts::PI],
+                [*log_frequency_range.end(), std::f64::consts::PI],
             ));
 
             let mut num_active = 0;
@@ -53,21 +54,24 @@ pub fn add_plot(
                     continue;
                 }
                 num_active += 1;
-                let phase_points =
-                    utils::make_log_frequency_points(audio_utils::make_phase_response(response));
+                let phase_points = utils::make_log_frequency_points(
+                    audio_utils::make_phase_response(response),
+                    log_frequency_range,
+                );
                 plot_ui.line(
                     egui_plot::Line::new("", phase_points)
-                        .color(constants::EQ_COLORS[index % constants::EQ_COLORS.len()]),
+                        .color(color_palette.eq_stroke[index % color_palette.eq_stroke.len()]),
                 );
             }
 
             if num_active > 1 {
                 let phase_points = utils::make_log_frequency_points(
                     audio_utils::make_phase_response(multiband_frequency_response),
+                    log_frequency_range,
                 );
                 plot_ui.line(
                     egui_plot::Line::new("multiband", phase_points)
-                        .color(constants::MULTI_BAND_COLOR),
+                        .color(color_palette.multiband_stroke),
                 );
             }
         });

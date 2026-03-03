@@ -6,6 +6,7 @@ pub fn add_plot(
     coefficients: &[biquad::coefficients::Coefficients<f64>],
     active_eqs: &[bool],
     plot_size: f32,
+    color_palette: &colors::ColorPalette,
 ) {
     egui_plot::Plot::new("Poles And Zeros")
         .allow_zoom(false)
@@ -52,7 +53,7 @@ pub fn add_plot(
                     .collect::<Vec<_>>();
                 plot_ui.points(
                     egui_plot::Points::new("Poles", poles)
-                        .color(constants::EQ_COLORS[index % constants::EQ_COLORS.len()])
+                        .color(color_palette.eq_stroke[index % color_palette.eq_stroke.len()])
                         .shape(egui_plot::MarkerShape::Cross)
                         .radius(6.0),
                 );
@@ -63,7 +64,7 @@ pub fn add_plot(
                     .collect::<Vec<_>>();
                 plot_ui.points(
                     egui_plot::Points::new("Zeros", zeros)
-                        .color(constants::EQ_COLORS[index % constants::EQ_COLORS.len()])
+                        .color(color_palette.eq_stroke[index % color_palette.eq_stroke.len()])
                         .shape(egui_plot::MarkerShape::Circle)
                         .filled(false)
                         .radius(5.0),

@@ -1,12 +1,12 @@
-use app_lib as app;
 use audio_lib::*;
 
 pub fn make_log_frequency_points<'a>(
     frequency_response: impl Fn(f64) -> f64 + 'a,
+    log_frequency_range: &std::ops::RangeInclusive<f64>,
 ) -> egui_plot::PlotPoints<'a> {
     egui_plot::PlotPoints::from_explicit_callback(
         move |log_frequency| frequency_response(utils::log_to_frequency(log_frequency)),
-        app::MIN_LOG_FREQUENCY..=app::MAX_LOG_FREQUENCY,
+        log_frequency_range.clone(),
         1000,
     )
 }

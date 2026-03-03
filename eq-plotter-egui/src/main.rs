@@ -23,7 +23,13 @@ fn main() -> eframe::Result {
             .start(
                 canvas,
                 web_options,
-                Box::new(|_cc| Ok(Box::new(<EqPlotter>::new(8)))),
+                Box::new(|_cc| {
+                    Ok(Box::new(<EqPlotter>::new(
+                        8,
+                        &app_lib::Config::<f64>::default(),
+                        &colors::ColorPalette::default(),
+                    )))
+                }),
             )
             .await
             .expect("failed to start WebRunner");
@@ -33,12 +39,10 @@ fn main() -> eframe::Result {
 
 #[cfg(not(target_arch = "wasm32"))]
 fn main() -> eframe::Result {
+    let init_window_size = egui::Vec2::new(1250.0, 1000.0);
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_inner_size([
-                constants::INIT_WINDOW_SIZE[0] as f32,
-                constants::INIT_WINDOW_SIZE[1] as f32,
-            ])
+            .with_inner_size(init_window_size)
             .with_clamp_size_to_monitor_size(false)
             .with_resizable(true),
         ..Default::default()
@@ -47,6 +51,12 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "EQ Plotter",
         options,
-        Box::new(|_cc| Ok(Box::new(eq_plotter::EqPlotter::new(8)))),
+        Box::new(|_cc| {
+            Ok(Box::new(eq_plotter::EqPlotter::new(
+                8,
+                &app_lib::Config::<f64>::default(),
+                &colors::ColorPalette::default(),
+            )))
+        }),
     )
 }

@@ -1,12 +1,15 @@
 use crate::*;
-use app_lib as app;
 use audio_lib::eq;
 
 pub fn add_eq_controls(
     ui: &mut egui::Ui,
     size: egui::Vec2,
     eqs: &mut [eq::Eq<f64>],
+    log_frequency_range: &std::ops::RangeInclusive<f64>,
+    db_range: &std::ops::RangeInclusive<f64>,
+    q_range: &std::ops::RangeInclusive<f64>,
     show_options: &mut options::ShowOptions,
+    eq_colors: &[egui::Color32],
 ) {
     let control_outer_margin = size.x / 25_f32;
     let control_width = size.x - 2_f32 * control_outer_margin;
@@ -36,8 +39,11 @@ pub fn add_eq_controls(
                             ui,
                             control_width,
                             control_outer_margin,
-                            constants::EQ_COLORS[index % constants::EQ_COLORS.len()],
+                            eq_colors[index % eq_colors.len()],
                             eq,
+                            log_frequency_range,
+                            db_range,
+                            q_range,
                         );
                     }
                 });
@@ -51,6 +57,9 @@ fn add_eq_control(
     outer_margin: f32,
     color: egui::Color32,
     eq: &mut eq::Eq<f64>,
+    log_frequency_range: &std::ops::RangeInclusive<f64>,
+    db_range: &std::ops::RangeInclusive<f64>,
+    q_range: &std::ops::RangeInclusive<f64>,
 ) {
     let mut gain_db = eq.gain.db();
     let mut log_frequency = eq.frequency.log_hz();
@@ -72,23 +81,20 @@ fn add_eq_control(
 
                 if eq.eq_type.has_frequency() {
                     ui.add(
-                        egui::Slider::new(
-                            &mut log_frequency,
-                            app::MIN_LOG_FREQUENCY..=app::MAX_LOG_FREQUENCY,
-                        )
-                        .custom_formatter(|log_frequency, _| {
-                            utils::log_frequency_to_string(log_frequency)
-                        })
-                        .custom_parser(utils::string_to_log_frequency)
-                        .prefix("frequency: ")
-                        .suffix("Hz"),
+                        egui::Slider::new(&mut log_frequency, log_frequency_range.clone())
+                            .custom_formatter(|log_frequency, _| {
+                                utils::log_frequency_to_string(log_frequency)
+                            })
+                            .custom_parser(utils::string_to_log_frequency)
+                            .prefix("frequency: ")
+                            .suffix("Hz"),
                     );
                     eq.frequency = eq::Frequency::LogHz(log_frequency);
                 }
 
                 if eq.eq_type.has_gain_db() {
                     ui.add(
-                        egui::Slider::new(&mut gain_db, app::MIN_GAIN_DB..=app::MAX_GAIN_DB)
+                        egui::Slider::new(&mut gain_db, db_range.clone())
                             .prefix("gain: ")
                             .suffix("dB"),
                     );
@@ -96,7 +102,7 @@ fn add_eq_control(
                 }
 
                 if eq.eq_type.has_q() {
-                    ui.add(egui::Slider::new(&mut eq.q, app::MIN_Q..=app::MAX_Q).prefix("Q: "));
+                    ui.add(egui::Slider::new(&mut eq.q, q_range.clone()).prefix("Q: "));
                 }
             });
         });

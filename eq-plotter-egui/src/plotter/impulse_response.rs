@@ -6,6 +6,7 @@ pub fn add_plot(
     active_eqs: &[bool],
     multiband_impulse_responses: &Vec<f64>,
     plot_size: f32,
+    color_palette: &colors::ColorPalette,
 ) {
     egui_plot::Plot::new("Impulse Response")
         .allow_zoom(false)
@@ -38,7 +39,7 @@ pub fn add_plot(
                 num_active += 1;
                 plot_ui.line(
                     egui_plot::Line::new("", egui_plot::PlotPoints::from_ys_f64(&response))
-                        .color(constants::EQ_COLORS[index % constants::EQ_COLORS.len()]),
+                        .color(color_palette.eq_stroke[index % color_palette.eq_stroke.len()]),
                 );
             }
             if num_active > 1 {
@@ -47,7 +48,7 @@ pub fn add_plot(
                         "multiband",
                         egui_plot::PlotPoints::from_ys_f64(&multiband_impulse_responses),
                     )
-                    .color(constants::MULTI_BAND_COLOR),
+                    .color(color_palette.multiband_stroke),
                 );
             }
         });

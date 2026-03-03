@@ -12,8 +12,11 @@ pub fn add_plots<const NUM_SPECTRUM_BINS: usize, const NUM_SPECTRUM_CHANNELS: us
     available_size: &egui::Vec2,
     eqs: &mut [eq::Eq<f64>],
     selected_eq_index: &mut usize,
+    log_frequency_range: &std::ops::RangeInclusive<f64>,
+    db_range: &std::ops::RangeInclusive<f64>,
     spectrum_data: &Option<SpectrumData<NUM_SPECTRUM_BINS, NUM_SPECTRUM_CHANNELS>>,
     show_options: &options::ShowOptions,
+    color_palette: &colors::ColorPalette,
     sample_rate: f64,
 ) {
     let plot_size = plot_size(show_options, available_size);
@@ -46,19 +49,24 @@ pub fn add_plots<const NUM_SPECTRUM_BINS: usize, const NUM_SPECTRUM_CHANNELS: us
                                 ui,
                                 eqs,
                                 selected_eq_index,
+                                log_frequency_range,
+                                db_range,
                                 spectrum_data,
                                 &frequency_responses,
                                 &multiband_frequency_response,
                                 plot_size,
+                                color_palette,
                             );
                         }
                         if show_options.phase {
                             phase::add_plot(
                                 ui,
                                 &frequency_responses,
+                                log_frequency_range,
                                 &active_eqs,
                                 &multiband_frequency_response,
                                 plot_size,
+                                color_palette,
                             );
                         }
                     });
@@ -73,10 +81,17 @@ pub fn add_plots<const NUM_SPECTRUM_BINS: usize, const NUM_SPECTRUM_CHANNELS: us
                                 &active_eqs,
                                 &multiband_impulse_response,
                                 plot_size,
+                                color_palette,
                             );
                         }
                         if show_options.poles_and_zeros {
-                            poles_and_zeros::add_plot(ui, &coefficients, &active_eqs, plot_size);
+                            poles_and_zeros::add_plot(
+                                ui,
+                                &coefficients,
+                                &active_eqs,
+                                plot_size,
+                                color_palette,
+                            );
                         }
                     });
                 });

@@ -1,5 +1,4 @@
 use crate::*;
-use app_lib as app;
 use audio_lib::eq;
 use audio_lib::fft;
 use audio_lib::utils as audio_utils;
@@ -14,10 +13,13 @@ pub fn add_plot<const NUM_SPECTRUM_BINS: usize, const NUM_SPECTRUM_CHANNELS: usi
     ui: &mut egui::Ui,
     eqs: &mut [eq::Eq<f64>],
     selected_eq_index: &mut usize,
+    log_frequency_range: &std::ops::RangeInclusive<f64>,
+    db_range: &std::ops::RangeInclusive<f64>,
     spectrum_data: &Option<SpectrumData<NUM_SPECTRUM_BINS, NUM_SPECTRUM_CHANNELS>>,
     frequency_responses: &[impl Fn(f64) -> num::Complex<f64>],
     multiband_frequency_response: &impl Fn(f64) -> num::Complex<f64>,
     plot_size: f32,
+    color_palette: &colors::ColorPalette,
 ) {
     assert!(eqs.len() == frequency_responses.len());
     let gain_plot_id = ui.make_persistent_id("gain_plot_id");
@@ -58,23 +60,20 @@ pub fn add_plot<const NUM_SPECTRUM_BINS: usize, const NUM_SPECTRUM_CHANNELS: usi
 
     let plot_response = plot.show(ui, |plot_ui| {
         plot_ui.set_plot_bounds(egui_plot::PlotBounds::from_min_max(
-            [app::MIN_LOG_FREQUENCY, app::MIN_GAIN_DB],
-            [app::MAX_LOG_FREQUENCY, app::MAX_GAIN_DB],
+            [*log_frequency_range.start(), *db_range.start()],
+            [*log_frequency_range.end(), *db_range.end()],
         ));
 
         if let Some(spectrum_data) = spectrum_data {
-            let spectrum_rectangles = make_spectrum_rectangles(
-                spectrum_data,
-                app::MIN_LOG_FREQUENCY..=app::MAX_LOG_FREQUENCY,
-                app::MIN_GAIN_DB..=app::MAX_GAIN_DB,
-            );
+            let spectrum_rectangles =
+                make_spectrum_rectangles(spectrum_data, log_frequency_range, db_range);
             for rectangle in spectrum_rectangles.iter() {
                 let plot_points = egui_plot::PlotPoints::new(rectangle.clone()); // TODO: use Borrowed
                 plot_ui.polygon(
                     egui_plot::Polygon::new("", plot_points)
                         .width(1_f32)
-                        .fill_color(constants::SPECTRUM_COLOR)
-                        .stroke(egui::Stroke::new(1_f32, constants::SPECTRUM_COLOR)),
+                        .fill_color(color_palette.spectrum_fill)
+                        .stroke(egui::Stroke::new(1_f32, color_palette.spectrum_fill)),
                 );
             }
         }
@@ -88,22 +87,25 @@ pub fn add_plot<const NUM_SPECTRUM_BINS: usize, const NUM_SPECTRUM_CHANNELS: usi
                 continue;
             }
             num_active += 1;
-            let gain_points =
-                utils::make_log_frequency_points(audio_utils::make_gain_db_response(response));
+            let gain_points = utils::make_log_frequency_points(
+                audio_utils::make_gain_db_response(response),
+                log_frequency_range,
+            );
             plot_ui.line(
                 egui_plot::Line::new("", gain_points)
                     .id(eq_id)
-                    .color(constants::EQ_COLORS[index % constants::EQ_COLORS.len()]),
+                    .color(color_palette.eq_stroke[index % color_palette.eq_stroke.len()]),
             );
         }
         if num_active > 1 {
-            let gain_points = utils::make_log_frequency_points(audio_utils::make_gain_db_response(
-                multiband_frequency_response,
-            ));
+            let gain_points = utils::make_log_frequency_points(
+                audio_utils::make_gain_db_response(multiband_frequency_response),
+                log_frequency_range,
+            );
             plot_ui.line(
                 egui_plot::Line::new("multiband", gain_points)
                     .fill_alpha(0.5)
-                    .color(constants::MULTI_BAND_COLOR),
+                    .color(color_palette.multiband_stroke),
             );
         }
         plot_ui.pointer_coordinate_drag_delta()
@@ -131,8 +133,8 @@ pub fn add_plot<const NUM_SPECTRUM_BINS: usize, const NUM_SPECTRUM_CHANNELS: usi
 
 fn make_spectrum_rectangles<const NUM_SPECTRUM_BINS: usize, const NUM_SPECTRUM_CHANNELS: usize>(
     spectrum_data: &SpectrumData<NUM_SPECTRUM_BINS, NUM_SPECTRUM_CHANNELS>,
-    log_frequency_range: std::ops::RangeInclusive<f64>,
-    db_range: std::ops::RangeInclusive<f64>,
+    log_frequency_range: &std::ops::RangeInclusive<f64>,
+    db_range: &std::ops::RangeInclusive<f64>,
 ) -> Vec<Vec<[f64; 2]>> {
     let bins = &spectrum_data.frequency_bins.bins();
     let mut rectangles: Vec<Vec<[f64; 2]>> =

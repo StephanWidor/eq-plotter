@@ -5,6 +5,12 @@ use std::sync::{self, atomic};
 
 pub fn create_editor<'a>(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn nih::Editor>> {
     let editor_state = params.editor_state.clone();
+    let app_config = &params.app_config;
+    let log_frequency_range = app_config.log_frequency_range().clone();
+    let db_range = app_config.db_range().clone();
+    let q_range = app_config.q_range().clone();
+    let min_size = egui::Vec2::new(700.0, 400.0);
+    let color_palette = params.color_palette.clone();
     nih_plug_egui::create_egui_editor(
         params.editor_state.clone(),
         (),
@@ -16,7 +22,7 @@ pub fn create_editor<'a>(params: sync::Arc<params::PluginParams>) -> Option<Box<
                 return;
             }
             nih_plug_egui::resizable_window::ResizableWindow::new("plugin-window")
-                .min_size(egui::Vec2::new(128.0, 128.0))
+                .min_size(min_size)
                 .show(egui_ctx, editor_state.as_ref(), |_ui| {
                     // ResizableWindow already has a CentralPanel, so this is a bit weird. But I couldn't find out a better way
                     // to set the global background color.
@@ -24,7 +30,7 @@ pub fn create_editor<'a>(params: sync::Arc<params::PluginParams>) -> Option<Box<
                         .frame(
                             egui::Frame::default()
                                 .inner_margin(20)
-                                .fill(constants::BACKGROUND_COLOR),
+                                .fill(color_palette.background),
                         )
                         .show(egui_ctx, |ui| {
                             let eqs = params.eqs();
@@ -46,8 +52,12 @@ pub fn create_editor<'a>(params: sync::Arc<params::PluginParams>) -> Option<Box<
                                 ui,
                                 &mut new_eqs,
                                 &mut selected_eq_index,
+                                &log_frequency_range,
+                                &db_range,
+                                &q_range,
                                 &spectrum_data,
                                 &mut show_options,
+                                &color_palette,
                                 params
                                     .sample_rate
                                     .load(std::sync::atomic::Ordering::Relaxed)

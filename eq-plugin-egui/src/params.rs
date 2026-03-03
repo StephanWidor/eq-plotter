@@ -1,7 +1,8 @@
-use app_lib::{self as app, DEFAULT_EQ};
+use crate::*;
 use audio_lib::*;
-use eq_plotter_egui::options;
+use eq_plotter_egui::{colors, options};
 use nih_plug::prelude as nih;
+use std::ops::RangeInclusive;
 use std::sync::{self, atomic};
 
 // hm, can we somehow get rid of this without destroying the nih::Enum and nih::Params derive?
@@ -66,29 +67,33 @@ pub struct EqParams {
 }
 
 impl EqParams {
-    const SMOOTHING_LENGTH_MS: f32 = 20.0;
-
-    fn new(names_suffix: &str, bypassed: bool) -> Self {
+    fn from_eq(
+        names_suffix: &str,
+        eq: &eq::Eq<f32>,
+        log_frequency_range: &RangeInclusive<f32>,
+        db_range: &RangeInclusive<f32>,
+        q_range: &RangeInclusive<f32>,
+    ) -> Self {
         Self {
             gain_db: nih::FloatParam::new(
                 format!("Gain (dB){names_suffix}"),
-                app::DEFAULT_EQ.gain.db() as f32,
+                eq.gain.db(),
                 nih::FloatRange::Linear {
-                    min: app::MIN_GAIN_DB as f32,
-                    max: app::MAX_GAIN_DB as f32,
+                    min: *db_range.start(),
+                    max: *db_range.end(),
                 },
             )
-            .with_smoother(nih::SmoothingStyle::Linear(Self::SMOOTHING_LENGTH_MS))
+            .with_smoother(nih::SmoothingStyle::Linear(config::SMOOTHING_LENGTH_MS))
             .with_unit(" dB"),
             log_frequency: nih::FloatParam::new(
                 format!("Frequency (Hz){names_suffix}"),
-                app::DEFAULT_EQ.frequency.log_hz() as f32,
+                eq.frequency.log_hz(),
                 nih::FloatRange::Linear {
-                    min: app::MIN_LOG_FREQUENCY as f32,
-                    max: app::MAX_LOG_FREQUENCY as f32,
+                    min: *log_frequency_range.start(),
+                    max: *log_frequency_range.end(),
                 },
             )
-            .with_smoother(nih::SmoothingStyle::Linear(Self::SMOOTHING_LENGTH_MS))
+            .with_smoother(nih::SmoothingStyle::Linear(config::SMOOTHING_LENGTH_MS))
             .with_unit(" Hz")
             .with_value_to_string(sync::Arc::new(
                 eq_plotter_egui::utils::log_frequency_to_string,
@@ -98,20 +103,16 @@ impl EqParams {
             )),
             q: nih::FloatParam::new(
                 format!("q{names_suffix}"),
-                app::DEFAULT_EQ.q as f32,
+                eq.q,
                 nih::FloatRange::Linear {
-                    min: app::MIN_Q as f32,
-                    max: app::MAX_Q as f32,
+                    min: *q_range.start(),
+                    max: *q_range.end(),
                 },
             )
-            .with_smoother(nih::SmoothingStyle::Linear(Self::SMOOTHING_LENGTH_MS)),
+            .with_smoother(nih::SmoothingStyle::Linear(config::SMOOTHING_LENGTH_MS)),
             eq_type: EqTypeParam::new(
                 format!("Eq Type{names_suffix}"),
-                EqTypeWrapper::from(if bypassed {
-                    eq::EqType::Bypassed
-                } else {
-                    DEFAULT_EQ.eq_type
-                }),
+                EqTypeWrapper::from(eq.eq_type),
             ),
         }
     }
@@ -154,24 +155,13 @@ impl EqParams {
     }
 }
 
-pub const NUM_BANDS: usize = 8;
-pub const MAX_NUM_CHANNELS: usize = 2;
-pub const ANALYZER_NUM_BINS: usize = 12;
-pub const DEFAULT_ANALYZER_COEFFICIENTS: fft::signal_analyzer::Coefficients<f32> =
-    fft::signal_analyzer::Coefficients {
-        sample_rate: 48000.0,
-        attack_time: 0.01,
-        release_time: 0.1,
-        window_type: windows::WindowType::VonHann,
-    };
-
 #[derive(nih::Params)]
 pub struct PluginParams {
     #[persist = "editor_state"]
     pub editor_state: sync::Arc<nih_plug_egui::EguiState>,
 
     #[nested(array, group = "eq_params")]
-    pub eq_params: [EqParams; NUM_BANDS],
+    pub eq_params: [EqParams; config::NUM_BANDS],
 
     pub sample_rate: nih::AtomicF32,
 
@@ -183,11 +173,17 @@ pub struct PluginParams {
 
     pub selected_eq_index: atomic::AtomicUsize,
 
-    pub analyzer_data: fft::signal_analyzer::SharedData<ANALYZER_NUM_BINS, MAX_NUM_CHANNELS>,
+    pub analyzer_data: fft::signal_analyzer::SharedData<
+        { config::ANALYZER_NUM_BINS },
+        { config::MAX_NUM_CHANNELS },
+    >,
+
+    pub app_config: app_lib::Config<f64>,
+    pub color_palette: colors::ColorPalette,
 }
 
 impl PluginParams {
-    pub fn eqs<F: utils::Float>(&self) -> [eq::Eq<F>; NUM_BANDS] {
+    pub fn eqs<F: utils::Float>(&self) -> [eq::Eq<F>; config::NUM_BANDS] {
         std::array::from_fn(|index| self.eq_params[index].to_eq())
     }
 
@@ -221,17 +217,30 @@ impl PluginParams {
     ) -> fft::signal_analyzer::Coefficients<f32> {
         fft::signal_analyzer::Coefficients {
             sample_rate,
-            ..DEFAULT_ANALYZER_COEFFICIENTS
+            ..config::DEFAULT_ANALYZER_COEFFICIENTS
         }
     }
 }
 
 impl Default for PluginParams {
     fn default() -> Self {
+        let app_config = app_lib::Config::<f32>::default();
+        let bypassed_init_eq: eq::Eq<f32> =
+            eq_plotter_egui::eq_plotter::EqPlotter::BYPASSED_INIT_EQ.into();
         Self {
             editor_state: nih_plug_egui::EguiState::from_size(1000, 700),
             eq_params: std::array::from_fn(|index| {
-                EqParams::new(format!(" [{}]", index + 1).as_str(), index != 0)
+                EqParams::from_eq(
+                    format!(" [{}]", index + 1).as_str(),
+                    if index == 0 {
+                        &app_config.init_eq()
+                    } else {
+                        &bypassed_init_eq
+                    },
+                    app_config.log_frequency_range(),
+                    app_config.db_range(),
+                    app_config.q_range(),
+                )
             }),
             sample_rate: nih::AtomicF32::new(1_f32),
             show_gain: atomic::AtomicBool::new(true),
@@ -241,8 +250,10 @@ impl Default for PluginParams {
             show_poles_and_zeros: atomic::AtomicBool::new(false),
             selected_eq_index: atomic::AtomicUsize::new(usize::MAX),
             analyzer_data: fft::signal_analyzer::SharedData::new(
-                DEFAULT_ANALYZER_COEFFICIENTS.sample_rate,
+                config::DEFAULT_ANALYZER_COEFFICIENTS.sample_rate,
             ),
+            app_config: app_lib::Config::default(),
+            color_palette: colors::ColorPalette::default(),
         }
     }
 }

@@ -1,14 +1,13 @@
 use crate::plotters::style;
-use app_lib as app;
-use audio_lib::biquad;
-use audio_lib::eq;
-use audio_lib::utils;
+use audio_lib::*;
 use num::complex::ComplexFloat;
 use plotters::prelude::*;
 
 pub fn render_eq_plots(
     eq: &eq::Eq<f32>,
     sample_rate: f32,
+    log_frequency_range: &std::ops::RangeInclusive<f32>,
+    db_range: &std::ops::RangeInclusive<f32>,
     width: u32,
     height: u32,
     background_color: slint::Color,
@@ -36,8 +35,19 @@ pub fn render_eq_plots(
     let coefficients = biquad::coefficients::Coefficients::from_eq(eq, sample_rate);
     let frequency_response = biquad::utils::make_frequency_response(&coefficients, sample_rate);
 
-    draw_gain_chart(&plot_areas[0], &chart_style, &frequency_response);
-    draw_phase_chart(&plot_areas[2], &chart_style, &frequency_response);
+    draw_gain_chart(
+        &plot_areas[0],
+        &chart_style,
+        log_frequency_range,
+        db_range,
+        &frequency_response,
+    );
+    draw_phase_chart(
+        &plot_areas[2],
+        &chart_style,
+        log_frequency_range,
+        &frequency_response,
+    );
     draw_ir_chart(&plot_areas[1], &chart_style, &coefficients);
     draw_poles_and_zeros_chart(&plot_areas[3], &chart_style, &coefficients);
 
@@ -61,12 +71,14 @@ pub fn render_eq_plots(
 fn draw_gain_chart<DB: DrawingBackend>(
     area: &DrawingArea<DB, plotters::coord::Shift>,
     style: &style::ChartStyleData,
+    log_frequency_range: &std::ops::RangeInclusive<f32>,
+    db_range: &std::ops::RangeInclusive<f32>,
     frequency_response: &impl Fn(f32) -> num::Complex<f32>,
 ) {
     let log_frequency_steps =
-        (app::MIN_LOG_FREQUENCY as f32..app::MAX_LOG_FREQUENCY as f32).step(0.01);
-    let gain_db_min = app::MIN_GAIN_DB as f32;
-    let gain_db_max = app::MAX_GAIN_DB as f32;
+        ((*log_frequency_range.start())..(*log_frequency_range.end())).step(0.01);
+    let gain_db_min = *db_range.start();
+    let gain_db_max = *db_range.end();
 
     let mut chart = ChartBuilder::on(area)
         .margin(style.margin_size)
@@ -121,10 +133,11 @@ fn draw_gain_chart<DB: DrawingBackend>(
 fn draw_phase_chart<DB: DrawingBackend>(
     area: &DrawingArea<DB, plotters::coord::Shift>,
     style: &style::ChartStyleData,
+    log_frequency_range: &std::ops::RangeInclusive<f32>,
     frequency_response: &impl Fn(f32) -> num::Complex<f32>,
 ) {
     let log_frequency_steps =
-        (app::MIN_LOG_FREQUENCY as f32..app::MAX_LOG_FREQUENCY as f32).step(0.01);
+        ((*log_frequency_range.start())..(*log_frequency_range.end())).step(0.01);
     let phase_min = -std::f32::consts::PI;
     let phase_max = std::f32::consts::PI;
 

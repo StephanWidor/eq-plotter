@@ -12,19 +12,22 @@ pub struct EqPlotter {
 }
 
 impl EqPlotter {
-    pub fn new() -> core::result::Result<Self, slint::PlatformError> {
+    pub fn new(app_config: &app::Config<f32>) -> core::result::Result<Self, slint::PlatformError> {
         let ui = EqPlotterUi::new()?;
         let background_color = ui.global::<Colors>().get_background_color();
 
         let eq_plotter = EqPlotter {
             ui: ui,
-            eq: sync::Arc::new(sync::RwLock::new(app::DEFAULT_EQ.into())),
+            eq: sync::Arc::new(sync::RwLock::new((*app_config.init_eq()).into())),
             background_color: background_color,
             sample_rate: 48000.0f32,
         };
 
-        eq_plotter.init_ui_properties();
-        eq_plotter.init_ui_callbacks();
+        eq_plotter.init_ui_properties(app_config);
+        eq_plotter.init_ui_callbacks(
+            app_config.log_frequency_range().clone(),
+            app_config.db_range().clone(),
+        );
 
         Ok(eq_plotter)
     }
@@ -34,7 +37,7 @@ impl EqPlotter {
         Ok(())
     }
 
-    fn init_ui_properties(&self) {
+    fn init_ui_properties(&self, app_config: &app::Config<f32>) {
         let read_eq = self.eq.read().unwrap();
         let ui_eq = self.ui.global::<Eq>();
 
@@ -43,19 +46,19 @@ impl EqPlotter {
         ui_eq.set_eq_types(slint::VecModel::from_slice(&eq_type_strings));
         ui_eq.set_eq_type(read_eq.eq_type.to_string().into());
 
-        ui_eq.set_min_gain_db(app::MIN_GAIN_DB as f32);
-        ui_eq.set_max_gain_db(app::MAX_GAIN_DB as f32);
+        ui_eq.set_min_gain_db(*app_config.db_range().start());
+        ui_eq.set_max_gain_db(*app_config.db_range().end());
         ui_eq.set_gain_db(read_eq.gain.db());
 
-        ui_eq.set_min_frequency(app::MIN_FREQUENCY as f32);
-        ui_eq.set_max_frequency(app::MAX_FREQUENCY as f32);
-        ui_eq.set_min_log_frequency(app::MIN_LOG_FREQUENCY as f32);
-        ui_eq.set_max_log_frequency(app::MAX_LOG_FREQUENCY as f32);
+        ui_eq.set_min_frequency(*app_config.frequency_range().start());
+        ui_eq.set_max_frequency(*app_config.frequency_range().end());
+        ui_eq.set_min_log_frequency(*app_config.log_frequency_range().start());
+        ui_eq.set_max_log_frequency(*app_config.log_frequency_range().end());
         ui_eq.set_frequency(read_eq.frequency.hz());
         ui_eq.set_log_frequency(read_eq.frequency.log_hz());
 
-        ui_eq.set_min_q(app::MIN_Q as f32);
-        ui_eq.set_max_q(app::MAX_Q as f32);
+        ui_eq.set_min_q(*app_config.q_range().start());
+        ui_eq.set_max_q(*app_config.q_range().end());
         ui_eq.set_q(read_eq.q);
 
         self.ui
@@ -65,7 +68,11 @@ impl EqPlotter {
         self.ui.set_q_control_visible(read_eq.eq_type.has_q());
     }
 
-    fn init_ui_callbacks(&self) {
+    fn init_ui_callbacks(
+        &self,
+        log_frequency_range: std::ops::RangeInclusive<f32>,
+        db_range: std::ops::RangeInclusive<f32>,
+    ) {
         let ui_callbacks = self.ui.global::<Callbacks>();
         ui_callbacks.on_request_set_eq_type({
             let ui_handle = self.ui.as_weak().unwrap();
@@ -127,6 +134,8 @@ impl EqPlotter {
                 crate::plotters::render::render_eq_plots(
                     &eq_handle.read().unwrap(),
                     sample_rate,
+                    &log_frequency_range,
+                    &db_range,
                     width as u32,
                     height as u32,
                     background_color,
