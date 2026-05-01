@@ -24,7 +24,7 @@ fn main() -> eframe::Result {
                 canvas,
                 web_options,
                 Box::new(|_cc| {
-                    Ok(Box::new(<EqPlotter>::new(
+                    Ok(Box::new(<eq_plotter::EqPlotter>::new(
                         8,
                         &app_lib::Config::<f64>::default(),
                         &colors::ColorPalette::default(),

@@ -10,12 +10,21 @@ members = [
 ]
 
 [workspace.dependencies]
-eframe = "0.31"
-egui = "0.31"
-egui_plot = "0.32"
-enum-table = "2.1"
+assert_approx_eq = "1.1"
+atomic_enum = "0.3.0"
+console_error_panic_hook = "0.1"
+eframe = "0.34"
+egui = "0.34"
+egui_plot = "0.35"
+enum-table = "3.0"
+more-asserts = "0.3"
 num = "0.4"
 num-traits = "0.2"
+rustfft = "6.4"
+smallvec = "1.15"
+wasm-bindgen-futures = { version = "0.4" }
+web-sys = { version = "0.3" }
+
 app-lib = { path = "app-lib" }
 audio-lib = { path = "audio-lib" }
 eq-plotter-egui = { path = "eq-plotter-egui" }

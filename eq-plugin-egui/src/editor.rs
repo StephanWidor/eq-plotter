@@ -14,16 +14,17 @@ pub fn create_editor<'a>(params: sync::Arc<params::PluginParams>) -> Option<Box<
     nih_plug_egui::create_egui_editor(
         params.editor_state.clone(),
         (),
-        |egui_ctx, _| {
+        nih_plug_egui::EguiSettings::default(),
+        |egui_ctx, _, _| {
             egui_ctx.set_theme(egui::Theme::Dark);
         },
-        move |egui_ctx, setter, _state| {
+        move |ui, setter, _, _| {
             if !editor_state.is_open() {
                 return;
             }
             nih_plug_egui::resizable_window::ResizableWindow::new("plugin-window")
                 .min_size(min_size)
-                .show(egui_ctx, editor_state.as_ref(), |_ui| {
+                .show(ui, editor_state.as_ref(), |ui| {
                     // ResizableWindow already has a CentralPanel, so this is a bit weird. But I couldn't find out a better way
                     // to set the global background color.
                     egui::CentralPanel::default()
@@ -32,7 +33,7 @@ pub fn create_editor<'a>(params: sync::Arc<params::PluginParams>) -> Option<Box<
                                 .inner_margin(20)
                                 .fill(color_palette.background),
                         )
-                        .show(egui_ctx, |ui| {
+                        .show_inside(ui, |ui| {
                             let eqs = params.eqs();
                             let mut new_eqs = eqs.clone();
                             let mut show_options = params.show_options();

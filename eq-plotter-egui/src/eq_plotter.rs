@@ -76,14 +76,14 @@ impl EqPlotter {
 }
 
 impl eframe::App for EqPlotter {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default()
             .frame(
                 egui::Frame::default()
                     .inner_margin(20)
                     .fill(self.color_palette.background),
             )
-            .show(ctx, |ui| {
+            .show_inside(ui, |ui| {
                 draw::<1, 1>(
                     ui,
                     &mut self.eqs,
