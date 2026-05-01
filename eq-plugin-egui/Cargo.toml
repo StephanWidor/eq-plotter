@@ -17,7 +17,6 @@ egui_plot = { workspace = true }
 nih_plug = { git = "https://codeberg.org/BillyDM/nih-plug.git", features = [
     "assert_process_allocs",
     "standalone",
-    "standalone-opengl",
 ] }
 nih_plug_egui = { git = "https://codeberg.org/BillyDM/nih-plug.git" }
 
