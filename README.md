@@ -13,46 +13,42 @@ https://github.com/user-attachments/assets/aac8b0cc-324e-41b8-9f55-36b7f83f08f3
 
 #### native:
 ```
-cargo build -p eq-plotter-egui
+cargo build -p eq-plotter-egui [--release]
 ```
 Find the binary in the target folder, or run by
 ```
-cargo run --bin eq-plotter-egui
+cargo run --p eq-plotter-egui [--release]
 ```
 
 #### wasm:
 ```
-cargo build -p eq-plotter-egui --target wasm32-unknown-unknown
-wasm-bindgen target/wasm32-unknown-unknown/debug/eq-plotter-egui.wasm --out-dir ./wasm_out --web
+cargo build -p eq-plotter-egui --target wasm32-unknown-unknown [--release]
+wasm-bindgen target/wasm32-unknown-unknown/[debug or release]/eq-plotter-egui.wasm --out-dir ./wasm_out --web
 python3 -m http.server --directory ./wasm_out 8080
 ```
 Then you can run eq-plotter in your browser under localhost:8080.
 
 ### slint app:
 ```
-cargo build -p eq-plotter-slint
+cargo build -p eq-plotter-slint [--release]
 ```
 Find the binary in the target folder, or run by
 ```
-cargo run --bin eq-plotter-slint
+cargo run -p eq-plotter-slint [--release]
 ```
-
-#### Remark:
-Drawing plots in slint is done via plotters crate. This seems to be very slow in debug builds (or at least I didn't find a way to speed that up).
-Building release builds is done by adding `--release` to `cargo build`/`cargo run`.
 
 ### nice-plug:
 
 #### Standalone:
 ```
-cargo build -p eq-plugin-egui
+cargo build -p eq-plugin-egui [--release]
 ```
 Find the binary in the target folder, or run by
 ```
-cargo run --bin eq-plugin-egui
+cargo run --bin eq-plugin-egui [--release]
 ```
 #### Audio plugin:
 ```
-cargo xtask bundle eq-plugin-egui --release
+cargo xtask bundle eq-plugin-egui [--release]
 ```
 VST3 and Clap plugin can then be found in target/bundled
