@@ -414,6 +414,8 @@ name = "app-lib"
 version = "0.1.0"
 dependencies = [
  "audio-lib",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -714,6 +716,7 @@ dependencies = [
  "num",
  "num-traits",
  "rustfft",
+ "serde",
  "smallvec",
 ]
 

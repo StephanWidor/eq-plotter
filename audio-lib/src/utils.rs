@@ -9,6 +9,8 @@ pub trait Float:
     + num::ToPrimitive
     + std::ops::AddAssign
     + std::ops::MulAssign
+    + serde::Serialize
+    + serde::de::DeserializeOwned
     + std::marker::Send
 {
     const TWO: Self;
