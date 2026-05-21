@@ -1,7 +1,11 @@
 [package]
-name = "eq-plotter-egui"
+name = "egui-lib"
 version = "0.1.0"
 edition = "2024"
+
+[features]
+default = []
+analyzer_data = []
 
 [dependencies]
 console_error_panic_hook = { workspace = true }
@@ -16,7 +20,3 @@ web-sys = { workspace = true, features = ["Window", "HtmlCanvasElement"] }
 
 app-lib = { workspace = true }
 audio-lib = { workspace = true }
-egui-lib = { workspace = true, features = [] }
-
-[build-dependencies]
-wasm-bindgen = { version = "0.2", optional = true }

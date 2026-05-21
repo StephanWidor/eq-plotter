@@ -1,52 +1,62 @@
+use crate::*;
 use audio_lib::*;
+use std::sync::{self, atomic};
 
 type FilterCoefficients<const NUM_BANDS: usize> =
     [biquad::coefficients::Coefficients<f32>; NUM_BANDS];
 type Filters<const NUM_BANDS: usize> = [biquad::filter::State<f32>; NUM_BANDS];
 
-pub struct Processor<const NUM_CHANNELS: usize, const NUM_BANDS: usize> {
+pub struct Processor<
+    const NUM_BANDS: usize,
+    const NUM_CHANNELS: usize,
+    const ANALYZER_NUM_BINS: usize,
+> {
+    plugin_params: sync::Arc<params::PluginParams<NUM_BANDS, NUM_CHANNELS, ANALYZER_NUM_BINS>>,
     eqs: [eq::Eq<f32>; NUM_BANDS],
     coefficients: FilterCoefficients<NUM_BANDS>,
     filters: [Filters<NUM_BANDS>; NUM_CHANNELS],
 }
 
-impl<const NUM_CHANNELS: usize, const NUM_BANDS: usize> Default
-    for Processor<NUM_CHANNELS, NUM_BANDS>
+impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS: usize>
+    Processor<NUM_BANDS, NUM_CHANNELS, ANALYZER_NUM_BINS>
 {
-    fn default() -> Self {
+    pub fn new(
+        plugin_params: sync::Arc<params::PluginParams<NUM_BANDS, NUM_CHANNELS, ANALYZER_NUM_BINS>>,
+    ) -> Self {
         Self {
+            plugin_params: plugin_params,
             eqs: [Self::INIT_EQ; NUM_BANDS],
             coefficients: [Self::INIT_FILTER_COEFFICIENTS; NUM_BANDS],
             filters: std::array::from_fn(|_| std::array::from_fn(|_| biquad::filter::State::new())),
         }
     }
-}
 
-impl<const NUM_CHANNELS: usize, const NUM_BANDS: usize> Processor<NUM_CHANNELS, NUM_BANDS> {
-    const INIT_FILTER_COEFFICIENTS: biquad::coefficients::Coefficients<f32> =
-        biquad::coefficients::Coefficients::muted();
-    const INIT_EQ: eq::Eq<f32> = eq::Eq {
-        gain: eq::Gain::Db(std::f32::NEG_INFINITY),
-        frequency: eq::Frequency::LogHz(std::f32::NEG_INFINITY),
-        q: 0.0,
-        eq_type: eq::EqType::Volume,
-    };
-
-    pub fn initialize(&mut self, eqs: &[eq::Eq<f32>], sample_rate: f32) -> bool {
+    pub fn initialize(&mut self) -> bool {
         for channel_filters in self.filters.iter_mut() {
             for filter in channel_filters.iter_mut() {
                 filter.reset();
             }
         }
-        self.update_coefficients(eqs, sample_rate)
+        self.update_coefficients(
+            &self.plugin_params.eqs(),
+            self.plugin_params
+                .sample_rate
+                .load(atomic::Ordering::Relaxed),
+        )
     }
 
-    pub fn process(&mut self, eqs: &[eq::Eq<f32>], sample_rate: f32, buffer: &mut [&mut [f32]]) {
-        self.update_coefficients(eqs, sample_rate);
+    pub fn process(&mut self, buffer: &mut nice::Buffer) {
+        self.update_coefficients(
+            &self.plugin_params.eqs(),
+            self.plugin_params
+                .sample_rate
+                .load(atomic::Ordering::Relaxed),
+        );
 
-        assert!(buffer.len() <= NUM_CHANNELS);
-        for channel in 0..buffer.len() {
-            let channel_samples = buffer.get_mut(channel).unwrap();
+        assert!(buffer.channels() <= NUM_CHANNELS);
+        let buffer_slice = buffer.as_slice();
+        for channel in 0..buffer_slice.len() {
+            let channel_samples = buffer_slice.get_mut(channel).unwrap();
             let channel_filters = &mut self.filters[channel];
             for sample in (*channel_samples).iter_mut() {
                 let mut processing_sample = *sample;
@@ -71,11 +81,20 @@ impl<const NUM_CHANNELS: usize, const NUM_BANDS: usize> Processor<NUM_CHANNELS, 
                 if !biquad::utils::is_stable(&new_coefficients) {
                     success = false;
                 } else {
-                    *eq = *new_eq;
+                    *eq = new_eq.clone();
                     self.coefficients[i] = new_coefficients;
                 }
             }
         }
         success
     }
+
+    const INIT_FILTER_COEFFICIENTS: biquad::coefficients::Coefficients<f32> =
+        biquad::coefficients::Coefficients::muted();
+    const INIT_EQ: eq::Eq<f32> = eq::Eq {
+        gain: eq::Gain::Amplitude(0_f32),
+        frequency: eq::Frequency::Hz(0_f32),
+        q: 0.0,
+        eq_type: eq::EqType::Volume,
+    };
 }

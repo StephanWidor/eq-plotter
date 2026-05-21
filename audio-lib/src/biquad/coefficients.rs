@@ -1,7 +1,7 @@
 use crate::eq;
 use crate::utils;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct Coefficients<F: utils::Float> {
     pub a1: F,
     pub a2: F,

@@ -1,12 +1,22 @@
+use std::ops::RangeInclusive;
+
 use audio_lib::*;
 
-pub fn make_log_frequency_points<'a>(
-    frequency_response: impl Fn(f64) -> f64 + 'a,
-    log_frequency_range: &std::ops::RangeInclusive<f64>,
+pub fn range_to_f64<F: utils::Float>(range: &RangeInclusive<F>) -> RangeInclusive<f64> {
+    range.start().to_f64().unwrap()..=range.end().to_f64().unwrap()
+}
+
+pub fn make_log_frequency_points<'a, F: utils::Float>(
+    frequency_response: impl Fn(F) -> F + 'a,
+    log_frequency_range: &RangeInclusive<F>,
 ) -> egui_plot::PlotPoints<'a> {
     egui_plot::PlotPoints::from_explicit_callback(
-        move |log_frequency| frequency_response(utils::log_to_frequency(log_frequency)),
-        log_frequency_range.clone(),
+        move |log_frequency| {
+            frequency_response(F::from(utils::log_to_frequency(log_frequency)).unwrap())
+                .to_f64()
+                .unwrap()
+        },
+        range_to_f64(log_frequency_range),
         1000,
     )
 }
@@ -18,32 +28,6 @@ pub fn make_circle_points<'a>(radius: f64, num_points: usize) -> egui_plot::Plot
         0.0..=2.0 * std::f64::consts::PI,
         num_points,
     )
-}
-
-pub fn impulse_responses(
-    coefficients: &[biquad::coefficients::Coefficients<f64>],
-) -> (Vec<Vec<f64>>, Vec<f64>) {
-    let eps_for_impulse = 0.001;
-    let hold_for_impulse = 10;
-    let max_length_for_impulse = 1024;
-    let impulse_responses = coefficients
-        .iter()
-        .map(|c| {
-            biquad::utils::impulse_response_for_coefficients(
-                &c,
-                eps_for_impulse,
-                hold_for_impulse,
-                max_length_for_impulse,
-            )
-        })
-        .collect::<Vec<_>>();
-    let multiband_impulse_response = biquad::utils::multiband::impulse_response_for_coefficients(
-        &coefficients,
-        eps_for_impulse,
-        hold_for_impulse,
-        max_length_for_impulse,
-    );
-    (impulse_responses, multiband_impulse_response)
 }
 
 pub fn log_frequency_to_string<F: utils::Float + std::fmt::Display>(log_frequency: F) -> String {
@@ -60,9 +44,9 @@ pub fn string_to_log_frequency<F: utils::Float + std::str::FromStr>(
         .map(utils::frequency_to_log)
 }
 
-pub fn log_frequency_formatter(
+pub fn log_frequency_formatter<F: utils::Float>(
     mark: egui_plot::GridMark,
-    _range: &std::ops::RangeInclusive<f64>,
+    _: &std::ops::RangeInclusive<F>,
 ) -> String {
     let log_frequency = mark.value;
     if log_frequency.fract().abs() < 1e-6 {

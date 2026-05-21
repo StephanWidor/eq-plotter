@@ -11,37 +11,52 @@ pub struct Coefficients<F: utils::Float> {
     pub release_time: F,
 }
 
-pub struct SharedData<const NUM_BINS: usize, const NUM_CHANNELS: usize> {
-    pub frequency_bins: sync::Arc<sync::RwLock<fft::LogFrequencyBins<f32, NUM_BINS>>>,
-    pub linear_gains: spsc::swap::Swap<[[f32; NUM_BINS]; NUM_CHANNELS]>,
+impl<F: utils::Float> Default for Coefficients<F> {
+    fn default() -> Self {
+        Self {
+            sample_rate: F::from(48000).unwrap(),
+            attack_time: F::from(0.01).unwrap(),
+            release_time: F::from(0.1).unwrap(),
+            window_type: windows::WindowType::VonHann,
+        }
+    }
 }
 
-impl<const NUM_BINS: usize, const NUM_CHANNELS: usize> SharedData<NUM_BINS, NUM_CHANNELS> {
-    pub fn new(sample_rate: f32) -> Self {
+pub struct SharedData<F: utils::Float, const NUM_BINS: usize, const NUM_CHANNELS: usize> {
+    pub frequency_bins: sync::Arc<sync::RwLock<fft::LogFrequencyRangeBins<F, NUM_BINS>>>,
+    pub linear_gains: spsc::swap::Swap<[[F; NUM_BINS]; NUM_CHANNELS]>,
+}
+
+impl<F: utils::Float, const NUM_BINS: usize, const NUM_CHANNELS: usize>
+    SharedData<F, NUM_BINS, NUM_CHANNELS>
+{
+    pub fn new(sample_rate: F) -> Self {
         Self {
-            frequency_bins: sync::Arc::new(sync::RwLock::new(fft::LogFrequencyBins::new(
+            frequency_bins: sync::Arc::new(sync::RwLock::new(fft::LogFrequencyRangeBins::new(
                 sample_rate,
             ))),
-            linear_gains: spsc::swap::Swap::from_init_value(&[[0_f32; NUM_BINS]; NUM_CHANNELS]),
+            linear_gains: spsc::swap::Swap::from_init_value(&[[F::ZERO; NUM_BINS]; NUM_CHANNELS]),
         }
     }
 
-    pub fn reset(&self, sample_rate: f32) {
+    pub fn reset(&self, sample_rate: F) {
         self.frequency_bins
             .write()
             .unwrap()
             .set_sample_rate(sample_rate);
         self.linear_gains.producer.manipulate_and_push(&|gains| {
             for channel_gains in gains.iter_mut() {
-                channel_gains.fill(0_f32);
+                channel_gains.fill(F::ZERO);
             }
         });
     }
 }
 
 pub struct SignalAnalyzer<F: utils::Float, const NUM_BINS: usize, const NUM_CHANNELS: usize> {
+    coefficients: Coefficients<F>,
     fft_processors: [fft::Processor<F>; NUM_CHANNELS],
-    gain_analyzers: [GainProcessor<F, NUM_BINS>; NUM_CHANNELS],
+    gain_processors: [GainProcessor<F, NUM_BINS>; NUM_CHANNELS],
+    output_muted: bool,
 }
 
 impl<F: utils::Float + FftNum, const NUM_BINS: usize, const NUM_CHANNELS: usize>
@@ -50,25 +65,37 @@ impl<F: utils::Float + FftNum, const NUM_BINS: usize, const NUM_CHANNELS: usize>
     pub fn new(coefficients: &Coefficients<F>) -> Self {
         let fft_length = 1 << NUM_BINS;
         Self {
+            coefficients: coefficients.clone(),
             fft_processors: std::array::from_fn(|_| {
                 fft::Processor::new(fft_length, coefficients.window_type)
             }),
-            gain_analyzers: std::array::from_fn(|_| GainProcessor::new(coefficients)),
+            gain_processors: std::array::from_fn(|_| GainProcessor::new(coefficients)),
+            output_muted: true,
         }
     }
 
     pub fn reset(&mut self, coefficients: &Coefficients<F>) {
+        self.coefficients = coefficients.clone();
         let fft_length = 1 << NUM_BINS;
         for i in 0..NUM_CHANNELS {
             self.fft_processors[i].reset(fft_length, coefficients.window_type);
-            self.gain_analyzers[i].reset(coefficients);
+            self.gain_processors[i].reset(coefficients);
         }
+        self.output_muted = true;
+    }
+
+    pub fn reset_sample_rate(&mut self, sample_rate: F) {
+        self.coefficients.sample_rate = sample_rate;
+        for gain_processor in self.gain_processors.iter_mut() {
+            gain_processor.reset(&self.coefficients);
+        }
+        self.output_muted = true;
     }
 
     pub fn push<T: AsRef<[F]>>(
         &mut self,
         buffer: &[T],
-        frequency_bins: &fft::LogFrequencyBins<F, NUM_BINS>,
+        frequency_bins: &fft::LogFrequencyRangeBins<F, NUM_BINS>,
         shared_linear_gains: &spsc::swap::Producer<[[F; NUM_BINS]; NUM_CHANNELS]>,
     ) {
         assert!(buffer.len() <= NUM_CHANNELS);
@@ -78,20 +105,63 @@ impl<F: utils::Float + FftNum, const NUM_BINS: usize, const NUM_CHANNELS: usize>
             let fft_result = self.fft_processors[channel].append(channel_samples);
             if fft_result == fft::ProcessingResult::NewOutputAvailable {
                 let spectrum = self.fft_processors[channel].out_signal();
-                self.gain_analyzers[channel].push(spectrum, frequency_bins);
+                self.gain_processors[channel].push(spectrum, frequency_bins);
                 needs_push = true;
             }
         }
         if needs_push {
-            shared_linear_gains.manipulate_and_push(&|push_data| {
+            self.push_gains(shared_linear_gains);
+        }
+        self.output_muted = false;
+    }
+
+    pub fn push_mute_signal(
+        &mut self,
+        num_frames: usize,
+        frequency_bins: &fft::LogFrequencyRangeBins<F, NUM_BINS>,
+        shared_linear_gains: &spsc::swap::Producer<[[F; NUM_BINS]; NUM_CHANNELS]>,
+    ) {
+        if self.output_muted {
+            return;
+        }
+        let mut needs_push = false;
+        for channel in 0..NUM_CHANNELS {
+            for _ in 0..num_frames {
+                let fft_result = self.fft_processors[channel].push(F::ZERO);
+                if fft_result == fft::ProcessingResult::NewOutputAvailable {
+                    let spectrum = self.fft_processors[channel].out_signal();
+                    self.gain_processors[channel].push(spectrum, frequency_bins);
+                    needs_push = true;
+                    break;
+                }
+            }
+        }
+        if needs_push {
+            self.push_gains(shared_linear_gains);
+            let threshold = F::from(0.001).unwrap();
+            self.output_muted = (|| {
                 for channel in 0..NUM_CHANNELS {
-                    let channel_gains = &mut push_data[channel];
-                    for (i, gain) in self.gain_analyzers[channel].linear_gains().enumerate() {
-                        channel_gains[i] = gain;
+                    if !self.gain_processors[channel].all_linear_gains_are_below(threshold) {
+                        return false;
                     }
                 }
-            });
+                true
+            })();
         }
+    }
+
+    fn push_gains(
+        &self,
+        shared_linear_gains: &spsc::swap::Producer<[[F; NUM_BINS]; NUM_CHANNELS]>,
+    ) {
+        shared_linear_gains.manipulate_and_push(&|push_data| {
+            for channel in 0..NUM_CHANNELS {
+                let channel_gains = &mut push_data[channel];
+                for (i, gain) in self.gain_processors[channel].linear_gains().enumerate() {
+                    channel_gains[i] = gain;
+                }
+            }
+        });
     }
 }
 
@@ -126,7 +196,7 @@ impl<F: utils::Float, const NUM_BINS: usize> GainProcessor<F, NUM_BINS> {
     fn push(
         &mut self,
         fft_output: &[num::Complex<F>],
-        frequency_bins: &fft::LogFrequencyBins<F, NUM_BINS>,
+        frequency_bins: &fft::LogFrequencyRangeBins<F, NUM_BINS>,
     ) {
         assert!(fft_output.len() == Self::FFT_LENGTH);
         for (i, bin) in frequency_bins.bins().iter().enumerate() {
@@ -143,11 +213,16 @@ impl<F: utils::Float, const NUM_BINS: usize> GainProcessor<F, NUM_BINS> {
         self.envelopes.iter().map(|envelope| envelope.value())
     }
 
+    fn all_linear_gains_are_below(&self, threshold: F) -> bool {
+        self.linear_gains()
+            .all(|linear_gain| linear_gain <= threshold)
+    }
+
     fn make_envelope_coefficients(
         coefficients: &Coefficients<F>,
     ) -> envelope_follower::Coefficients<F> {
         let time_scale = F::ONE / F::from(Self::FFT_LENGTH).unwrap();
-        envelope_follower::Coefficients::new(
+        envelope_follower::Coefficients::from_attack_and_release_time(
             coefficients.attack_time * time_scale,
             coefficients.release_time * time_scale,
             coefficients.sample_rate,
@@ -188,7 +263,7 @@ mod tests {
         };
 
         let fft_length = 1 << NUM_BINS;
-        let shared_data = SharedData::<NUM_BINS, NUM_CHANNELS>::new(COEFFICIENTS.sample_rate);
+        let shared_data = SharedData::<f32, NUM_BINS, NUM_CHANNELS>::new(COEFFICIENTS.sample_rate);
         let mut analyzer = SignalAnalyzer::<f32, NUM_BINS, NUM_CHANNELS>::new(&COEFFICIENTS);
 
         let frequency_step = fft::frequency_step(fft_length, COEFFICIENTS.sample_rate);

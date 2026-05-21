@@ -1,13 +1,11 @@
 use crate::*;
-use audio_lib::eq;
+use audio_lib::eq; //use egui::emath;
 
-pub fn add_eq_controls(
+pub fn add_controls<F: audio_utils::Float + egui::emath::Numeric>(
     ui: &mut egui::Ui,
     size: egui::Vec2,
-    eqs: &mut [eq::Eq<f64>],
-    log_frequency_range: &std::ops::RangeInclusive<f64>,
-    db_range: &std::ops::RangeInclusive<f64>,
-    q_range: &std::ops::RangeInclusive<f64>,
+    eqs: &mut [eq::Eq<F>],
+    eq_ranges: &EqRanges<F>,
     show_options: &mut options::ShowOptions,
     eq_colors: &[egui::Color32],
 ) {
@@ -22,6 +20,7 @@ pub fn add_eq_controls(
                         if show_options.gain {
                             ui.horizontal(|ui| {
                                 ui.checkbox(&mut show_options.gain, "Gain");
+                                #[cfg(feature = "analyzer_data")]
                                 ui.checkbox(
                                     &mut show_options.signal_gain_spectrum,
                                     "Analyze Signal",
@@ -35,15 +34,13 @@ pub fn add_eq_controls(
                         ui.checkbox(&mut show_options.poles_and_zeros, "Poles And Zeros");
                     });
                     for (index, eq) in eqs.iter_mut().enumerate() {
-                        add_eq_control(
+                        add_control(
                             ui,
                             control_width,
                             control_outer_margin,
                             eq_colors[index % eq_colors.len()],
                             eq,
-                            log_frequency_range,
-                            db_range,
-                            q_range,
+                            eq_ranges,
                         );
                     }
                 });
@@ -51,15 +48,13 @@ pub fn add_eq_controls(
     });
 }
 
-fn add_eq_control(
+fn add_control<F: audio_utils::Float + egui::emath::Numeric>(
     ui: &mut egui::Ui,
     width: f32,
     outer_margin: f32,
     color: egui::Color32,
-    eq: &mut eq::Eq<f64>,
-    log_frequency_range: &std::ops::RangeInclusive<f64>,
-    db_range: &std::ops::RangeInclusive<f64>,
-    q_range: &std::ops::RangeInclusive<f64>,
+    eq: &mut eq::Eq<F>,
+    eq_ranges: &EqRanges<F>,
 ) {
     let mut gain_db = eq.gain.db();
     let mut log_frequency = eq.frequency.log_hz();
@@ -81,20 +76,23 @@ fn add_eq_control(
 
                 if eq.eq_type.has_frequency() {
                     ui.add(
-                        egui::Slider::new(&mut log_frequency, log_frequency_range.clone())
-                            .custom_formatter(|log_frequency, _| {
-                                utils::log_frequency_to_string(log_frequency)
-                            })
-                            .custom_parser(utils::string_to_log_frequency)
-                            .prefix("frequency: ")
-                            .suffix("Hz"),
+                        egui::Slider::new(
+                            &mut log_frequency,
+                            eq_ranges.log_frequency_range.clone(),
+                        )
+                        .custom_formatter(|log_frequency, _| {
+                            utils::log_frequency_to_string(log_frequency)
+                        })
+                        .custom_parser(utils::string_to_log_frequency)
+                        .prefix("frequency: ")
+                        .suffix("Hz"),
                     );
                     eq.frequency = eq::Frequency::LogHz(log_frequency);
                 }
 
                 if eq.eq_type.has_gain_db() {
                     ui.add(
-                        egui::Slider::new(&mut gain_db, db_range.clone())
+                        egui::Slider::new(&mut gain_db, eq_ranges.db_range.clone())
                             .prefix("gain: ")
                             .suffix("dB"),
                     );
@@ -102,7 +100,7 @@ fn add_eq_control(
                 }
 
                 if eq.eq_type.has_q() {
-                    ui.add(egui::Slider::new(&mut eq.q, q_range.clone()).prefix("Q: "));
+                    ui.add(egui::Slider::new(&mut eq.q, eq_ranges.q_range.clone()).prefix("Q: "));
                 }
             });
         });

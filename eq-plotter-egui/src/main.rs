@@ -3,7 +3,16 @@ use wasm_bindgen::JsCast;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen_futures::wasm_bindgen;
 
-use eq_plotter_egui::*;
+use egui_lib::*;
+
+mod eq_plotter;
+
+pub mod config {
+    pub const NUM_BANDS: usize = 8;
+}
+
+type EqPlotter = eq_plotter::EqPlotter<{ config::NUM_BANDS }>;
+type Settings = eq_plotter::Settings<{ config::NUM_BANDS }>;
 
 #[cfg(target_arch = "wasm32")]
 fn main() -> eframe::Result {
@@ -24,9 +33,8 @@ fn main() -> eframe::Result {
                 canvas,
                 web_options,
                 Box::new(|_cc| {
-                    Ok(Box::new(<eq_plotter::EqPlotter>::new(
-                        8,
-                        &app_lib::Config::<f64>::default(),
+                    Ok(Box::new(<EqPlotter>::new(
+                        &Settings::default(),
                         &colors::ColorPalette::default(),
                     )))
                 }),
@@ -52,9 +60,8 @@ fn main() -> eframe::Result {
         "EQ Plotter",
         options,
         Box::new(|_cc| {
-            Ok(Box::new(eq_plotter::EqPlotter::new(
-                8,
-                &app_lib::Config::<f64>::default(),
+            Ok(Box::new(EqPlotter::new(
+                &Settings::default(),
                 &colors::ColorPalette::default(),
             )))
         }),

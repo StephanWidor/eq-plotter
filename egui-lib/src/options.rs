@@ -8,6 +8,7 @@ pub enum ShowOptionType {
 
 pub struct ShowOptions {
     pub gain: bool,
+    #[cfg(feature = "analyzer_data")]
     pub signal_gain_spectrum: bool,
     pub phase: bool,
     pub impulse_response: bool,
@@ -18,6 +19,7 @@ impl ShowOptions {
     pub fn new_all_enabled() -> Self {
         Self {
             gain: true,
+            #[cfg(feature = "analyzer_data")]
             signal_gain_spectrum: true,
             phase: true,
             impulse_response: true,
@@ -28,6 +30,7 @@ impl ShowOptions {
     pub fn new_only_gain() -> Self {
         Self {
             gain: true,
+            #[cfg(feature = "analyzer_data")]
             signal_gain_spectrum: true,
             phase: false,
             impulse_response: false,

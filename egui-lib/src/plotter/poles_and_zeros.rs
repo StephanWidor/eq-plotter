@@ -1,10 +1,9 @@
 use crate::*;
 use audio_lib::biquad;
 
-pub fn add_plot(
+pub fn add_plot<F: audio_utils::Float + egui::emath::Numeric>(
     ui: &mut egui::Ui,
-    coefficients: &[biquad::coefficients::Coefficients<f64>],
-    active_eqs: &[bool],
+    coefficients: &[Option<biquad::coefficients::Coefficients<F>>],
     plot_size: f32,
     color_palette: &colors::ColorPalette,
 ) {
@@ -43,13 +42,12 @@ pub fn add_plot(
                     .stroke(egui::Stroke::new(1_f32, egui::Color32::GRAY)),
             );
 
-            for ((index, c), active) in coefficients.iter().enumerate().zip(active_eqs) {
-                if !*active {
-                    continue;
-                }
-                let poles = biquad::utils::poles(&c)
+            let active_coefficients = coefficients.iter().filter(|c| c.is_some());
+            for (index, c) in active_coefficients.enumerate() {
+                let c = c.as_ref().unwrap();
+                let poles = biquad::utils::poles(c)
                     .iter()
-                    .map(|pole| [pole.re, pole.im])
+                    .map(|pole| [pole.re.to_f64(), pole.im.to_f64()])
                     .collect::<Vec<_>>();
                 plot_ui.points(
                     egui_plot::Points::new("Poles", poles)
@@ -58,9 +56,9 @@ pub fn add_plot(
                         .radius(6.0),
                 );
 
-                let zeros = biquad::utils::zeros(&c)
+                let zeros = biquad::utils::zeros(c)
                     .iter()
-                    .map(|zero| [zero.re, zero.im])
+                    .map(|zero| [zero.re.to_f64(), zero.im.to_f64()])
                     .collect::<Vec<_>>();
                 plot_ui.points(
                     egui_plot::Points::new("Zeros", zeros)

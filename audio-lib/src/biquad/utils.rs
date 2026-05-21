@@ -11,9 +11,9 @@ pub fn process_sequential<F: utils::Float>(filters: &mut [Filter<F>], sample: F)
 }
 
 pub fn make_transfer_function<F: utils::Float>(
-    coefficients: &Coefficients<F>,
+    coefficients: Coefficients<F>,
 ) -> impl Fn(num::Complex<F>) -> Complex<F> {
-    |z: num::Complex<F>| {
+    move |z: num::Complex<F>| {
         let z_squared = z * z;
         let numerator = Complex::from(coefficients.b0)
             + Complex::from(coefficients.b1) * z
@@ -26,10 +26,10 @@ pub fn make_transfer_function<F: utils::Float>(
 }
 
 pub fn make_frequency_response<F: utils::Float>(
-    coefficients: &Coefficients<F>,
+    coefficients: Coefficients<F>,
     sample_rate: F,
 ) -> impl Fn(F) -> Complex<F> {
-    let transfer_function = make_transfer_function(&coefficients);
+    let transfer_function = make_transfer_function(coefficients);
     move |frequency| {
         transfer_function(Complex::from_polar(
             F::ONE,
@@ -62,25 +62,25 @@ pub fn impulse_response<F: utils::Float>(
 }
 
 pub fn impulse_response_for_coefficients<F: utils::Float>(
-    coefficients: &Coefficients<F>,
+    coefficients: Coefficients<F>,
     eps: F,
     hold_length: usize,
     max_length: usize,
 ) -> Vec<F> {
     let mut filter = Filter::new(coefficients);
-    let mut process = |s| filter.process(s);
+    let mut process = move |s| filter.process(s);
     impulse_response(&mut process, eps, hold_length, max_length)
 }
 
 pub mod multiband {
     use super::*;
 
-    pub fn make_frequency_response<F: utils::Float>(
-        coefficients: &[Coefficients<F>],
+    pub fn make_frequency_response<F: utils::Float, C: IntoIterator<Item = Coefficients<F>>>(
+        coefficients: C,
         sample_rate: F,
     ) -> impl Fn(F) -> Complex<F> {
         let transfer_functions = coefficients
-            .iter()
+            .into_iter()
             .map(|c| make_transfer_function(c))
             .collect::<Vec<_>>();
         move |frequency| {
@@ -93,14 +93,17 @@ pub mod multiband {
         }
     }
 
-    pub fn impulse_response_for_coefficients<F: utils::Float>(
-        coefficients: &[Coefficients<F>],
+    pub fn impulse_response_for_coefficients<
+        F: utils::Float,
+        C: IntoIterator<Item = Coefficients<F>>,
+    >(
+        coefficients: C,
         eps: F,
         hold_length: usize,
         max_length: usize,
     ) -> Vec<F> {
         let mut filters = coefficients
-            .iter()
+            .into_iter()
             .map(|c| Filter::new(c))
             .collect::<Vec<_>>();
         let mut process = |s| process_sequential(&mut filters, s);
@@ -217,7 +220,7 @@ mod tests {
         let gain_db = 2.3;
 
         let coefficients = Coefficients::from_volume_db(gain_db);
-        let response = make_frequency_response(&coefficients, sample_rate)(100.0);
+        let response = make_frequency_response(coefficients, sample_rate)(100.0);
 
         let gain_db_back = amplitude_to_db(response.abs());
         assert_approx_eq!(gain_db, gain_db_back);
@@ -228,7 +231,7 @@ mod tests {
         let sample_rate = 48000.0;
         let coefficients = Coefficients::from_lowpass(1000.0, 0.7, sample_rate);
 
-        let frequency_response = make_frequency_response(&coefficients, sample_rate);
+        let frequency_response = make_frequency_response(coefficients, sample_rate);
 
         let mut gain_db_back = amplitude_to_db(frequency_response(50.0).abs());
         assert_approx_eq!(gain_db_back, 0.0, 5e-4);
@@ -242,7 +245,7 @@ mod tests {
         let sample_rate = 48000.0;
         let coefficients = Coefficients::from_highpass(1000.0, 0.7, sample_rate);
 
-        let calc_response = make_frequency_response(&coefficients, sample_rate);
+        let calc_response = make_frequency_response(coefficients, sample_rate);
 
         let mut gain_db_back = amplitude_to_db(calc_response(50.0).abs());
         assert_le!(gain_db_back, -40.0);
@@ -257,7 +260,7 @@ mod tests {
         let frequency = 5000.0;
         let coefficients = Coefficients::from_bandpass(frequency, 10.0, sample_rate);
 
-        let calc_response = make_frequency_response(&coefficients, sample_rate);
+        let calc_response = make_frequency_response(coefficients, sample_rate);
 
         let mut gain_db_back = utils::amplitude_to_db(calc_response(50.0).abs());
         assert_le!(gain_db_back, -40.0);
@@ -275,7 +278,7 @@ mod tests {
         let frequency = 5000.0;
         let coefficients = Coefficients::from_allpass(frequency, 10.0, sample_rate);
 
-        let calc_response = make_frequency_response(&coefficients, sample_rate);
+        let calc_response = make_frequency_response(coefficients, sample_rate);
 
         let mut gain_db_back = amplitude_to_db(calc_response(50.0).abs());
         assert_approx_eq!(gain_db_back, 0.0);
@@ -293,7 +296,7 @@ mod tests {
         let frequency = 5000.0;
         let coefficients = Coefficients::from_notch(frequency, 10.0, sample_rate);
 
-        let calc_response = make_frequency_response(&coefficients, sample_rate);
+        let calc_response = make_frequency_response(coefficients, sample_rate);
 
         let mut gain_db_back = amplitude_to_db(calc_response(50.0).abs());
         assert_approx_eq!(gain_db_back, 0.0, 1e-5);
@@ -312,7 +315,7 @@ mod tests {
         let gain_db = 3.4;
         let coefficients = Coefficients::from_peak_db(gain_db, frequency, 10.0, sample_rate);
 
-        let calc_response = make_frequency_response(&coefficients, sample_rate);
+        let calc_response = make_frequency_response(coefficients, sample_rate);
 
         let mut gain_db_back = amplitude_to_db(calc_response(50.0).abs());
         assert_approx_eq!(gain_db_back, 0.0, 1e-5);
@@ -330,7 +333,7 @@ mod tests {
         let gain_db = 3.4;
         let coefficients = Coefficients::from_lowshelf_db(gain_db, 1000.0, 0.7, sample_rate);
 
-        let calc_response = make_frequency_response(&coefficients, sample_rate);
+        let calc_response = make_frequency_response(coefficients, sample_rate);
 
         let mut gain_db_back = amplitude_to_db(calc_response(50.0).abs());
         assert_approx_eq!(gain_db_back, gain_db, 5e-4);
@@ -345,7 +348,7 @@ mod tests {
         let gain_db = -2.4;
         let coefficients = Coefficients::from_highshelf_db(gain_db, 1000.0, 0.7, sample_rate);
 
-        let calc_response = make_frequency_response(&coefficients, sample_rate);
+        let calc_response = make_frequency_response(coefficients, sample_rate);
 
         let mut gain_db_back = amplitude_to_db(calc_response(50.0).abs());
         assert_approx_eq!(gain_db_back, 0.0, 3e-4);
@@ -365,9 +368,9 @@ mod tests {
 
         let single_band_responses = coefficients
             .iter()
-            .map(|c| make_frequency_response(c, sample_rate))
+            .map(|c| make_frequency_response(c.clone(), sample_rate))
             .collect::<Vec<_>>();
-        let multiband_response = multiband::make_frequency_response(&coefficients, sample_rate);
+        let multiband_response = multiband::make_frequency_response(coefficients, sample_rate);
 
         for i in 1..200 {
             let frequency = (i * 100) as f64;

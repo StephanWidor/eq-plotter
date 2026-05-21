@@ -43,9 +43,9 @@ pub struct Filter<F: utils::Float> {
 }
 
 impl<F: utils::Float> Filter<F> {
-    pub const fn new(coefficients: &Coefficients<F>) -> Self {
+    pub const fn new(coefficients: Coefficients<F>) -> Self {
         Self {
-            coefficients: *coefficients,
+            coefficients: coefficients,
             state: State::new(),
         }
     }

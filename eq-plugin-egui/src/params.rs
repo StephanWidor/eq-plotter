@@ -1,12 +1,98 @@
 use crate::*;
 use audio_lib::*;
-use eq_plotter_egui::{colors, options};
-use nice_plug::prelude as nice;
+use egui_lib::{colors, options};
 use std::ops::RangeInclusive;
 use std::sync::{self, atomic};
 
 // hm, can we somehow get rid of this without destroying the nice::Enum and nice::Params derive?
 use nice_plug::params::Params;
+
+#[derive(nice::Params)]
+pub struct PluginParams<
+    const NUM_BANDS: usize,
+    const NUM_CHANNELS: usize,
+    const ANALYZER_NUM_BINS: usize,
+> {
+    #[persist = "editor_state"]
+    pub editor_state: sync::Arc<nice_plug_egui::EguiState>,
+
+    #[nested(array, group = "eq_params")]
+    pub eq_params: [EqParams; NUM_BANDS],
+
+    pub sample_rate: nice::AtomicF32,
+    pub show_gain: atomic::AtomicBool,
+    pub show_signal_gain_spectrum: atomic::AtomicBool,
+    pub show_phase: atomic::AtomicBool,
+    pub show_impulse_response: atomic::AtomicBool,
+    pub show_poles_and_zeros: atomic::AtomicBool,
+    pub selected_eq_index: atomic::AtomicUsize,
+    pub analyzer_data:
+        fft::signal_analyzer::SharedData<f32, { ANALYZER_NUM_BINS }, { NUM_CHANNELS }>,
+    pub eq_ranges: EqRanges,
+    pub impulse_response_settings: ImpulseResponseSettings,
+    pub color_palette: colors::ColorPalette,
+}
+
+impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS: usize>
+    PluginParams<NUM_BANDS, NUM_CHANNELS, ANALYZER_NUM_BINS>
+{
+    pub fn new(settings: &Settings<NUM_BANDS>, smoothing_length_ms: f32) -> Self {
+        let eq_ranges = settings.eq_ranges.clone();
+        Self {
+            editor_state: nice_plug_egui::EguiState::from_size(1000, 700),
+            eq_params: std::array::from_fn(|index| {
+                EqParams::from_eq(
+                    format!(" [{}]", index + 1).as_str(),
+                    &settings.init_eqs[index],
+                    &eq_ranges.log_frequency_range,
+                    &eq_ranges.db_range,
+                    &eq_ranges.q_range,
+                    smoothing_length_ms,
+                )
+            }),
+            sample_rate: nice::AtomicF32::new(settings.init_sample_rate),
+            show_gain: atomic::AtomicBool::new(true),
+            show_signal_gain_spectrum: atomic::AtomicBool::new(true),
+            show_phase: atomic::AtomicBool::new(false),
+            show_impulse_response: atomic::AtomicBool::new(false),
+            show_poles_and_zeros: atomic::AtomicBool::new(false),
+            selected_eq_index: atomic::AtomicUsize::new(usize::MAX),
+            analyzer_data: fft::signal_analyzer::SharedData::new(settings.init_sample_rate),
+            eq_ranges: eq_ranges,
+            impulse_response_settings: settings.impulse_response.clone(),
+            color_palette: colors::ColorPalette::default(),
+        }
+    }
+
+    pub fn eqs<F: utils::Float>(&self) -> [eq::Eq<F>; NUM_BANDS] {
+        std::array::from_fn(|index| self.eq_params[index].to_eq())
+    }
+
+    pub fn show_options(&self) -> options::ShowOptions {
+        options::ShowOptions {
+            gain: self.show_gain.load(atomic::Ordering::Relaxed),
+            signal_gain_spectrum: self
+                .show_signal_gain_spectrum
+                .load(atomic::Ordering::Relaxed),
+            phase: self.show_phase.load(atomic::Ordering::Relaxed),
+            impulse_response: self.show_impulse_response.load(atomic::Ordering::Relaxed),
+            poles_and_zeros: self.show_poles_and_zeros.load(atomic::Ordering::Relaxed),
+        }
+    }
+
+    pub fn set_show_options(&self, options: &options::ShowOptions) {
+        self.show_gain
+            .store(options.gain, atomic::Ordering::Relaxed);
+        self.show_signal_gain_spectrum
+            .store(options.signal_gain_spectrum, atomic::Ordering::Relaxed);
+        self.show_phase
+            .store(options.phase, atomic::Ordering::Relaxed);
+        self.show_impulse_response
+            .store(options.impulse_response, atomic::Ordering::Relaxed);
+        self.show_poles_and_zeros
+            .store(options.poles_and_zeros, atomic::Ordering::Relaxed);
+    }
+}
 
 #[derive(PartialEq, Clone, Copy)]
 pub struct EqTypeWrapper {
@@ -73,6 +159,7 @@ impl EqParams {
         log_frequency_range: &RangeInclusive<f32>,
         db_range: &RangeInclusive<f32>,
         q_range: &RangeInclusive<f32>,
+        smoothing_length_ms: f32,
     ) -> Self {
         Self {
             gain_db: nice::FloatParam::new(
@@ -83,7 +170,7 @@ impl EqParams {
                     max: *db_range.end(),
                 },
             )
-            .with_smoother(nice::SmoothingStyle::Linear(config::SMOOTHING_LENGTH_MS))
+            .with_smoother(nice::SmoothingStyle::Linear(smoothing_length_ms))
             .with_unit(" dB"),
             log_frequency: nice::FloatParam::new(
                 format!("Frequency (Hz){names_suffix}"),
@@ -93,14 +180,10 @@ impl EqParams {
                     max: *log_frequency_range.end(),
                 },
             )
-            .with_smoother(nice::SmoothingStyle::Linear(config::SMOOTHING_LENGTH_MS))
+            .with_smoother(nice::SmoothingStyle::Linear(smoothing_length_ms))
             .with_unit(" Hz")
-            .with_value_to_string(sync::Arc::new(
-                eq_plotter_egui::utils::log_frequency_to_string,
-            ))
-            .with_string_to_value(sync::Arc::new(
-                eq_plotter_egui::utils::string_to_log_frequency,
-            )),
+            .with_value_to_string(sync::Arc::new(egui_lib::utils::log_frequency_to_string))
+            .with_string_to_value(sync::Arc::new(egui_lib::utils::string_to_log_frequency)),
             q: nice::FloatParam::new(
                 format!("q{names_suffix}"),
                 eq.q,
@@ -109,7 +192,7 @@ impl EqParams {
                     max: *q_range.end(),
                 },
             )
-            .with_smoother(nice::SmoothingStyle::Linear(config::SMOOTHING_LENGTH_MS)),
+            .with_smoother(nice::SmoothingStyle::Linear(smoothing_length_ms)),
             eq_type: EqTypeParam::new(
                 format!("Eq Type{names_suffix}"),
                 EqTypeWrapper::from(eq.eq_type),
@@ -152,108 +235,5 @@ impl EqParams {
         setter.begin_set_parameter(&self.eq_type);
         setter.set_parameter(&self.eq_type, eq_type.into());
         setter.end_set_parameter(&self.eq_type);
-    }
-}
-
-#[derive(nice::Params)]
-pub struct PluginParams {
-    #[persist = "editor_state"]
-    pub editor_state: sync::Arc<nice_plug_egui::EguiState>,
-
-    #[nested(array, group = "eq_params")]
-    pub eq_params: [EqParams; config::NUM_BANDS],
-
-    pub sample_rate: nice::AtomicF32,
-
-    pub show_gain: atomic::AtomicBool,
-    pub show_signal_gain_spectrum: atomic::AtomicBool,
-    pub show_phase: atomic::AtomicBool,
-    pub show_impulse_response: atomic::AtomicBool,
-    pub show_poles_and_zeros: atomic::AtomicBool,
-
-    pub selected_eq_index: atomic::AtomicUsize,
-
-    pub analyzer_data: fft::signal_analyzer::SharedData<
-        { config::ANALYZER_NUM_BINS },
-        { config::MAX_NUM_CHANNELS },
-    >,
-
-    pub app_config: app_lib::Config<f64>,
-    pub color_palette: colors::ColorPalette,
-}
-
-impl PluginParams {
-    pub fn eqs<F: utils::Float>(&self) -> [eq::Eq<F>; config::NUM_BANDS] {
-        std::array::from_fn(|index| self.eq_params[index].to_eq())
-    }
-
-    pub fn show_options(&self) -> options::ShowOptions {
-        options::ShowOptions {
-            gain: self.show_gain.load(atomic::Ordering::Relaxed),
-            signal_gain_spectrum: self
-                .show_signal_gain_spectrum
-                .load(atomic::Ordering::Relaxed),
-            phase: self.show_phase.load(atomic::Ordering::Relaxed),
-            impulse_response: self.show_impulse_response.load(atomic::Ordering::Relaxed),
-            poles_and_zeros: self.show_poles_and_zeros.load(atomic::Ordering::Relaxed),
-        }
-    }
-
-    pub fn set_show_options(&self, options: &options::ShowOptions) {
-        self.show_gain
-            .store(options.gain, atomic::Ordering::Relaxed);
-        self.show_signal_gain_spectrum
-            .store(options.signal_gain_spectrum, atomic::Ordering::Relaxed);
-        self.show_phase
-            .store(options.phase, atomic::Ordering::Relaxed);
-        self.show_impulse_response
-            .store(options.impulse_response, atomic::Ordering::Relaxed);
-        self.show_poles_and_zeros
-            .store(options.poles_and_zeros, atomic::Ordering::Relaxed);
-    }
-
-    pub fn analyzer_coefficients_with_sample_rate(
-        sample_rate: f32,
-    ) -> fft::signal_analyzer::Coefficients<f32> {
-        fft::signal_analyzer::Coefficients {
-            sample_rate,
-            ..config::DEFAULT_ANALYZER_COEFFICIENTS
-        }
-    }
-}
-
-impl Default for PluginParams {
-    fn default() -> Self {
-        let app_config = app_lib::Config::<f32>::default();
-        let bypassed_init_eq: eq::Eq<f32> =
-            eq_plotter_egui::eq_plotter::EqPlotter::BYPASSED_INIT_EQ.into();
-        Self {
-            editor_state: nice_plug_egui::EguiState::from_size(1000, 700),
-            eq_params: std::array::from_fn(|index| {
-                EqParams::from_eq(
-                    format!(" [{}]", index + 1).as_str(),
-                    if index == 0 {
-                        &app_config.init_eq()
-                    } else {
-                        &bypassed_init_eq
-                    },
-                    app_config.log_frequency_range(),
-                    app_config.db_range(),
-                    app_config.q_range(),
-                )
-            }),
-            sample_rate: nice::AtomicF32::new(1_f32),
-            show_gain: atomic::AtomicBool::new(true),
-            show_signal_gain_spectrum: atomic::AtomicBool::new(true),
-            show_phase: atomic::AtomicBool::new(false),
-            show_impulse_response: atomic::AtomicBool::new(false),
-            show_poles_and_zeros: atomic::AtomicBool::new(false),
-            selected_eq_index: atomic::AtomicUsize::new(usize::MAX),
-            analyzer_data: fft::signal_analyzer::SharedData::new(
-                config::DEFAULT_ANALYZER_COEFFICIENTS.sample_rate,
-            ),
-            app_config: app_lib::Config::default(),
-            color_palette: colors::ColorPalette::default(),
-        }
     }
 }

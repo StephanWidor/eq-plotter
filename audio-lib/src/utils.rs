@@ -9,6 +9,7 @@ pub trait Float:
     + num::ToPrimitive
     + std::ops::AddAssign
     + std::ops::MulAssign
+    + std::marker::Send
 {
     const TWO: Self;
     const FOUR: Self;
@@ -84,15 +85,15 @@ pub fn omega<F: Float>(frequency: F, sample_rate: F) -> F {
 }
 
 pub fn make_gain_db_response<F: Float>(
-    complex_frequency_response: &impl Fn(F) -> num::Complex<F>,
+    complex_frequency_response: impl Fn(F) -> num::Complex<F>,
 ) -> impl Fn(F) -> F {
-    |frequency| amplitude_to_db(complex_frequency_response(frequency).abs())
+    move |frequency| amplitude_to_db(complex_frequency_response(frequency).abs())
 }
 
 pub fn make_phase_response<F: Float>(
-    complex_frequency_response: &impl Fn(F) -> num::Complex<F>,
+    complex_frequency_response: impl Fn(F) -> num::Complex<F>,
 ) -> impl Fn(F) -> F {
-    |frequency| complex_frequency_response(frequency).arg()
+    move |frequency| complex_frequency_response(frequency).arg()
 }
 
 /// complex roots of polynom c2*x^2 + c1*x + c0

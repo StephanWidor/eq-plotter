@@ -1,16 +1,18 @@
 use crate::*;
-use eq_plotter_egui::*;
-use nice_plug::prelude as nice;
 use std::sync::{self, atomic};
 
-pub fn create_editor<'a>(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn nice::Editor>> {
+pub fn create_editor<
+    'a,
+    const NUM_BANDS: usize,
+    const NUM_CHANNELS: usize,
+    const ANALYZER_NUM_BINS: usize,
+>(
+    params: sync::Arc<params::PluginParams<NUM_BANDS, NUM_CHANNELS, ANALYZER_NUM_BINS>>,
+) -> Option<Box<dyn nice::Editor>> {
     let editor_state = params.editor_state.clone();
-    let app_config = &params.app_config;
-    let log_frequency_range = app_config.log_frequency_range().clone();
-    let db_range = app_config.db_range().clone();
-    let q_range = app_config.q_range().clone();
     let min_size = egui::Vec2::new(700.0, 400.0);
     let color_palette = params.color_palette.clone();
+
     nice_plug_egui::create_egui_editor(
         params.editor_state.clone(),
         (),
@@ -41,28 +43,24 @@ pub fn create_editor<'a>(params: sync::Arc<params::PluginParams>) -> Option<Box<
                                 params.selected_eq_index.load(atomic::Ordering::Relaxed);
                             let spectrum_gains =
                                 params.analyzer_data.linear_gains.consumer.pull_and_read();
-                            let spectrum_data = Option::Some(eq_plotter::SpectrumData {
+                            let spectrum_data = egui_lib::plotter::SpectrumData {
                                 frequency_bins: &params
                                     .analyzer_data
                                     .frequency_bins
                                     .read()
                                     .unwrap(),
                                 linear_gains: &spectrum_gains,
-                            });
-                            eq_plotter::draw(
+                            };
+                            egui_lib::draw(
                                 ui,
                                 &mut new_eqs,
                                 &mut selected_eq_index,
-                                &log_frequency_range,
-                                &db_range,
-                                &q_range,
+                                &params.eq_ranges,
+                                &params.impulse_response_settings,
+                                params.sample_rate.load(atomic::Ordering::Relaxed),
                                 &spectrum_data,
                                 &mut show_options,
                                 &color_palette,
-                                params
-                                    .sample_rate
-                                    .load(std::sync::atomic::Ordering::Relaxed)
-                                    as f64,
                             );
 
                             for ((new_eq, old_eq), band_params) in

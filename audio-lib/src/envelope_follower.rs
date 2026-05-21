@@ -7,7 +7,7 @@ pub struct Coefficients<F: utils::Float> {
 }
 
 impl<F: utils::Float> Coefficients<F> {
-    pub fn new(attack_time: F, release_time: F, sample_rate: F) -> Self {
+    pub fn from_attack_and_release_time(attack_time: F, release_time: F, sample_rate: F) -> Self {
         Self {
             attack: Self::time_to_coefficient(attack_time, sample_rate),
             release: Self::time_to_coefficient(release_time, sample_rate),
@@ -58,8 +58,12 @@ pub struct EnvelopeFollower<F: utils::Float> {
 }
 
 impl<F: utils::Float> EnvelopeFollower<F> {
-    pub fn new(attack_time: F, release_time: F, sample_rate: F) -> Self {
-        Self::from_coefficients(&Coefficients::new(attack_time, release_time, sample_rate))
+    pub fn from_attack_and_release_time(attack_time: F, release_time: F, sample_rate: F) -> Self {
+        Self::from_coefficients(&Coefficients::from_attack_and_release_time(
+            attack_time,
+            release_time,
+            sample_rate,
+        ))
     }
 
     pub fn from_coefficients(coefficients: &Coefficients<F>) -> Self {
@@ -94,7 +98,8 @@ mod tests {
     #[test]
     fn converges_to_target() {
         let sample_rate = 44100_f32;
-        let mut envelope = EnvelopeFollower::new(0.01_f32, 0.01_f32, sample_rate);
+        let mut envelope =
+            EnvelopeFollower::from_attack_and_release_time(0.01_f32, 0.01_f32, sample_rate);
 
         let target = 0.7_f32;
         let mut out = 0_f32;
@@ -109,7 +114,8 @@ mod tests {
     fn reaches_time_constant() {
         let sample_rate = 48000.0;
         let attack_time = 0.05;
-        let mut envelope = EnvelopeFollower::new(attack_time, 0.1, sample_rate);
+        let mut envelope =
+            EnvelopeFollower::from_attack_and_release_time(attack_time, 0.1, sample_rate);
 
         let num_samples = (attack_time * sample_rate) as usize;
         for _ in 0..num_samples {
@@ -123,7 +129,7 @@ mod tests {
 
     #[test]
     fn attack_is_monotonic() {
-        let mut envelope = EnvelopeFollower::new(0.01, 0.1, 16000.0);
+        let mut envelope = EnvelopeFollower::from_attack_and_release_time(0.01, 0.1, 16000.0);
 
         let mut previous_out = 0.0;
         for _ in 0..1000 {
@@ -135,7 +141,7 @@ mod tests {
 
     #[test]
     fn release_is_monotonic() {
-        let mut envelope = EnvelopeFollower::new(0.01, 0.1, 48000.0);
+        let mut envelope = EnvelopeFollower::from_attack_and_release_time(0.01, 0.1, 48000.0);
         envelope.reset(1.0);
 
         let mut previous_out = 1.0;

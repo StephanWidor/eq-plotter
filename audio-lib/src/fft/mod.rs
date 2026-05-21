@@ -7,8 +7,8 @@ pub fn frequency_step<F: crate::utils::Float>(fft_length: usize, sample_rate: F)
     sample_rate / F::from(fft_length).unwrap()
 }
 
-pub use log_frequency_bins::LogFrequencyBin;
-pub use log_frequency_bins::LogFrequencyBins;
+pub use log_frequency_bins::LogFrequencyRangeBin;
+pub use log_frequency_bins::LogFrequencyRangeBins;
 pub use processor::ProcessingResult;
 pub use processor::Processor;
 pub use signal_analyzer::{Coefficients, SignalAnalyzer};

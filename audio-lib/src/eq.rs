@@ -171,7 +171,7 @@ impl From<Frequency<f64>> for Frequency<f32> {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Eq<F: utils::Float> {
     pub gain: Gain<F>,
     pub frequency: Frequency<F>,
@@ -236,7 +236,7 @@ mod tests {
             q: 0.707_f32,
             eq_type: EqType::Peak,
         };
-        let eq_f64: Eq<f64> = Eq::<f64>::from(eq_f32);
+        let eq_f64: Eq<f64> = Eq::<f64>::from(eq_f32.clone());
 
         let eq_f32_back: Eq<f32> = eq_f64.into();
         assert_eq!(eq_f32, eq_f32_back);

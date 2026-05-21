@@ -1,6 +1,5 @@
-use eq_plugin_egui::plugin;
-use nice_plug::prelude::*;
+use eq_plugin_egui::*;
 
 fn main() {
-    nice_export_standalone::<plugin::Plugin>();
+    nice::nice_export_standalone::<Plugin>();
 }

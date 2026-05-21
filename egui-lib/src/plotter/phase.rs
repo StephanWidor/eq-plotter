@@ -1,12 +1,11 @@
 use crate::*;
 use audio_lib::utils as audio_utils;
 
-pub fn add_plot(
+pub fn add_plot<F: audio_utils::Float + egui::emath::Numeric>(
     ui: &mut egui::Ui,
-    frequency_responses: &[impl Fn(f64) -> num::Complex<f64>],
-    log_frequency_range: &std::ops::RangeInclusive<f64>,
-    active_eqs: &[bool],
-    multiband_frequency_response: &impl Fn(f64) -> num::Complex<f64>,
+    coefficients: &[Option<biquad::coefficients::Coefficients<F>>],
+    sample_rate: F,
+    log_frequency_range: &std::ops::RangeInclusive<F>,
     plot_size: f32,
     color_palette: &colors::ColorPalette,
 ) {
@@ -42,29 +41,23 @@ pub fn add_plot(
         .legend(egui_plot::Legend::default())
         .show(ui, |plot_ui| {
             plot_ui.set_plot_bounds(egui_plot::PlotBounds::from_min_max(
-                [*log_frequency_range.start(), -std::f64::consts::PI],
-                [*log_frequency_range.end(), std::f64::consts::PI],
+                [
+                    log_frequency_range.start().to_f64().unwrap(),
+                    -std::f64::consts::PI,
+                ],
+                [
+                    log_frequency_range.end().to_f64().unwrap(),
+                    std::f64::consts::PI,
+                ],
             ));
 
-            let mut num_active = 0;
-            for ((index, response), active) in
-                frequency_responses.iter().enumerate().zip(active_eqs)
-            {
-                if !*active {
-                    continue;
-                }
-                num_active += 1;
-                let phase_points = utils::make_log_frequency_points(
-                    audio_utils::make_phase_response(response),
-                    log_frequency_range,
-                );
-                plot_ui.line(
-                    egui_plot::Line::new("", phase_points)
-                        .color(color_palette.eq_stroke[index % color_palette.eq_stroke.len()]),
-                );
-            }
-
-            if num_active > 1 {
+            let active_coefficients = coefficients.iter().filter(|c| c.is_some());
+            if active_coefficients.clone().take(2).count() > 1 {
+                let multiband_frequency_response =
+                    biquad::utils::multiband::make_frequency_response(
+                        active_coefficients.map(|c| c.as_ref().unwrap().clone()),
+                        sample_rate,
+                    );
                 let phase_points = utils::make_log_frequency_points(
                     audio_utils::make_phase_response(multiband_frequency_response),
                     log_frequency_range,
@@ -73,6 +66,19 @@ pub fn add_plot(
                     egui_plot::Line::new("multiband", phase_points)
                         .color(color_palette.multiband_stroke),
                 );
+            }
+            for (index, c) in coefficients.iter().enumerate() {
+                if let Some(c) = c {
+                    let response = biquad::utils::make_frequency_response(c.clone(), sample_rate);
+                    let phase_points = utils::make_log_frequency_points(
+                        audio_utils::make_phase_response(response),
+                        log_frequency_range,
+                    );
+                    plot_ui.line(
+                        egui_plot::Line::new("", phase_points)
+                            .color(color_palette.eq_stroke[index % color_palette.eq_stroke.len()]),
+                    );
+                }
             }
         });
 }
