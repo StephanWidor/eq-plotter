@@ -14,11 +14,11 @@ crate-type = ["cdylib", "lib"]
 egui = { workspace = true }
 egui_plot = { workspace = true }
 
-nih_plug = { git = "https://codeberg.org/BillyDM/nih-plug.git", features = [
+nice-plug = { git = "https://codeberg.org/BillyDM/nice-plug.git", features = [
     "assert_process_allocs",
     "standalone",
 ] }
-nih_plug_egui = { git = "https://codeberg.org/BillyDM/nih-plug.git" }
+nice-plug-egui = { git = "https://codeberg.org/BillyDM/nice-plug.git" }
 
 app-lib = { path = "../app-lib" }
 audio-lib = { path = "../audio-lib" }

@@ -1,6 +1,6 @@
 use eq_plugin_egui::plugin;
-use nih_plug::prelude::*;
+use nice_plug::prelude::*;
 
 fn main() {
-    nih_export_standalone::<plugin::Plugin>();
+    nice_export_standalone::<plugin::Plugin>();
 }

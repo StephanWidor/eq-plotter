@@ -3,7 +3,7 @@
 Playing around to learn some Rust:
 
 - using egui for plotting impulse and frequency response, as well as poles and zeros of biquad eqs.
-- using nih-plug for building an eq audio plugin
+- using nice-plug for building an eq audio plugin
 
 https://github.com/user-attachments/assets/aac8b0cc-324e-41b8-9f55-36b7f83f08f3
 
@@ -41,7 +41,7 @@ cargo run --bin eq-plotter-slint
 Drawing plots in slint is done via plotters crate. This seems to be very slow in debug builds (or at least I didn't find a way to speed that up).
 Building release builds is done by adding `--release` to `cargo build`/`cargo run`.
 
-### nih plugin:
+### nice-plug:
 
 #### Standalone:
 ```

@@ -1,9 +1,9 @@
 use crate::*;
 use eq_plotter_egui::*;
-use nih_plug::prelude as nih;
+use nice_plug::prelude as nice;
 use std::sync::{self, atomic};
 
-pub fn create_editor<'a>(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn nih::Editor>> {
+pub fn create_editor<'a>(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn nice::Editor>> {
     let editor_state = params.editor_state.clone();
     let app_config = &params.app_config;
     let log_frequency_range = app_config.log_frequency_range().clone();
@@ -11,10 +11,10 @@ pub fn create_editor<'a>(params: sync::Arc<params::PluginParams>) -> Option<Box<
     let q_range = app_config.q_range().clone();
     let min_size = egui::Vec2::new(700.0, 400.0);
     let color_palette = params.color_palette.clone();
-    nih_plug_egui::create_egui_editor(
+    nice_plug_egui::create_egui_editor(
         params.editor_state.clone(),
         (),
-        nih_plug_egui::EguiSettings::default(),
+        nice_plug_egui::EguiSettings::default(),
         |egui_ctx, _, _| {
             egui_ctx.set_theme(egui::Theme::Dark);
         },
@@ -22,7 +22,7 @@ pub fn create_editor<'a>(params: sync::Arc<params::PluginParams>) -> Option<Box<
             if !editor_state.is_open() {
                 return;
             }
-            nih_plug_egui::resizable_window::ResizableWindow::new("plugin-window")
+            nice_plug_egui::resizable_window::ResizableWindow::new("plugin-window")
                 .min_size(min_size)
                 .show(ui, editor_state.as_ref(), |ui| {
                     // ResizableWindow already has a CentralPanel, so this is a bit weird. But I couldn't find out a better way
