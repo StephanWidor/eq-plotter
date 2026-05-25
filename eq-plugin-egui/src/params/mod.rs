@@ -30,7 +30,6 @@ pub struct PluginParams<
     #[nested(group = "show_params")]
     pub show_params: ShowParams,
 
-    pub drag_eq_index: atomic::AtomicUsize,
     pub analyzer_data:
         fft::signal_analyzer::SharedData<f32, { ANALYZER_NUM_BINS }, { NUM_CHANNELS }>,
     pub eq_ranges: EqRanges,
@@ -57,7 +56,6 @@ impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS:
             }),
             sample_rate: nice::AtomicF32::new(settings.init_sample_rate),
             show_params: ShowParams::from_options(&settings.ui.show_options),
-            drag_eq_index: atomic::AtomicUsize::new(usize::MAX),
             analyzer_data: fft::signal_analyzer::SharedData::new(settings.init_sample_rate),
             eq_ranges: eq_ranges,
             impulse_response_params: settings.ui.impulse_response_params.clone(),
