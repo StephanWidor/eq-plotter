@@ -7,6 +7,7 @@ pub struct Settings<F: utils::Float, const NUM_BANDS: usize> {
     pub init_eqs: [eq::Eq<F>; NUM_BANDS],
     pub init_sample_rate: F,
     pub ui: ui::Settings<F>,
+    pub persistence_dir: std::path::PathBuf,
 }
 
 impl<F: utils::Float, const NUM_BANDS: usize> Default for Settings<F, NUM_BANDS> {
@@ -20,6 +21,10 @@ impl<F: utils::Float, const NUM_BANDS: usize> Default for Settings<F, NUM_BANDS>
                 impulse_response_params: ui::ImpulseResponseParams::default(),
                 show_options: ui::ShowOptions::new_all_enabled(),
             },
+            persistence_dir: dirs::config_dir()
+                .unwrap_or_else(|| std::path::PathBuf::from("."))
+                .join("sw")
+                .join("eq_plotter"),
         }
     }
 }

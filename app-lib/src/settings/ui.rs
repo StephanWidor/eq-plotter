@@ -8,7 +8,7 @@ pub struct Settings<F: audio_lib::utils::Float> {
     pub show_options: ShowOptions,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ShowOptions {
     pub gain: bool,
     pub signal_gain_spectrum: bool,
