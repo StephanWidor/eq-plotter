@@ -1,7 +1,9 @@
 use crate::utils;
 use enum_table::Enumable;
 
-#[derive(Debug, PartialEq, Clone, Copy, enum_table::Enumable)]
+#[derive(
+    Debug, PartialEq, Clone, Copy, enum_table::Enumable, serde::Serialize, serde::Deserialize,
+)]
 pub enum EqType {
     Volume,
     LowPass,
@@ -93,7 +95,8 @@ impl TryFrom<&str> for EqType {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy, serde::Serialize, serde::Deserialize)]
+#[serde(bound = "F: utils::Float")]
 pub enum Gain<F: utils::Float> {
     Amplitude(F),
     Db(F),
@@ -132,7 +135,8 @@ impl From<Gain<f64>> for Gain<f32> {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy, serde::Serialize, serde::Deserialize)]
+#[serde(bound = "F: utils::Float")]
 pub enum Frequency<F: utils::Float> {
     Hz(F),
     LogHz(F),
@@ -171,7 +175,8 @@ impl From<Frequency<f64>> for Frequency<f32> {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(bound = "F: utils::Float")]
 pub struct Eq<F: utils::Float> {
     pub gain: Gain<F>,
     pub frequency: Frequency<F>,

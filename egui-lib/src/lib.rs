@@ -2,15 +2,15 @@
 
 pub mod colors;
 pub mod control;
-pub mod options;
 pub mod plotter;
 pub mod utils;
 
 use audio_lib::utils as audio_utils;
 use audio_lib::*;
 
-pub type EqRanges<F> = app_lib::settings::EqRanges<F>;
-pub type ImpulseResponseSettings<F> = app_lib::settings::ImpulseResponse<F>;
+pub type EqRanges<F> = app_lib::settings::ui::EqRanges<F>;
+pub type ImpulseResponseParams<F> = app_lib::settings::ui::ImpulseResponseParams<F>;
+pub type ShowOptions = app_lib::settings::ui::ShowOptions;
 
 #[cfg(not(feature = "analyzer_data"))]
 pub fn draw<F: audio_utils::Float + egui::emath::Numeric>(
@@ -18,9 +18,9 @@ pub fn draw<F: audio_utils::Float + egui::emath::Numeric>(
     eqs: &mut [eq::Eq<F>],
     drag_eq_index: &mut usize,
     eq_ranges: &EqRanges<F>,
-    impulse_response_settings: &ImpulseResponseSettings<F>,
+    impulse_response_params: &ImpulseResponseParams<F>,
     sample_rate: F,
-    show_options: &mut options::ShowOptions,
+    show_options: &mut ShowOptions,
     color_palette: &colors::ColorPalette,
 ) {
     draw_impl::<F, 0, 0>(
@@ -28,7 +28,7 @@ pub fn draw<F: audio_utils::Float + egui::emath::Numeric>(
         eqs,
         drag_eq_index,
         eq_ranges,
-        impulse_response_settings,
+        impulse_response_params,
         sample_rate,
         show_options,
         color_palette,
@@ -45,10 +45,10 @@ pub fn draw<
     eqs: &mut [eq::Eq<F>],
     drag_eq_index: &mut usize,
     eq_ranges: &EqRanges<F>,
-    impulse_response_settings: &ImpulseResponseSettings<F>,
+    impulse_response_params: &ImpulseResponseParams<F>,
     sample_rate: F,
     spectrum_data: &plotter::SpectrumData<F, NUM_SPECTRUM_BINS, NUM_SPECTRUM_CHANNELS>,
-    show_options: &mut options::ShowOptions,
+    show_options: &mut ShowOptions,
     color_palette: &colors::ColorPalette,
 ) {
     draw_impl(
@@ -56,7 +56,7 @@ pub fn draw<
         eqs,
         drag_eq_index,
         eq_ranges,
-        impulse_response_settings,
+        impulse_response_params,
         sample_rate,
         spectrum_data,
         show_options,
@@ -73,14 +73,14 @@ fn draw_impl<
     eqs: &mut [eq::Eq<F>],
     drag_eq_index: &mut usize,
     eq_ranges: &EqRanges<F>,
-    impulse_response_settings: &ImpulseResponseSettings<F>,
+    impulse_response_params: &ImpulseResponseParams<F>,
     sample_rate: F,
     #[cfg(feature = "analyzer_data")] spectrum_data: &plotter::SpectrumData<
         F,
         NUM_SPECTRUM_BINS,
         NUM_SPECTRUM_CHANNELS,
     >,
-    show_options: &mut options::ShowOptions,
+    show_options: &mut ShowOptions,
     color_palette: &colors::ColorPalette,
 ) {
     let ui_size = ui.available_size();
@@ -111,7 +111,7 @@ fn draw_impl<
             eqs,
             drag_eq_index,
             eq_ranges,
-            impulse_response_settings,
+            impulse_response_params,
             sample_rate,
             show_options,
             color_palette,
@@ -123,7 +123,7 @@ fn draw_impl<
             eqs,
             drag_eq_index,
             eq_ranges,
-            impulse_response_settings,
+            impulse_response_params,
             sample_rate,
             spectrum_data,
             show_options,

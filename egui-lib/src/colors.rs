@@ -1,4 +1,3 @@
-// swdebug: move to app_lib?
 #[derive(Clone)]
 pub struct ColorPalette {
     pub background: egui::Color32,

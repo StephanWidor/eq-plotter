@@ -34,8 +34,8 @@ fn main() -> eframe::Result {
                 web_options,
                 Box::new(|_cc| {
                     Ok(Box::new(<EqPlotter>::new(
-                        &Settings::default(),
-                        &colors::ColorPalette::default(),
+                        Settings::default(),
+                        colors::ColorPalette::default(),
                     )))
                 }),
             )
@@ -61,8 +61,8 @@ fn main() -> eframe::Result {
         options,
         Box::new(|_cc| {
             Ok(Box::new(EqPlotter::new(
-                &Settings::default(),
-                &colors::ColorPalette::default(),
+                Settings::default(),
+                colors::ColorPalette::default(),
             )))
         }),
     )

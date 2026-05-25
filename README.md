@@ -28,7 +28,7 @@ python3 -m http.server --directory ./wasm_out 8080
 ```
 Then you can run eq-plotter in your browser under localhost:8080.
 
-### slint app:
+### slint app (only partly implemented):
 ```
 cargo build -p eq-plotter-slint [--release]
 ```

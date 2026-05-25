@@ -4,8 +4,8 @@
 pub mod eq_plotter;
 pub mod plotters;
 
-pub type EqRanges = app_lib::settings::EqRanges<f32>;
-pub type ImpulseResponseSettings = app_lib::settings::ImpulseResponse<f32>;
+pub type EqRanges = app_lib::settings::ui::EqRanges<f32>;
+pub type ImpulseResponseParams = app_lib::settings::ui::ImpulseResponseParams<f32>;
 pub type Settings = app_lib::settings::Settings<f32, 1>;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

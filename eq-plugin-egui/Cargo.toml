@@ -13,6 +13,7 @@ crate-type = ["cdylib", "lib"]
 [dependencies]
 egui = { workspace = true }
 egui_plot = { workspace = true }
+serde = { workspace = true }
 
 nice-plug = { git = "https://codeberg.org/BillyDM/nice-plug.git", features = [
     "assert_process_allocs",

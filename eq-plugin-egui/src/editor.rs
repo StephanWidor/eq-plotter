@@ -1,6 +1,10 @@
 use crate::*;
 use std::sync::{self, atomic};
 
+pub struct UiState {
+    pub drag_eq_index: usize,
+}
+
 pub fn create_editor<
     'a,
     const NUM_BANDS: usize,
@@ -12,15 +16,18 @@ pub fn create_editor<
     let editor_state = params.editor_state.clone();
     let min_size = egui::Vec2::new(700.0, 400.0);
     let color_palette = params.color_palette.clone();
+    let mut ui_state = Some(UiState {
+        drag_eq_index: usize::MAX,
+    });
 
     nice_plug_egui::create_egui_editor(
         params.editor_state.clone(),
-        (),
+        ui_state.take().unwrap(),
         nice_plug_egui::EguiSettings::default(),
         |egui_ctx, _, _| {
             egui_ctx.set_theme(egui::Theme::Dark);
         },
-        move |ui, setter, _, _| {
+        move |ui, setter, _, ui_state| {
             if !editor_state.is_open() {
                 return;
             }
@@ -38,9 +45,7 @@ pub fn create_editor<
                         .show_inside(ui, |ui| {
                             let eqs = params.eqs();
                             let mut new_eqs = eqs.clone();
-                            let mut show_options = params.show_options();
-                            let mut drag_eq_index =
-                                params.drag_eq_index.load(atomic::Ordering::Relaxed);
+                            let mut show_options = params.show_params.load_options();
                             let spectrum_gains =
                                 params.analyzer_data.linear_gains.consumer.pull_and_read();
                             let spectrum_data = egui_lib::plotter::SpectrumData {
@@ -54,9 +59,9 @@ pub fn create_editor<
                             egui_lib::draw(
                                 ui,
                                 &mut new_eqs,
-                                &mut drag_eq_index,
+                                &mut ui_state.drag_eq_index,
                                 &params.eq_ranges,
-                                &params.impulse_response_settings,
+                                &params.impulse_response_params,
                                 params.sample_rate.load(atomic::Ordering::Relaxed),
                                 &spectrum_data,
                                 &mut show_options,
@@ -81,10 +86,7 @@ pub fn create_editor<
                                 }
                             }
 
-                            params.set_show_options(&show_options);
-                            params
-                                .drag_eq_index
-                                .store(drag_eq_index, atomic::Ordering::Relaxed);
+                            params.show_params.store_options(&show_options);
                         });
                 });
         },
