@@ -33,20 +33,15 @@ impl<F: utils::Float, const NUM_BANDS: usize> Settings<F, NUM_BANDS> {
             let frequency = eq::Frequency::LogHz(
                 *log_frequency_range.start() + F::from(i + 1).unwrap() * log_frequency_step,
             );
-            if i == active_index {
-                eq::Eq {
-                    gain: eq::Gain::Db(F::from(3).unwrap()),
-                    frequency: frequency,
-                    q: F::from(0.7).unwrap(),
-                    eq_type: eq::EqType::Peak,
-                }
-            } else {
-                eq::Eq {
-                    gain: eq::Gain::Db(F::from(0).unwrap()),
-                    frequency: frequency,
-                    q: F::from(0.7).unwrap(),
-                    eq_type: eq::EqType::Bypassed,
-                }
+            eq::Eq {
+                gain: eq::Gain::Db(F::from(3).unwrap()),
+                frequency: frequency,
+                q: F::from(0.7).unwrap(),
+                eq_type: if i == active_index {
+                    eq::EqType::Peak
+                } else {
+                    eq::EqType::Bypassed
+                },
             }
         })
     }
