@@ -2051,6 +2051,7 @@ dependencies = [
  "egui_plot",
  "nice-plug",
  "nice-plug-egui",
+ "serde",
 ]
 
 [[package]]

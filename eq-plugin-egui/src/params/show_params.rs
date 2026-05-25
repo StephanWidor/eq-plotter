@@ -1,10 +1,16 @@
 use super::*;
 
+#[derive(nice::Params, serde::Serialize, serde::Deserialize)]
 pub struct ShowParams {
+    #[persist = "gain"]
     pub gain: atomic::AtomicBool,
+    #[persist = "signal_gain_spectrum"]
     pub signal_gain_spectrum: atomic::AtomicBool,
+    #[persist = "phase"]
     pub phase: atomic::AtomicBool,
+    #[persist = "impulse_response"]
     pub impulse_response: atomic::AtomicBool,
+    #[persist = "poles_and_zeros"]
     pub poles_and_zeros: atomic::AtomicBool,
 }
 
@@ -20,7 +26,8 @@ impl ShowParams {
     }
 
     pub fn store_options(&self, options: &ShowOptions) {
-        self.gain.store(options.gain, atomic::Ordering::Relaxed);
+        self.gain
+            .store(options.gain, std::sync::atomic::Ordering::Relaxed);
         self.signal_gain_spectrum
             .store(options.signal_gain_spectrum, atomic::Ordering::Relaxed);
         self.phase.store(options.phase, atomic::Ordering::Relaxed);

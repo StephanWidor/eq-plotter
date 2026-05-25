@@ -26,7 +26,10 @@ pub struct PluginParams<
     pub eq_params: [EqParams; NUM_BANDS],
 
     pub sample_rate: nice::AtomicF32,
+
+    #[nested(group = "show_params")]
     pub show_params: ShowParams,
+
     pub drag_eq_index: atomic::AtomicUsize,
     pub analyzer_data:
         fft::signal_analyzer::SharedData<f32, { ANALYZER_NUM_BINS }, { NUM_CHANNELS }>,
