@@ -25,7 +25,7 @@ pub struct PluginParams<
     pub show_phase: atomic::AtomicBool,
     pub show_impulse_response: atomic::AtomicBool,
     pub show_poles_and_zeros: atomic::AtomicBool,
-    pub selected_eq_index: atomic::AtomicUsize,
+    pub drag_eq_index: atomic::AtomicUsize,
     pub analyzer_data:
         fft::signal_analyzer::SharedData<f32, { ANALYZER_NUM_BINS }, { NUM_CHANNELS }>,
     pub eq_ranges: EqRanges,
@@ -56,7 +56,7 @@ impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS:
             show_phase: atomic::AtomicBool::new(false),
             show_impulse_response: atomic::AtomicBool::new(false),
             show_poles_and_zeros: atomic::AtomicBool::new(false),
-            selected_eq_index: atomic::AtomicUsize::new(usize::MAX),
+            drag_eq_index: atomic::AtomicUsize::new(usize::MAX),
             analyzer_data: fft::signal_analyzer::SharedData::new(settings.init_sample_rate),
             eq_ranges: eq_ranges,
             impulse_response_settings: settings.impulse_response.clone(),

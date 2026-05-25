@@ -39,8 +39,8 @@ pub fn create_editor<
                             let eqs = params.eqs();
                             let mut new_eqs = eqs.clone();
                             let mut show_options = params.show_options();
-                            let mut selected_eq_index =
-                                params.selected_eq_index.load(atomic::Ordering::Relaxed);
+                            let mut drag_eq_index =
+                                params.drag_eq_index.load(atomic::Ordering::Relaxed);
                             let spectrum_gains =
                                 params.analyzer_data.linear_gains.consumer.pull_and_read();
                             let spectrum_data = egui_lib::plotter::SpectrumData {
@@ -54,7 +54,7 @@ pub fn create_editor<
                             egui_lib::draw(
                                 ui,
                                 &mut new_eqs,
-                                &mut selected_eq_index,
+                                &mut drag_eq_index,
                                 &params.eq_ranges,
                                 &params.impulse_response_settings,
                                 params.sample_rate.load(atomic::Ordering::Relaxed),
@@ -83,8 +83,8 @@ pub fn create_editor<
 
                             params.set_show_options(&show_options);
                             params
-                                .selected_eq_index
-                                .store(selected_eq_index, atomic::Ordering::Relaxed);
+                                .drag_eq_index
+                                .store(drag_eq_index, atomic::Ordering::Relaxed);
                         });
                 });
         },

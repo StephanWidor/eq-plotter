@@ -20,7 +20,7 @@ pub fn add_plot<
     ui: &mut egui::Ui,
     coefficients: &[Option<biquad::coefficients::Coefficients<F>>],
     sample_rate: F,
-    last_eq_index: usize,
+    last_drag_eq_index: usize,
     eq_ranges: &EqRanges<F>,
     plot_size: f32,
     color_palette: &colors::ColorPalette,
@@ -29,7 +29,7 @@ pub fn add_plot<
         ui,
         coefficients,
         sample_rate,
-        last_eq_index,
+        last_drag_eq_index,
         eq_ranges,
         plot_size,
         color_palette,
@@ -45,7 +45,7 @@ pub fn add_plot<
     ui: &mut egui::Ui,
     coefficients: &[Option<biquad::coefficients::Coefficients<F>>],
     sample_rate: F,
-    last_eq_index: usize,
+    last_drag_eq_index: usize,
     eq_ranges: &EqRanges<F>,
     spectrum_data: &plotter::SpectrumData<F, NUM_SPECTRUM_BINS, NUM_SPECTRUM_CHANNELS>,
     plot_size: f32,
@@ -55,7 +55,7 @@ pub fn add_plot<
         ui,
         coefficients,
         sample_rate,
-        last_eq_index,
+        last_drag_eq_index,
         eq_ranges,
         spectrum_data,
         plot_size,
@@ -71,7 +71,7 @@ fn add_plot_impl<
     ui: &mut egui::Ui,
     coefficients: &[Option<biquad::coefficients::Coefficients<F>>],
     sample_rate: F,
-    last_eq_index: usize,
+    last_drag_eq_index: usize,
     eq_ranges: &EqRanges<F>,
     #[cfg(feature = "analyzer_data")] spectrum_data: &plotter::SpectrumData<
         F,
@@ -181,23 +181,23 @@ fn add_plot_impl<
         plot_ui.pointer_coordinate_drag_delta()
     });
 
-    let mut selected_eq_index = last_eq_index;
+    let mut drag_eq_index = last_drag_eq_index;
     if plot_response.response.is_pointer_button_down_on() {
-        if selected_eq_index >= coefficients.len()
+        if drag_eq_index >= coefficients.len()
             && let Some(hovered_item) = plot_response.hovered_plot_item
         {
             if let Some(hovered_eq_index) = eq_id_to_index(hovered_item) {
-                selected_eq_index = hovered_eq_index;
+                drag_eq_index = hovered_eq_index;
             }
         }
     } else {
-        selected_eq_index = usize::MAX;
+        drag_eq_index = usize::MAX;
     }
 
-    if selected_eq_index < coefficients.len() {
+    if drag_eq_index < coefficients.len() {
         let drag_delta = plot_response.inner;
         IndexedEqDiff {
-            index: selected_eq_index,
+            index: drag_eq_index,
             diff: Some(EqDiff {
                 log_frequency: F::from(drag_delta.x).unwrap(),
                 gain_db: F::from(drag_delta.y).unwrap(),
@@ -205,7 +205,7 @@ fn add_plot_impl<
         }
     } else {
         IndexedEqDiff {
-            index: selected_eq_index,
+            index: drag_eq_index,
             diff: None,
         }
     }

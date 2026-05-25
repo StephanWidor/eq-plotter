@@ -16,7 +16,7 @@ pub type ImpulseResponseSettings<F> = app_lib::settings::ImpulseResponse<F>;
 pub fn draw<F: audio_utils::Float + egui::emath::Numeric>(
     ui: &mut egui::Ui,
     eqs: &mut [eq::Eq<F>],
-    selected_eq_index: &mut usize,
+    drag_eq_index: &mut usize,
     eq_ranges: &EqRanges<F>,
     impulse_response_settings: &ImpulseResponseSettings<F>,
     sample_rate: F,
@@ -26,7 +26,7 @@ pub fn draw<F: audio_utils::Float + egui::emath::Numeric>(
     draw_impl::<F, 0, 0>(
         ui,
         eqs,
-        selected_eq_index,
+        drag_eq_index,
         eq_ranges,
         impulse_response_settings,
         sample_rate,
@@ -43,7 +43,7 @@ pub fn draw<
 >(
     ui: &mut egui::Ui,
     eqs: &mut [eq::Eq<F>],
-    selected_eq_index: &mut usize,
+    drag_eq_index: &mut usize,
     eq_ranges: &EqRanges<F>,
     impulse_response_settings: &ImpulseResponseSettings<F>,
     sample_rate: F,
@@ -54,7 +54,7 @@ pub fn draw<
     draw_impl(
         ui,
         eqs,
-        selected_eq_index,
+        drag_eq_index,
         eq_ranges,
         impulse_response_settings,
         sample_rate,
@@ -71,7 +71,7 @@ fn draw_impl<
 >(
     ui: &mut egui::Ui,
     eqs: &mut [eq::Eq<F>],
-    selected_eq_index: &mut usize,
+    drag_eq_index: &mut usize,
     eq_ranges: &EqRanges<F>,
     impulse_response_settings: &ImpulseResponseSettings<F>,
     sample_rate: F,
@@ -109,7 +109,7 @@ fn draw_impl<
             ui,
             &available_size,
             eqs,
-            selected_eq_index,
+            drag_eq_index,
             eq_ranges,
             impulse_response_settings,
             sample_rate,
@@ -121,7 +121,7 @@ fn draw_impl<
             ui,
             &available_size,
             eqs,
-            selected_eq_index,
+            drag_eq_index,
             eq_ranges,
             impulse_response_settings,
             sample_rate,

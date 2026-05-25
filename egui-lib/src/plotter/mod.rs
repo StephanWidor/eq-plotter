@@ -11,7 +11,7 @@ pub fn add_plots<F: audio_utils::Float + egui::emath::Numeric>(
     ui: &mut egui::Ui,
     available_size: &egui::Vec2,
     eqs: &mut [eq::Eq<F>],
-    selected_eq_index: &mut usize,
+    drag_eq_index: &mut usize,
     eq_ranges: &EqRanges<F>,
     impulse_response_settings: &ImpulseResponseSettings<F>,
     sample_rate: F,
@@ -22,7 +22,7 @@ pub fn add_plots<F: audio_utils::Float + egui::emath::Numeric>(
         ui,
         available_size,
         eqs,
-        selected_eq_index,
+        drag_eq_index,
         eq_ranges,
         impulse_response_settings,
         sample_rate,
@@ -47,7 +47,7 @@ pub fn add_plots<
     ui: &mut egui::Ui,
     available_size: &egui::Vec2,
     eqs: &mut [eq::Eq<F>],
-    selected_eq_index: &mut usize,
+    drag_eq_index: &mut usize,
     eq_ranges: &EqRanges<F>,
     impulse_response_settings: &ImpulseResponseSettings<F>,
     sample_rate: F,
@@ -59,7 +59,7 @@ pub fn add_plots<
         ui,
         available_size,
         eqs,
-        selected_eq_index,
+        drag_eq_index,
         eq_ranges,
         impulse_response_settings,
         sample_rate,
@@ -77,7 +77,7 @@ fn add_plots_impl<
     ui: &mut egui::Ui,
     available_size: &egui::Vec2,
     eqs: &mut [eq::Eq<F>],
-    selected_eq_index: &mut usize,
+    drag_eq_index: &mut usize,
     eq_ranges: &EqRanges<F>,
     impulse_response_settings: &ImpulseResponseSettings<F>,
     sample_rate: F,
@@ -119,16 +119,16 @@ fn add_plots_impl<
                                     ui,
                                     &coefficients,
                                     sample_rate,
-                                    *selected_eq_index,
+                                    *drag_eq_index,
                                     eq_ranges,
                                     #[cfg(feature = "analyzer_data")]
                                     spectrum_data,
                                     plot_size,
                                     color_palette,
                                 );
-                            *selected_eq_index = indexed_eq_diff.index;
+                            *drag_eq_index = indexed_eq_diff.index;
                             if let Some(eq_diff) = indexed_eq_diff.diff {
-                                let eq = &mut eqs[*selected_eq_index];
+                                let eq = &mut eqs[*drag_eq_index];
                                 eq.frequency = eq::Frequency::LogHz(
                                     eq.frequency.log_hz() + eq_diff.log_frequency,
                                 );
