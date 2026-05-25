@@ -1,4 +1,4 @@
-use crate::{plotters::style, EqRanges, ImpulseResponseSettings};
+use crate::{plotters::style, EqRanges, ImpulseResponseParams};
 use audio_lib::*;
 use num::complex::ComplexFloat;
 use plotters::prelude::*;
@@ -7,7 +7,7 @@ pub fn render_eq_plots(
     eq: &eq::Eq<f32>,
     sample_rate: f32,
     eq_ranges: &EqRanges,
-    impulse_response_settings: &ImpulseResponseSettings,
+    impulse_response_params: &ImpulseResponseParams,
     width: u32,
     height: u32,
     background_color: slint::Color,
@@ -51,7 +51,7 @@ pub fn render_eq_plots(
     draw_ir_chart(
         &plot_areas[1],
         &chart_style,
-        impulse_response_settings,
+        impulse_response_params,
         &coefficients,
     );
     draw_poles_and_zeros_chart(&plot_areas[3], &chart_style, &coefficients);
@@ -197,14 +197,14 @@ fn draw_phase_chart<DB: DrawingBackend>(
 fn draw_ir_chart<DB: DrawingBackend>(
     area: &DrawingArea<DB, plotters::coord::Shift>,
     style: &style::ChartStyleData,
-    impulse_response_settings: &ImpulseResponseSettings,
+    impulse_response_params: &ImpulseResponseParams,
     coefficients: &biquad::coefficients::Coefficients<f32>,
 ) {
     let impulse_response = biquad::utils::impulse_response_for_coefficients(
         coefficients.clone(),
-        impulse_response_settings.eps,
-        impulse_response_settings.hold_length,
-        impulse_response_settings.max_length,
+        impulse_response_params.eps,
+        impulse_response_params.hold_length,
+        impulse_response_params.max_length,
     );
 
     let mut chart = ChartBuilder::on(&area)

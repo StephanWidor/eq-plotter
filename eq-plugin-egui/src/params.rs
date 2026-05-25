@@ -1,6 +1,6 @@
 use crate::*;
 use audio_lib::*;
-use egui_lib::{colors, options};
+use egui_lib::colors;
 use std::ops::RangeInclusive;
 use std::sync::{self, atomic};
 
@@ -29,7 +29,7 @@ pub struct PluginParams<
     pub analyzer_data:
         fft::signal_analyzer::SharedData<f32, { ANALYZER_NUM_BINS }, { NUM_CHANNELS }>,
     pub eq_ranges: EqRanges,
-    pub impulse_response_settings: ImpulseResponseSettings,
+    pub impulse_response_params: ImpulseResponseParams,
     pub color_palette: colors::ColorPalette,
 }
 
@@ -37,7 +37,7 @@ impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS:
     PluginParams<NUM_BANDS, NUM_CHANNELS, ANALYZER_NUM_BINS>
 {
     pub fn new(settings: &Settings<NUM_BANDS>, smoothing_length_ms: f32) -> Self {
-        let eq_ranges = settings.eq_ranges.clone();
+        let eq_ranges = settings.ui.eq_ranges.clone();
         Self {
             editor_state: nice_plug_egui::EguiState::from_size(1000, 700),
             eq_params: std::array::from_fn(|index| {
@@ -59,7 +59,7 @@ impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS:
             drag_eq_index: atomic::AtomicUsize::new(usize::MAX),
             analyzer_data: fft::signal_analyzer::SharedData::new(settings.init_sample_rate),
             eq_ranges: eq_ranges,
-            impulse_response_settings: settings.impulse_response.clone(),
+            impulse_response_params: settings.ui.impulse_response_params.clone(),
             color_palette: colors::ColorPalette::default(),
         }
     }
@@ -68,8 +68,8 @@ impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS:
         std::array::from_fn(|index| self.eq_params[index].to_eq())
     }
 
-    pub fn show_options(&self) -> options::ShowOptions {
-        options::ShowOptions {
+    pub fn show_options(&self) -> ShowOptions {
+        ShowOptions {
             gain: self.show_gain.load(atomic::Ordering::Relaxed),
             signal_gain_spectrum: self
                 .show_signal_gain_spectrum
@@ -80,7 +80,7 @@ impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS:
         }
     }
 
-    pub fn set_show_options(&self, options: &options::ShowOptions) {
+    pub fn set_show_options(&self, options: &ShowOptions) {
         self.show_gain
             .store(options.gain, atomic::Ordering::Relaxed);
         self.show_signal_gain_spectrum

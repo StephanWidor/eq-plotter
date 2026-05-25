@@ -6,7 +6,7 @@ pub fn add_controls<F: audio_utils::Float + egui::emath::Numeric>(
     size: egui::Vec2,
     eqs: &mut [eq::Eq<F>],
     eq_ranges: &EqRanges<F>,
-    show_options: &mut options::ShowOptions,
+    show_options: &mut ShowOptions,
     eq_colors: &[egui::Color32],
 ) {
     let control_outer_margin = size.x / 25_f32;

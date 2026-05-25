@@ -8,8 +8,9 @@ pub mod processor;
 use config::*;
 pub use nice_plug::prelude as nice;
 
-pub type EqRanges = app_lib::settings::EqRanges<f32>;
-pub type ImpulseResponseSettings = app_lib::settings::ImpulseResponse<f32>;
+pub type EqRanges = app_lib::settings::ui::EqRanges<f32>;
+pub type ImpulseResponseParams = app_lib::settings::ui::ImpulseResponseParams<f32>;
+pub type ShowOptions = app_lib::settings::ui::ShowOptions;
 pub type Settings<const NUM_BANDS: usize> = app_lib::settings::Settings<f32, NUM_BANDS>;
 pub type Plugin =
     plugin::Plugin<{ Config::NUM_BANDS }, { Config::NUM_CHANNELS }, { Config::ANALYZER_NUM_BINS }>;

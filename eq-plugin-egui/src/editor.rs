@@ -56,7 +56,7 @@ pub fn create_editor<
                                 &mut new_eqs,
                                 &mut drag_eq_index,
                                 &params.eq_ranges,
-                                &params.impulse_response_settings,
+                                &params.impulse_response_params,
                                 params.sample_rate.load(atomic::Ordering::Relaxed),
                                 &spectrum_data,
                                 &mut show_options,

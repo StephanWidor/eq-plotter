@@ -23,10 +23,10 @@ impl EqPlotter {
             sample_rate: settings.init_sample_rate,
         };
 
-        eq_plotter.init_ui_properties(&settings.eq_ranges);
+        eq_plotter.init_ui_properties(&settings.ui.eq_ranges);
         eq_plotter.init_ui_callbacks(
-            settings.eq_ranges.clone(),
-            settings.impulse_response.clone(),
+            settings.ui.eq_ranges.clone(),
+            settings.ui.impulse_response_params.clone(),
         );
 
         Ok(eq_plotter)
@@ -72,7 +72,7 @@ impl EqPlotter {
     fn init_ui_callbacks(
         &self,
         eq_ranges: EqRanges,
-        impulse_response_settings: ImpulseResponseSettings,
+        impulse_response_params: ImpulseResponseParams,
     ) {
         let ui_callbacks = self.ui.global::<Callbacks>();
         ui_callbacks.on_request_set_eq_type({
@@ -137,7 +137,7 @@ impl EqPlotter {
                     &eq.read().unwrap(),
                     sample_rate,
                     &eq_ranges,
-                    &impulse_response_settings,
+                    &impulse_response_params,
                     width as u32,
                     height as u32,
                     background_color,

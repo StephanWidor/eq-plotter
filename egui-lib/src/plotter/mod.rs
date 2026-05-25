@@ -13,9 +13,9 @@ pub fn add_plots<F: audio_utils::Float + egui::emath::Numeric>(
     eqs: &mut [eq::Eq<F>],
     drag_eq_index: &mut usize,
     eq_ranges: &EqRanges<F>,
-    impulse_response_settings: &ImpulseResponseSettings<F>,
+    impulse_response_params: &ImpulseResponseParams<F>,
     sample_rate: F,
-    show_options: &options::ShowOptions,
+    show_options: &ShowOptions,
     color_palette: &colors::ColorPalette,
 ) {
     add_plots_impl::<F, 0, 0>(
@@ -24,7 +24,7 @@ pub fn add_plots<F: audio_utils::Float + egui::emath::Numeric>(
         eqs,
         drag_eq_index,
         eq_ranges,
-        impulse_response_settings,
+        impulse_response_params,
         sample_rate,
         show_options,
         color_palette,
@@ -49,10 +49,10 @@ pub fn add_plots<
     eqs: &mut [eq::Eq<F>],
     drag_eq_index: &mut usize,
     eq_ranges: &EqRanges<F>,
-    impulse_response_settings: &ImpulseResponseSettings<F>,
+    impulse_response_params: &ImpulseResponseParams<F>,
     sample_rate: F,
     spectrum_data: &SpectrumData<F, NUM_SPECTRUM_BINS, NUM_SPECTRUM_CHANNELS>,
-    show_options: &options::ShowOptions,
+    show_options: &ShowOptions,
     color_palette: &colors::ColorPalette,
 ) {
     add_plots_impl(
@@ -61,7 +61,7 @@ pub fn add_plots<
         eqs,
         drag_eq_index,
         eq_ranges,
-        impulse_response_settings,
+        impulse_response_params,
         sample_rate,
         spectrum_data,
         show_options,
@@ -79,14 +79,14 @@ fn add_plots_impl<
     eqs: &mut [eq::Eq<F>],
     drag_eq_index: &mut usize,
     eq_ranges: &EqRanges<F>,
-    impulse_response_settings: &ImpulseResponseSettings<F>,
+    impulse_response_params: &ImpulseResponseParams<F>,
     sample_rate: F,
     #[cfg(feature = "analyzer_data")] spectrum_data: &SpectrumData<
         F,
         NUM_SPECTRUM_BINS,
         NUM_SPECTRUM_CHANNELS,
     >,
-    show_options: &options::ShowOptions,
+    show_options: &ShowOptions,
     color_palette: &colors::ColorPalette,
 ) {
     let plot_size = plot_size(show_options, available_size);
@@ -152,7 +152,7 @@ fn add_plots_impl<
                             impulse_response::add_plot(
                                 ui,
                                 &coefficients,
-                                impulse_response_settings,
+                                impulse_response_params,
                                 plot_size,
                                 color_palette,
                             );
@@ -166,7 +166,7 @@ fn add_plots_impl<
         });
 }
 
-fn plot_size(show_options: &options::ShowOptions, available_size: &egui::Vec2) -> f32 {
+fn plot_size(show_options: &ShowOptions, available_size: &egui::Vec2) -> f32 {
     let num_rows = (((show_options.gain && show_options.phase)
         || (show_options.impulse_response && show_options.poles_and_zeros))
         as usize
