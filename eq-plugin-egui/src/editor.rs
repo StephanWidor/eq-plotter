@@ -38,7 +38,7 @@ pub fn create_editor<
                         .show_inside(ui, |ui| {
                             let eqs = params.eqs();
                             let mut new_eqs = eqs.clone();
-                            let mut show_options = params.show_options();
+                            let mut show_options = params.show_params.load_options();
                             let mut drag_eq_index =
                                 params.drag_eq_index.load(atomic::Ordering::Relaxed);
                             let spectrum_gains =
@@ -81,7 +81,7 @@ pub fn create_editor<
                                 }
                             }
 
-                            params.set_show_options(&show_options);
+                            params.show_params.store_options(&show_options);
                             params
                                 .drag_eq_index
                                 .store(drag_eq_index, atomic::Ordering::Relaxed);

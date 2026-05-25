@@ -38,7 +38,8 @@ impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const NUM_BINS: usize>
         if self.plugin_params.editor_state.is_open()
             && self
                 .plugin_params
-                .show_signal_gain_spectrum
+                .show_params
+                .signal_gain_spectrum
                 .load(atomic::Ordering::Relaxed)
         {
             self.analyzer.push(
