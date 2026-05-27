@@ -76,7 +76,7 @@ impl<const NUM_BANDS: usize> Drop for EqPlotter<NUM_BANDS> {
             &self
                 .settings
                 .persistence_dir
-                .join("showoptions.json")
+                .join("show_options.json")
                 .as_path(),
         );
         persistence::save_to_json_file(
