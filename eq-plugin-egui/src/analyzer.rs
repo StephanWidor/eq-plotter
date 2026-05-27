@@ -32,7 +32,7 @@ impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const NUM_BINS: usize>
         true
     }
 
-    pub fn process(&mut self, buffer: &mut nice::Buffer) {
+    pub fn process(&mut self, buffer: &nice::Buffer) {
         let analyzer_data = &self.plugin_params.analyzer_data;
 
         if self.plugin_params.editor_state.is_open()
