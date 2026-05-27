@@ -33,7 +33,7 @@ fn main() -> eframe::Result {
                 canvas,
                 web_options,
                 Box::new(|_cc| {
-                    Ok(Box::new(<EqPlotter>::new(
+                    Ok(Box::new(EqPlotter::new(
                         Settings::default(),
                         colors::ColorPalette::default(),
                     )))
