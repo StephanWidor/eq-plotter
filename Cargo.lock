@@ -1173,7 +1173,8 @@ dependencies = [
 [[package]]
 name = "clap-sys"
 version = "0.5.0"
-source = "git+https://github.com/micahrj/clap-sys.git?rev=25d7f53fdb6363ad63fbd80049cb7a42a97ac156#25d7f53fdb6363ad63fbd80049cb7a42a97ac156"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a76abbdb2907f6fd97fb6bc0b7be96b77d328f2dd9669d1075cc03369ed22154"
 
 [[package]]
 name = "clap_builder"
@@ -1657,9 +1658,9 @@ dependencies = [
 
 [[package]]
 name = "displaydoc"
-version = "0.2.5"
+version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97369cbbc041bc366949bc74d34658d6cda5621039731c6310521892a3a20ae0"
+checksum = "1ac70aa55017e108007fbaf5aa0f54b021c98f92ff8af59d42eda9da96e3dd4f"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1756,9 +1757,9 @@ dependencies = [
 
 [[package]]
 name = "ecolor"
-version = "0.34.2"
+version = "0.34.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "55f6cc0cb3b84a21232c468db972ebcddd34decbf1ff02cdebffd807c13bbd81"
+checksum = "a05fbfa222ffb51989d5ccf33e5f7aebfcf96c5023413856b0c3618a7f79896e"
 dependencies = [
  "bytemuck",
  "emath",
@@ -1766,9 +1767,9 @@ dependencies = [
 
 [[package]]
 name = "eframe"
-version = "0.34.2"
+version = "0.34.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fea3080bfd001aee2223dcb2228d9de7d31f41d7cfb99e8cd70df3ae8083a42f"
+checksum = "f98fe83b2589105b69dd25ca1e0fa2135a6e864d502fd8e08978f937e128cfef"
 dependencies = [
  "ahash",
  "bytemuck",
@@ -1802,9 +1803,9 @@ dependencies = [
 
 [[package]]
 name = "egui"
-version = "0.34.2"
+version = "0.34.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3cbe28ac1a9c0761319aafb9ad37737720cc49d99c13a4a6b990768fa01ffe67"
+checksum = "42112be0ae157289312b92b3dfaf20e911b5a3c4c65d4aab0e7c47fbc0ce16e3"
 dependencies = [
  "accesskit 0.24.0",
  "ahash",
@@ -1821,7 +1822,7 @@ dependencies = [
 [[package]]
 name = "egui-baseview"
 version = "0.2.2"
-source = "git+https://codeberg.org/BillyDM/nice-plug.git#1abffe4d254178583fbe1413c875db61977347f6"
+source = "git+https://codeberg.org/BillyDM/nice-plug.git#4da4fffa3d2b695f10f5e75da9e759dbc28423c5"
 dependencies = [
  "baseview",
  "copypasta",
@@ -1853,9 +1854,9 @@ dependencies = [
 
 [[package]]
 name = "egui-wgpu"
-version = "0.34.2"
+version = "0.34.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f311c0b9cdd8a38821ae6f245fbe6e1a3d7d157c77b7d22344f205b317232c8"
+checksum = "9f0c0559ac5598a1b887a6206dccbab7e3e6246c57cb00ae287262bd44776c9c"
 dependencies = [
  "ahash",
  "bytemuck",
@@ -1873,9 +1874,9 @@ dependencies = [
 
 [[package]]
 name = "egui-winit"
-version = "0.34.2"
+version = "0.34.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8e97625c2fe0fadc8b92ec690fbf515e15e2efd67ca50e063ad3302ec8ee626"
+checksum = "967c5b323625d46d46a59b5daba3fef742248d27693cc18972458619858c4239"
 dependencies = [
  "accesskit_winit 0.32.2",
  "arboard",
@@ -1895,9 +1896,9 @@ dependencies = [
 
 [[package]]
 name = "egui_glow"
-version = "0.34.2"
+version = "0.34.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6caa4eca47cc2358e2c5ae60843a94118e338f87099c6af4170e6e968e8d77cb"
+checksum = "62b652957fa7e1ab01e8fecbfbf4e35f6e43a53fa98af8a562b50d5403cd44b9"
 dependencies = [
  "bytemuck",
  "egui",
@@ -1929,9 +1930,9 @@ checksum = "91622ff5e7162018101f2fea40d6ebf4a78bbe5a49736a2020649edf9693679e"
 
 [[package]]
 name = "emath"
-version = "0.34.2"
+version = "0.34.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a74fbbf7501c430b89df62d102b6bfa02162faaf3e155512c677c9d20f5708d1"
+checksum = "b53f0d33a479321da6b0caa71366c9f67e8a2c149762d90bdc0d16e601ee8ecb"
 dependencies = [
  "bytemuck",
 ]
@@ -1985,9 +1986,9 @@ dependencies = [
 
 [[package]]
 name = "epaint"
-version = "0.34.2"
+version = "0.34.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "92b452e348c2758115288802ca25f86ee286ce2cfae6643711ce116662311310"
+checksum = "6675898a291ec212fc3df04f537d177fce8496120244590e6359dcaa4c25da79"
 dependencies = [
  "ahash",
  "bytemuck",
@@ -2007,9 +2008,9 @@ dependencies = [
 
 [[package]]
 name = "epaint_default_fonts"
-version = "0.34.2"
+version = "0.34.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1644e25dbe3d663fd9c2a4181772c64b23361e377e550c10422ecc3a7de1c3c2"
+checksum = "f8970033a4282a7bcf899b38b5ed3a58b732fe093d03785d58648515d8d309da"
 
 [[package]]
 name = "eq-plotter-egui"
@@ -3710,14 +3711,14 @@ checksum = "b6d2cec3eae94f9f509c767b45932f1ada8350c4bdb85af2fcab4a3c14807981"
 
 [[package]]
 name = "libredox"
-version = "0.1.16"
+version = "0.1.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e02f3bb43d335493c96bf3fd3a321600bf6bd07ed34bc64118e9293bdffea46c"
+checksum = "f02ab6bace2054fb888a3c16f990117b579d14a3088e472d63c6011fa185c9d3"
 dependencies = [
  "bitflags 2.11.1",
  "libc",
  "plain",
- "redox_syscall 0.7.5",
+ "redox_syscall 0.8.0",
 ]
 
 [[package]]
@@ -3876,9 +3877,9 @@ dependencies = [
 
 [[package]]
 name = "memchr"
-version = "2.8.0"
+version = "2.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8ca58f447f06ed17d5fc4043ce1b10dd205e060fb3ce5b979b8ed8e59ff3f79"
+checksum = "6b947ae49db0d222b1dbc6b113ce7248a3fc3a6ca21b696717bfc000ba4484d8"
 
 [[package]]
 name = "memmap2"
@@ -4066,7 +4067,7 @@ dependencies = [
 [[package]]
 name = "nice-log"
 version = "0.2.2"
-source = "git+https://codeberg.org/BillyDM/nice-plug.git#1abffe4d254178583fbe1413c875db61977347f6"
+source = "git+https://codeberg.org/BillyDM/nice-plug.git#4da4fffa3d2b695f10f5e75da9e759dbc28423c5"
 dependencies = [
  "atty",
  "log",
@@ -4079,7 +4080,7 @@ dependencies = [
 [[package]]
 name = "nice-plug"
 version = "0.1.0"
-source = "git+https://codeberg.org/BillyDM/nice-plug.git#1abffe4d254178583fbe1413c875db61977347f6"
+source = "git+https://codeberg.org/BillyDM/nice-plug.git#4da4fffa3d2b695f10f5e75da9e759dbc28423c5"
 dependencies = [
  "anyhow",
  "anymap3",
@@ -4113,7 +4114,7 @@ dependencies = [
 [[package]]
 name = "nice-plug-core"
 version = "0.1.2"
-source = "git+https://codeberg.org/BillyDM/nice-plug.git#1abffe4d254178583fbe1413c875db61977347f6"
+source = "git+https://codeberg.org/BillyDM/nice-plug.git#4da4fffa3d2b695f10f5e75da9e759dbc28423c5"
 dependencies = [
  "atomic_float",
  "atomic_refcell",
@@ -4121,6 +4122,7 @@ dependencies = [
  "crossbeam-utils",
  "log",
  "midi-consts",
+ "nice-assert-no-alloc",
  "nice-plug-derive",
  "parking_lot",
  "raw-window-handle 0.5.2",
@@ -4131,7 +4133,7 @@ dependencies = [
 [[package]]
 name = "nice-plug-derive"
 version = "0.1.1"
-source = "git+https://codeberg.org/BillyDM/nice-plug.git#1abffe4d254178583fbe1413c875db61977347f6"
+source = "git+https://codeberg.org/BillyDM/nice-plug.git#4da4fffa3d2b695f10f5e75da9e759dbc28423c5"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4140,8 +4142,8 @@ dependencies = [
 
 [[package]]
 name = "nice-plug-egui"
-version = "0.1.2"
-source = "git+https://codeberg.org/BillyDM/nice-plug.git#1abffe4d254178583fbe1413c875db61977347f6"
+version = "0.1.3"
+source = "git+https://codeberg.org/BillyDM/nice-plug.git#4da4fffa3d2b695f10f5e75da9e759dbc28423c5"
 dependencies = [
  "crossbeam",
  "egui",
@@ -4155,7 +4157,7 @@ dependencies = [
 [[package]]
 name = "nice-plug-xtask"
 version = "0.1.0"
-source = "git+https://codeberg.org/BillyDM/nice-plug.git#1abffe4d254178583fbe1413c875db61977347f6"
+source = "git+https://codeberg.org/BillyDM/nice-plug.git#4da4fffa3d2b695f10f5e75da9e759dbc28423c5"
 dependencies = [
  "anyhow",
  "cargo_metadata",
@@ -5544,9 +5546,9 @@ dependencies = [
 
 [[package]]
 name = "redox_syscall"
-version = "0.7.5"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4666a1a60d8412eab19d94f6d13dcc9cea0a5ef4fdf6a5db306537413c661b1b"
+checksum = "7c7591fa2c6b601dfcfe5f043f65a1c39fcdf50efefcd7f1572e538c1f4b398d"
 dependencies = [
  "bitflags 2.11.1",
 ]
@@ -6638,9 +6640,9 @@ dependencies = [
 
 [[package]]
 name = "toml_edit"
-version = "0.25.11+spec-1.1.0"
+version = "0.25.12+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b59c4d22ed448339746c59b905d24568fcbb3ab65a500494f7b8c3e97739f2b"
+checksum = "d2153edc6955a6c354fad8f5efd38b6a8769bdccf9fe50f8e1329f81b0baa5d7"
 dependencies = [
  "indexmap",
  "toml_datetime 1.1.1+spec-1.1.0",
@@ -8484,18 +8486,18 @@ checksum = "6df3dc4292935e51816d896edcd52aa30bc297907c26167fec31e2b0c6a32524"
 
 [[package]]
 name = "zerocopy"
-version = "0.8.48"
+version = "0.8.49"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eed437bf9d6692032087e337407a86f04cd8d6a16a37199ed57949d415bd68e9"
+checksum = "bce33a6288fa3f072a8c2c7d0f2fdbb90e28298f0135c1f99b96c3db2efcc60b"
 dependencies = [
  "zerocopy-derive",
 ]
 
 [[package]]
 name = "zerocopy-derive"
-version = "0.8.48"
+version = "0.8.49"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "70e3cd084b1788766f53af483dd21f93881ff30d7320490ec3ef7526d203bad4"
+checksum = "8fd425244944f4ab65ccff928e7323354c5a018c75838362fdce749dfad2ee1e"
 dependencies = [
  "proc-macro2",
  "quote",
