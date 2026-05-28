@@ -15,13 +15,13 @@ pub fn create_editor<
     let editor_state = params.editor_state.clone();
     let min_size = egui::Vec2::new(700.0, 400.0);
     let color_palette = params.color_palette.clone();
-    let mut ui_state = Some(UiState {
+    let ui_state = UiState {
         drag_eq_index: usize::MAX,
-    });
+    };
 
     nice_plug_egui::create_egui_editor(
         params.editor_state.clone(),
-        ui_state.take().unwrap(),
+        ui_state,
         nice_plug_egui::EguiSettings::default(),
         |egui_ctx, _, _| {
             egui_ctx.set_theme(egui::Theme::Dark);
