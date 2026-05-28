@@ -1,5 +1,6 @@
 use crate::*;
-use audio_lib::{eq, persistence};
+use app_lib::persistence;
+use audio_lib::eq;
 
 pub type Settings<const NUM_BANDS: usize> = app_lib::settings::Settings<f64, NUM_BANDS>;
 
