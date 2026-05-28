@@ -6,7 +6,6 @@ pub struct UiState {
 }
 
 pub fn create_editor<
-    'a,
     const NUM_BANDS: usize,
     const NUM_CHANNELS: usize,
     const ANALYZER_NUM_BINS: usize,
