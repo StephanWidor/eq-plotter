@@ -3,7 +3,7 @@ use crate::*;
 pub fn add_plot<F: audio_utils::Float + egui::emath::Numeric>(
     ui: &mut egui::Ui,
     coefficients: &[Option<biquad::coefficients::Coefficients<F>>],
-    impulse_response_params: &ImpulseResponseParams<F>,
+    impulse_response_params: &app_lib::settings::ui::ImpulseResponseParams<F>,
     plot_size: f32,
     color_palette: &colors::ColorPalette,
 ) {

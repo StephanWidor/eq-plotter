@@ -18,7 +18,7 @@ web-sys = { workspace = true, features = ["Window", "HtmlCanvasElement"] }
 
 app-lib = { workspace = true }
 audio-lib = { workspace = true }
-egui-lib = { workspace = true, features = [] }
+egui-lib = { workspace = true }
 
 [build-dependencies]
 wasm-bindgen = { version = "0.2", optional = true }

@@ -7,21 +7,27 @@ pub struct Plugin<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALY
     params: sync::Arc<params::PluginParams<NUM_BANDS, NUM_CHANNELS, ANALYZER_NUM_BINS>>,
     processor: processor::Processor<{ NUM_BANDS }, { NUM_CHANNELS }, { ANALYZER_NUM_BINS }>,
     analyzer: analyzer::Analyzer<{ NUM_BANDS }, { NUM_CHANNELS }, { ANALYZER_NUM_BINS }>,
+    ui_settings: UiSettings,
 }
 
 impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS: usize>
     Plugin<NUM_BANDS, NUM_CHANNELS, ANALYZER_NUM_BINS>
 {
     pub fn new(
-        settings: &Settings<NUM_BANDS>,
+        app_settings: &AppSettings<NUM_BANDS>,
         analyzer_coefficients: &analyzer::Coefficients,
         smoothing_length_ms: f32,
+        color_palette: egui_lib::colors::ColorPalette,
     ) -> Self {
-        let params = sync::Arc::new(params::PluginParams::new(settings, smoothing_length_ms));
+        let params = sync::Arc::new(params::PluginParams::new(app_settings, smoothing_length_ms));
         Self {
             params: params.clone(),
             processor: processor::Processor::new(params.clone()),
             analyzer: analyzer::Analyzer::new(params.clone(), analyzer_coefficients),
+            ui_settings: UiSettings {
+                app: app_settings.ui.clone(),
+                color_palette: color_palette,
+            },
         }
     }
 
@@ -48,9 +54,10 @@ impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS:
 {
     fn default() -> Self {
         Self::new(
-            &Settings::<NUM_BANDS>::default(),
+            &AppSettings::<NUM_BANDS>::default(),
             &analyzer::Coefficients::default(),
             20_f32,
+            egui_lib::colors::ColorPalette::default(),
         )
     }
 }
@@ -103,7 +110,7 @@ impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS:
         &mut self,
         _async_executor: nice::AsyncExecutor<Self>,
     ) -> Option<Box<dyn nice::Editor>> {
-        editor::create_editor(self.params.clone())
+        editor::create_editor(self.params.clone(), self.ui_settings.clone())
     }
 }
 

@@ -12,7 +12,7 @@ pub mod config {
 }
 
 type EqPlotter = eq_plotter::EqPlotter<{ config::NUM_BANDS }>;
-type Settings = eq_plotter::Settings<{ config::NUM_BANDS }>;
+type AppSettings = eq_plotter::AppSettings<{ config::NUM_BANDS }>;
 
 #[cfg(target_arch = "wasm32")]
 fn main() -> eframe::Result {
@@ -34,7 +34,7 @@ fn main() -> eframe::Result {
                 web_options,
                 Box::new(|_cc| {
                     Ok(Box::new(EqPlotter::new(
-                        Settings::default(),
+                        AppSettings::default(),
                         colors::ColorPalette::default(),
                     )))
                 }),
@@ -61,7 +61,7 @@ fn main() -> eframe::Result {
         options,
         Box::new(|_cc| {
             Ok(Box::new(EqPlotter::new(
-                Settings::default(),
+                AppSettings::default(),
                 colors::ColorPalette::default(),
             )))
         }),

@@ -11,7 +11,6 @@ pub struct IndexedEqDiff<F: audio_utils::Float> {
     pub diff: Option<EqDiff<F>>,
 }
 
-#[cfg(not(feature = "analyzer_data"))]
 pub fn add_plot<
     F: audio_utils::Float + egui::emath::Numeric,
     const NUM_SPECTRUM_BINS: usize,
@@ -21,63 +20,8 @@ pub fn add_plot<
     coefficients: &[Option<biquad::coefficients::Coefficients<F>>],
     sample_rate: F,
     last_drag_eq_index: usize,
-    eq_ranges: &EqRanges<F>,
-    plot_size: f32,
-    color_palette: &colors::ColorPalette,
-) -> IndexedEqDiff<F> {
-    add_plot_impl::<F, 0, 0>(
-        ui,
-        coefficients,
-        sample_rate,
-        last_drag_eq_index,
-        eq_ranges,
-        plot_size,
-        color_palette,
-    )
-}
-
-#[cfg(feature = "analyzer_data")]
-pub fn add_plot<
-    F: audio_utils::Float + egui::emath::Numeric,
-    const NUM_SPECTRUM_BINS: usize,
-    const NUM_SPECTRUM_CHANNELS: usize,
->(
-    ui: &mut egui::Ui,
-    coefficients: &[Option<biquad::coefficients::Coefficients<F>>],
-    sample_rate: F,
-    last_drag_eq_index: usize,
-    eq_ranges: &EqRanges<F>,
-    spectrum_data: &plotter::SpectrumData<F, NUM_SPECTRUM_BINS, NUM_SPECTRUM_CHANNELS>,
-    plot_size: f32,
-    color_palette: &colors::ColorPalette,
-) -> IndexedEqDiff<F> {
-    add_plot_impl(
-        ui,
-        coefficients,
-        sample_rate,
-        last_drag_eq_index,
-        eq_ranges,
-        spectrum_data,
-        plot_size,
-        color_palette,
-    )
-}
-
-fn add_plot_impl<
-    F: audio_utils::Float + egui::emath::Numeric,
-    const NUM_SPECTRUM_BINS: usize,
-    const NUM_SPECTRUM_CHANNELS: usize,
->(
-    ui: &mut egui::Ui,
-    coefficients: &[Option<biquad::coefficients::Coefficients<F>>],
-    sample_rate: F,
-    last_drag_eq_index: usize,
-    eq_ranges: &EqRanges<F>,
-    #[cfg(feature = "analyzer_data")] spectrum_data: &plotter::SpectrumData<
-        F,
-        NUM_SPECTRUM_BINS,
-        NUM_SPECTRUM_CHANNELS,
-    >,
+    eq_ranges: &app_lib::settings::ui::EqRanges<F>,
+    spectrum_data: &Option<SpectrumData<F, NUM_SPECTRUM_BINS, NUM_SPECTRUM_CHANNELS>>,
     plot_size: f32,
     color_palette: &colors::ColorPalette,
 ) -> IndexedEqDiff<F> {
@@ -132,8 +76,7 @@ fn add_plot_impl<
             ],
         ));
 
-        #[cfg(feature = "analyzer_data")]
-        {
+        if let Some(spectrum_data) = spectrum_data.as_ref() {
             let spectrum_rectangles =
                 make_spectrum_rectangles(spectrum_data, &log_frequency_range, &db_range);
             for rectangle in spectrum_rectangles {
@@ -211,7 +154,6 @@ fn add_plot_impl<
     }
 }
 
-#[cfg(feature = "analyzer_data")]
 fn make_spectrum_rectangles<
     F: audio_utils::Float + egui::emath::Numeric,
     const NUM_SPECTRUM_BINS: usize,

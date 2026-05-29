@@ -1,4 +1,4 @@
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct ColorPalette {
     pub background: egui::Color32,
     pub eq_stroke: [egui::Color32; 8],

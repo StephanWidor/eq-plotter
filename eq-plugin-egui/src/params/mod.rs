@@ -1,6 +1,5 @@
 use crate::*;
 use audio_lib::*;
-use egui_lib::colors;
 use std::sync::{self, atomic};
 
 pub mod eq_params;
@@ -32,15 +31,12 @@ pub struct PluginParams<
 
     pub analyzer_data:
         fft::signal_analyzer::SharedData<f32, { ANALYZER_NUM_BINS }, { NUM_CHANNELS }>,
-    pub eq_ranges: EqRanges,
-    pub impulse_response_params: ImpulseResponseParams,
-    pub color_palette: colors::ColorPalette,
 }
 
 impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS: usize>
     PluginParams<NUM_BANDS, NUM_CHANNELS, ANALYZER_NUM_BINS>
 {
-    pub fn new(settings: &Settings<NUM_BANDS>, smoothing_length_ms: f32) -> Self {
+    pub fn new(settings: &AppSettings<NUM_BANDS>, smoothing_length_ms: f32) -> Self {
         let eq_ranges = settings.ui.eq_ranges.clone();
         Self {
             editor_state: nice_plug_egui::EguiState::from_size(1000, 700),
@@ -55,11 +51,8 @@ impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS:
                 )
             }),
             sample_rate: nice::AtomicF32::new(settings.init_sample_rate),
-            show_params: ShowParams::from_options(&settings.ui.show_options),
+            show_params: ShowParams::from_options(&settings.ui.init_show_options),
             analyzer_data: fft::signal_analyzer::SharedData::new(settings.init_sample_rate),
-            eq_ranges: eq_ranges,
-            impulse_response_params: settings.ui.impulse_response_params.clone(),
-            color_palette: colors::ColorPalette::default(),
         }
     }
 

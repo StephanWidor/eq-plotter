@@ -23,4 +23,4 @@ nice-plug-egui = { git = "https://codeberg.org/BillyDM/nice-plug.git" }
 
 app-lib = { path = "../app-lib" }
 audio-lib = { path = "../audio-lib" }
-egui-lib = { workspace = true, features = ["analyzer_data"] }
+egui-lib = { workspace = true }

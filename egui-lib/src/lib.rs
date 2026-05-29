@@ -8,80 +8,38 @@ pub mod utils;
 use audio_lib::utils as audio_utils;
 use audio_lib::*;
 
-pub type EqRanges<F> = app_lib::settings::ui::EqRanges<F>;
-pub type ImpulseResponseParams<F> = app_lib::settings::ui::ImpulseResponseParams<F>;
-pub type ShowOptions = app_lib::settings::ui::ShowOptions;
-
-#[cfg(not(feature = "analyzer_data"))]
-pub fn draw<F: audio_utils::Float + egui::emath::Numeric>(
-    ui: &mut egui::Ui,
-    eqs: &mut [eq::Eq<F>],
-    drag_eq_index: &mut usize,
-    eq_ranges: &EqRanges<F>,
-    impulse_response_params: &ImpulseResponseParams<F>,
-    sample_rate: F,
-    show_options: &mut ShowOptions,
-    color_palette: &colors::ColorPalette,
-) {
-    draw_impl::<F, 0, 0>(
-        ui,
-        eqs,
-        drag_eq_index,
-        eq_ranges,
-        impulse_response_params,
-        sample_rate,
-        show_options,
-        color_palette,
-    );
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(bound = "F: audio_utils::Float")]
+pub struct Params<F: audio_utils::Float, const NUM_BANDS: usize> {
+    pub show_options: app_lib::settings::ui::ShowOptions,
+    #[serde(with = "serde_arrays")]
+    pub eqs: [eq::Eq<F>; NUM_BANDS],
+    pub sample_rate: F,
+    pub drag_eq_index: usize,
 }
 
-#[cfg(feature = "analyzer_data")]
+#[derive(Debug, Clone)]
+pub struct Settings<F: audio_utils::Float> {
+    pub app: app_lib::settings::ui::Settings<F>,
+    pub color_palette: colors::ColorPalette,
+}
+
+pub struct SpectrumData<'a, F: audio_utils::Float, const NUM_BINS: usize, const NUM_CHANNELS: usize>
+{
+    pub frequency_bins: &'a fft::LogFrequencyRangeBins<F, NUM_BINS>,
+    pub linear_gains: &'a [[F; NUM_BINS]; NUM_CHANNELS],
+}
+
 pub fn draw<
     F: audio_utils::Float + egui::emath::Numeric,
+    const NUM_BANDS: usize,
     const NUM_SPECTRUM_BINS: usize,
     const NUM_SPECTRUM_CHANNELS: usize,
 >(
     ui: &mut egui::Ui,
-    eqs: &mut [eq::Eq<F>],
-    drag_eq_index: &mut usize,
-    eq_ranges: &EqRanges<F>,
-    impulse_response_params: &ImpulseResponseParams<F>,
-    sample_rate: F,
-    spectrum_data: &plotter::SpectrumData<F, NUM_SPECTRUM_BINS, NUM_SPECTRUM_CHANNELS>,
-    show_options: &mut ShowOptions,
-    color_palette: &colors::ColorPalette,
-) {
-    draw_impl(
-        ui,
-        eqs,
-        drag_eq_index,
-        eq_ranges,
-        impulse_response_params,
-        sample_rate,
-        spectrum_data,
-        show_options,
-        color_palette,
-    );
-}
-
-fn draw_impl<
-    F: audio_utils::Float + egui::emath::Numeric,
-    const NUM_SPECTRUM_BINS: usize,
-    const NUM_SPECTRUM_CHANNELS: usize,
->(
-    ui: &mut egui::Ui,
-    eqs: &mut [eq::Eq<F>],
-    drag_eq_index: &mut usize,
-    eq_ranges: &EqRanges<F>,
-    impulse_response_params: &ImpulseResponseParams<F>,
-    sample_rate: F,
-    #[cfg(feature = "analyzer_data")] spectrum_data: &plotter::SpectrumData<
-        F,
-        NUM_SPECTRUM_BINS,
-        NUM_SPECTRUM_CHANNELS,
-    >,
-    show_options: &mut ShowOptions,
-    color_palette: &colors::ColorPalette,
+    params: &mut Params<F, NUM_BANDS>,
+    settings: &Settings<F>,
+    spectrum_data: &Option<SpectrumData<F, NUM_SPECTRUM_BINS, NUM_SPECTRUM_CHANNELS>>,
 ) {
     let ui_size = ui.available_size();
 
@@ -90,44 +48,20 @@ fn draw_impl<
         control::add(
             ui,
             egui::Vec2::new(control_width, ui_size.y),
-            eqs,
-            eq_ranges,
-            show_options,
-            &color_palette.eq_stroke,
+            params,
+            spectrum_data.is_some(),
+            &settings.app.eq_ranges,
+            &settings.color_palette.eq_stroke,
         );
 
-        if !(show_options.gain
-            || show_options.phase
-            || show_options.impulse_response
-            || show_options.poles_and_zeros)
+        if !(params.show_options.gain
+            || params.show_options.phase
+            || params.show_options.impulse_response
+            || params.show_options.poles_and_zeros)
         {
             return;
         }
         let available_size = egui::Vec2::new(0.96_f32 * (ui_size.x - control_width), ui_size.y);
-        #[cfg(not(feature = "analyzer_data"))]
-        plotter::add_plots(
-            ui,
-            &available_size,
-            eqs,
-            drag_eq_index,
-            eq_ranges,
-            impulse_response_params,
-            sample_rate,
-            show_options,
-            color_palette,
-        );
-        #[cfg(feature = "analyzer_data")]
-        plotter::add_plots(
-            ui,
-            &available_size,
-            eqs,
-            drag_eq_index,
-            eq_ranges,
-            impulse_response_params,
-            sample_rate,
-            spectrum_data,
-            show_options,
-            color_palette,
-        );
+        plotter::add_plots(ui, &available_size, params, settings, spectrum_data);
     });
 }

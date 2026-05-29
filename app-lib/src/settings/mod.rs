@@ -19,7 +19,7 @@ impl<F: utils::Float, const NUM_BANDS: usize> Default for Settings<F, NUM_BANDS>
             ui: ui::Settings {
                 eq_ranges: eq_ranges,
                 impulse_response_params: ui::ImpulseResponseParams::default(),
-                show_options: ui::ShowOptions::new_all_enabled(),
+                init_show_options: ui::ShowOptions::new_all_enabled(),
             },
             persistence_dir: dirs::config_dir()
                 .unwrap_or_else(|| std::path::PathBuf::from("."))

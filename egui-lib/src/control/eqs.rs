@@ -1,16 +1,17 @@
 use crate::*;
 use audio_lib::eq; //use egui::emath;
 
-pub fn add_controls<F: audio_utils::Float + egui::emath::Numeric>(
+pub fn add_controls<F: audio_utils::Float + egui::emath::Numeric, const NUM_BANDS: usize>(
     ui: &mut egui::Ui,
     size: egui::Vec2,
-    eqs: &mut [eq::Eq<F>],
-    eq_ranges: &EqRanges<F>,
-    show_options: &mut ShowOptions,
+    params: &mut Params<F, NUM_BANDS>,
+    spectrum_available: bool,
+    eq_ranges: &app_lib::settings::ui::EqRanges<F>,
     eq_colors: &[egui::Color32],
 ) {
     let control_outer_margin = size.x / 25_f32;
     let control_width = size.x - 2_f32 * control_outer_margin;
+    let show_options = &mut params.show_options;
     egui::Frame::group(ui.style()).show(ui, |ui| {
         egui::ScrollArea::vertical()
             .min_scrolled_height(size.y)
@@ -20,11 +21,12 @@ pub fn add_controls<F: audio_utils::Float + egui::emath::Numeric>(
                         if show_options.gain {
                             ui.horizontal(|ui| {
                                 ui.checkbox(&mut show_options.gain, "Gain");
-                                #[cfg(feature = "analyzer_data")]
-                                ui.checkbox(
-                                    &mut show_options.signal_gain_spectrum,
-                                    "Analyze Signal",
-                                );
+                                if spectrum_available {
+                                    ui.checkbox(
+                                        &mut show_options.signal_gain_spectrum,
+                                        "Analyze Signal",
+                                    );
+                                }
                             });
                         } else {
                             ui.checkbox(&mut show_options.gain, "Gain");
@@ -33,7 +35,7 @@ pub fn add_controls<F: audio_utils::Float + egui::emath::Numeric>(
                         ui.checkbox(&mut show_options.impulse_response, "Impulse Response");
                         ui.checkbox(&mut show_options.poles_and_zeros, "Poles And Zeros");
                     });
-                    for (index, eq) in eqs.iter_mut().enumerate() {
+                    for (index, eq) in params.eqs.iter_mut().enumerate() {
                         add_control(
                             ui,
                             control_width,
@@ -54,7 +56,7 @@ fn add_control<F: audio_utils::Float + egui::emath::Numeric>(
     outer_margin: f32,
     color: egui::Color32,
     eq: &mut eq::Eq<F>,
-    eq_ranges: &EqRanges<F>,
+    eq_ranges: &app_lib::settings::ui::EqRanges<F>,
 ) {
     let mut gain_db = eq.gain.db();
     let mut log_frequency = eq.frequency.log_hz();

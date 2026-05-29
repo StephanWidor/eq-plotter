@@ -6,95 +6,27 @@ mod poles_and_zeros;
 use crate::*;
 use audio_lib::{biquad, eq};
 
-#[cfg(not(feature = "analyzer_data"))]
-pub fn add_plots<F: audio_utils::Float + egui::emath::Numeric>(
-    ui: &mut egui::Ui,
-    available_size: &egui::Vec2,
-    eqs: &mut [eq::Eq<F>],
-    drag_eq_index: &mut usize,
-    eq_ranges: &EqRanges<F>,
-    impulse_response_params: &ImpulseResponseParams<F>,
-    sample_rate: F,
-    show_options: &ShowOptions,
-    color_palette: &colors::ColorPalette,
-) {
-    add_plots_impl::<F, 0, 0>(
-        ui,
-        available_size,
-        eqs,
-        drag_eq_index,
-        eq_ranges,
-        impulse_response_params,
-        sample_rate,
-        show_options,
-        color_palette,
-    );
-}
-
-#[cfg(feature = "analyzer_data")]
-pub struct SpectrumData<'a, F: audio_utils::Float, const NUM_BINS: usize, const NUM_CHANNELS: usize>
-{
-    pub frequency_bins: &'a fft::LogFrequencyRangeBins<F, NUM_BINS>,
-    pub linear_gains: &'a [[F; NUM_BINS]; NUM_CHANNELS],
-}
-
-#[cfg(feature = "analyzer_data")]
 pub fn add_plots<
     F: audio_utils::Float + egui::emath::Numeric,
+    const NUM_BANDS: usize,
     const NUM_SPECTRUM_BINS: usize,
     const NUM_SPECTRUM_CHANNELS: usize,
 >(
     ui: &mut egui::Ui,
     available_size: &egui::Vec2,
-    eqs: &mut [eq::Eq<F>],
-    drag_eq_index: &mut usize,
-    eq_ranges: &EqRanges<F>,
-    impulse_response_params: &ImpulseResponseParams<F>,
-    sample_rate: F,
-    spectrum_data: &SpectrumData<F, NUM_SPECTRUM_BINS, NUM_SPECTRUM_CHANNELS>,
-    show_options: &ShowOptions,
-    color_palette: &colors::ColorPalette,
+    params: &mut Params<F, NUM_BANDS>,
+    settings: &Settings<F>,
+    spectrum_data: &Option<SpectrumData<F, NUM_SPECTRUM_BINS, NUM_SPECTRUM_CHANNELS>>,
 ) {
-    add_plots_impl(
-        ui,
-        available_size,
-        eqs,
-        drag_eq_index,
-        eq_ranges,
-        impulse_response_params,
-        sample_rate,
-        spectrum_data,
-        show_options,
-        color_palette,
-    );
-}
-
-fn add_plots_impl<
-    F: audio_utils::Float + egui::emath::Numeric,
-    const NUM_SPECTRUM_BINS: usize,
-    const NUM_SPECTRUM_CHANNELS: usize,
->(
-    ui: &mut egui::Ui,
-    available_size: &egui::Vec2,
-    eqs: &mut [eq::Eq<F>],
-    drag_eq_index: &mut usize,
-    eq_ranges: &EqRanges<F>,
-    impulse_response_params: &ImpulseResponseParams<F>,
-    sample_rate: F,
-    #[cfg(feature = "analyzer_data")] spectrum_data: &SpectrumData<
-        F,
-        NUM_SPECTRUM_BINS,
-        NUM_SPECTRUM_CHANNELS,
-    >,
-    show_options: &ShowOptions,
-    color_palette: &colors::ColorPalette,
-) {
+    let show_options = &mut params.show_options;
     let plot_size = plot_size(show_options, available_size);
     if plot_size < 50_f32 {
         return;
     }
-
-    let coefficients = eqs
+    let drag_eq_index = &mut params.drag_eq_index;
+    let sample_rate = params.sample_rate;
+    let coefficients = params
+        .eqs
         .iter()
         .map(|eq| {
             if eq.eq_type.is_active() {
@@ -120,15 +52,14 @@ fn add_plots_impl<
                                     &coefficients,
                                     sample_rate,
                                     *drag_eq_index,
-                                    eq_ranges,
-                                    #[cfg(feature = "analyzer_data")]
+                                    &settings.app.eq_ranges,
                                     spectrum_data,
                                     plot_size,
-                                    color_palette,
+                                    &settings.color_palette,
                                 );
                             *drag_eq_index = indexed_eq_diff.index;
                             if let Some(eq_diff) = indexed_eq_diff.diff {
-                                let eq = &mut eqs[*drag_eq_index];
+                                let eq = &mut params.eqs[*drag_eq_index];
                                 eq.frequency = eq::Frequency::LogHz(
                                     eq.frequency.log_hz() + eq_diff.log_frequency,
                                 );
@@ -140,9 +71,9 @@ fn add_plots_impl<
                                 ui,
                                 &coefficients,
                                 sample_rate,
-                                &eq_ranges.log_frequency_range,
+                                &settings.app.eq_ranges.log_frequency_range,
                                 plot_size,
-                                color_palette,
+                                &settings.color_palette,
                             );
                         }
                     });
@@ -152,13 +83,18 @@ fn add_plots_impl<
                             impulse_response::add_plot(
                                 ui,
                                 &coefficients,
-                                impulse_response_params,
+                                &settings.app.impulse_response_params,
                                 plot_size,
-                                color_palette,
+                                &settings.color_palette,
                             );
                         }
                         if show_options.poles_and_zeros {
-                            poles_and_zeros::add_plot(ui, &coefficients, plot_size, color_palette);
+                            poles_and_zeros::add_plot(
+                                ui,
+                                &coefficients,
+                                plot_size,
+                                &settings.color_palette,
+                            );
                         }
                     });
                 });
@@ -166,7 +102,10 @@ fn add_plots_impl<
         });
 }
 
-fn plot_size(show_options: &ShowOptions, available_size: &egui::Vec2) -> f32 {
+fn plot_size(
+    show_options: &app_lib::settings::ui::ShowOptions,
+    available_size: &egui::Vec2,
+) -> f32 {
     let num_rows = (((show_options.gain && show_options.phase)
         || (show_options.impulse_response && show_options.poles_and_zeros))
         as usize

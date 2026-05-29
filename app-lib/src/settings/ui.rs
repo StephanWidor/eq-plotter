@@ -5,7 +5,7 @@ use std::ops::RangeInclusive;
 pub struct Settings<F: audio_lib::utils::Float> {
     pub eq_ranges: EqRanges<F>,
     pub impulse_response_params: ImpulseResponseParams<F>,
-    pub show_options: ShowOptions,
+    pub init_show_options: ShowOptions,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -63,7 +63,7 @@ impl<F: utils::Float> Default for ImpulseResponseParams<F> {
 }
 
 impl ShowOptions {
-    pub fn new_all_enabled() -> Self {
+    pub const fn new_all_enabled() -> Self {
         Self {
             gain: true,
             signal_gain_spectrum: true,
@@ -73,7 +73,7 @@ impl ShowOptions {
         }
     }
 
-    pub fn new_only_gain() -> Self {
+    pub const fn new_only_gain() -> Self {
         Self {
             gain: true,
             signal_gain_spectrum: true,

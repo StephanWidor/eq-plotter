@@ -1,23 +1,22 @@
 use crate::*;
 use std::sync::{self, atomic};
 
-pub struct UiState {
-    pub drag_eq_index: usize,
-}
-
 pub fn create_editor<
     const NUM_BANDS: usize,
     const NUM_CHANNELS: usize,
     const ANALYZER_NUM_BINS: usize,
 >(
     params: sync::Arc<params::PluginParams<NUM_BANDS, NUM_CHANNELS, ANALYZER_NUM_BINS>>,
+    ui_settings: UiSettings,
 ) -> Option<Box<dyn nice::Editor>> {
     let editor_state = params.editor_state.clone();
-    let min_size = egui::Vec2::new(700.0, 400.0);
-    let color_palette = params.color_palette.clone();
-    let ui_state = UiState {
+    let ui_state = UiParams {
+        show_options: params.show_params.load_options(),
+        eqs: params.eqs(),
+        sample_rate: params.sample_rate.load(atomic::Ordering::Relaxed),
         drag_eq_index: usize::MAX,
     };
+    let min_size = egui::Vec2::new(700.0, 400.0);
 
     nice_plug_egui::create_egui_editor(
         params.editor_state.clone(),
@@ -39,36 +38,31 @@ pub fn create_editor<
                         .frame(
                             egui::Frame::default()
                                 .inner_margin(20)
-                                .fill(color_palette.background),
+                                .fill(ui_settings.color_palette.background),
                         )
                         .show_inside(ui, |ui| {
-                            let eqs = params.eqs();
-                            let mut new_eqs = eqs.clone();
-                            let mut show_options = params.show_params.load_options();
+                            ui_state.eqs = params.eqs();
+                            let backup_eqs = ui_state.eqs.clone();
+                            ui_state.sample_rate =
+                                params.sample_rate.load(atomic::Ordering::Relaxed);
+                            ui_state.show_options = params.show_params.load_options();
                             let spectrum_gains =
                                 params.analyzer_data.linear_gains.consumer.pull_and_read();
-                            let spectrum_data = egui_lib::plotter::SpectrumData {
+                            let spectrum_data = Some(egui_lib::SpectrumData {
                                 frequency_bins: &params
                                     .analyzer_data
                                     .frequency_bins
                                     .read()
                                     .unwrap(),
                                 linear_gains: &spectrum_gains,
-                            };
-                            egui_lib::draw(
-                                ui,
-                                &mut new_eqs,
-                                &mut ui_state.drag_eq_index,
-                                &params.eq_ranges,
-                                &params.impulse_response_params,
-                                params.sample_rate.load(atomic::Ordering::Relaxed),
-                                &spectrum_data,
-                                &mut show_options,
-                                &color_palette,
-                            );
+                            });
+                            egui_lib::draw(ui, ui_state, &ui_settings, &spectrum_data);
 
-                            for ((new_eq, old_eq), band_params) in
-                                new_eqs.iter().zip(eqs).zip(params.eq_params.as_ref())
+                            for ((new_eq, old_eq), band_params) in ui_state
+                                .eqs
+                                .iter()
+                                .zip(backup_eqs)
+                                .zip(params.eq_params.as_ref())
                             {
                                 if new_eq.gain.db() != old_eq.gain.db() {
                                     band_params.set_gain_db(new_eq.gain.db(), setter);
@@ -85,7 +79,7 @@ pub fn create_editor<
                                 }
                             }
 
-                            params.show_params.store_options(&show_options);
+                            params.show_params.store_options(&ui_state.show_options);
                         });
                 });
         },

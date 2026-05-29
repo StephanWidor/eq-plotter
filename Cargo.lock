@@ -1848,6 +1848,8 @@ dependencies = [
  "enum-table",
  "num",
  "num-traits",
+ "serde",
+ "serde_arrays",
  "wasm-bindgen-futures",
  "web-sys",
 ]

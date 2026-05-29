@@ -1,14 +1,14 @@
 use crate::*;
-use audio_lib::eq;
+
 pub mod eqs;
 
-pub fn add<F: audio_utils::Float + egui::emath::Numeric>(
+pub fn add<F: audio_utils::Float + egui::emath::Numeric, const NUM_BANDS: usize>(
     ui: &mut egui::Ui,
     size: egui::Vec2,
-    eqs: &mut [eq::Eq<F>],
-    eq_ranges: &EqRanges<F>,
-    show_options: &mut ShowOptions,
+    params: &mut Params<F, NUM_BANDS>,
+    spectrum_available: bool,
+    eq_ranges: &app_lib::settings::ui::EqRanges<F>,
     eq_colors: &[egui::Color32],
 ) {
-    eqs::add_controls(ui, size, eqs, &eq_ranges, show_options, eq_colors);
+    eqs::add_controls(ui, size, params, spectrum_available, eq_ranges, eq_colors);
 }
