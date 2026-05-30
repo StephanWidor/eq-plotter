@@ -5,6 +5,7 @@ pub mod control;
 pub mod plotter;
 pub mod utils;
 
+pub use app_lib::presets;
 use audio_lib::utils as audio_utils;
 use audio_lib::*;
 
@@ -16,6 +17,7 @@ pub struct Params<F: audio_utils::Float, const NUM_BANDS: usize> {
     pub eqs: [eq::Eq<F>; NUM_BANDS],
     pub sample_rate: F,
     pub drag_eq_index: usize,
+    pub preset_selection: presets::Selection,
 }
 
 #[derive(Debug, Clone)]
@@ -38,6 +40,7 @@ pub fn draw<
 >(
     ui: &mut egui::Ui,
     params: &mut Params<F, NUM_BANDS>,
+    presets: &mut presets::Presets<F, NUM_BANDS>,
     settings: &Settings<F>,
     spectrum_data: &Option<SpectrumData<F, NUM_SPECTRUM_BINS, NUM_SPECTRUM_CHANNELS>>,
 ) {
@@ -49,9 +52,9 @@ pub fn draw<
             ui,
             egui::Vec2::new(control_width, ui_size.y),
             params,
+            presets,
+            settings,
             spectrum_data.is_some(),
-            &settings.app.eq_ranges,
-            &settings.color_palette.eq_stroke,
         );
 
         if !(params.show_options.gain

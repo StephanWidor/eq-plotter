@@ -1,13 +1,16 @@
 use crate::*;
+use app_lib::persistence;
 use nice::Plugin as NicePlugin;
 use std::sync::{self, atomic};
 
 pub struct Plugin<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS: usize>
 {
     params: sync::Arc<params::PluginParams<NUM_BANDS, NUM_CHANNELS, ANALYZER_NUM_BINS>>,
+    presets: sync::Arc<sync::Mutex<Presets<NUM_BANDS>>>,
     processor: processor::Processor<{ NUM_BANDS }, { NUM_CHANNELS }, { ANALYZER_NUM_BINS }>,
     analyzer: analyzer::Analyzer<{ NUM_BANDS }, { NUM_CHANNELS }, { ANALYZER_NUM_BINS }>,
     ui_settings: UiSettings,
+    persistence_dir: std::path::PathBuf,
 }
 
 impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS: usize>
@@ -20,14 +23,23 @@ impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS:
         color_palette: egui_lib::colors::ColorPalette,
     ) -> Self {
         let params = sync::Arc::new(params::PluginParams::new(app_settings, smoothing_length_ms));
+        let presets = if let Some(presets) = persistence::create_from_json_file::<Presets<NUM_BANDS>>(
+            &Self::presets_file_path(&app_settings.persistence_dir).as_path(),
+        ) {
+            presets
+        } else {
+            Presets::<NUM_BANDS>::new()
+        };
         Self {
             params: params.clone(),
+            presets: sync::Arc::new(sync::Mutex::new(presets)),
             processor: processor::Processor::new(params.clone()),
             analyzer: analyzer::Analyzer::new(params.clone(), analyzer_coefficients),
             ui_settings: UiSettings {
                 app: app_settings.ui.clone(),
                 color_palette: color_palette,
             },
+            persistence_dir: app_settings.persistence_dir.clone(),
         }
     }
 
@@ -46,6 +58,22 @@ impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS:
             i += 1;
         }
         layouts
+    }
+
+    fn presets_file_path(presets_dir: &std::path::PathBuf) -> std::path::PathBuf {
+        presets_dir.join("presets.json")
+    }
+}
+
+impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS: usize> Drop
+    for Plugin<NUM_BANDS, NUM_CHANNELS, ANALYZER_NUM_BINS>
+{
+    fn drop(&mut self) {
+        let presets = self.presets.lock().unwrap();
+        persistence::save_to_json_file::<Presets<NUM_BANDS>>(
+            &presets,
+            &Self::presets_file_path(&self.persistence_dir),
+        );
     }
 }
 
@@ -110,7 +138,11 @@ impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS:
         &mut self,
         _async_executor: nice::AsyncExecutor<Self>,
     ) -> Option<Box<dyn nice::Editor>> {
-        editor::create_editor(self.params.clone(), self.ui_settings.clone())
+        editor::create_editor(
+            self.params.clone(),
+            self.presets.clone(),
+            self.ui_settings.clone(),
+        )
     }
 }
 
