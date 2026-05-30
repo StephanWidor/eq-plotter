@@ -7,6 +7,7 @@ pub fn create_editor<
     const ANALYZER_NUM_BINS: usize,
 >(
     params: sync::Arc<params::PluginParams<NUM_BANDS, NUM_CHANNELS, ANALYZER_NUM_BINS>>,
+    presets: sync::Arc<sync::Mutex<Presets<NUM_BANDS>>>,
     ui_settings: UiSettings,
 ) -> Option<Box<dyn nice::Editor>> {
     let editor_state = params.editor_state.clone();
@@ -15,6 +16,7 @@ pub fn create_editor<
         eqs: params.eqs(),
         sample_rate: params.sample_rate.load(atomic::Ordering::Relaxed),
         drag_eq_index: usize::MAX,
+        preset_selection: app_lib::presets::Selection::None,
     };
     let min_size = egui::Vec2::new(700.0, 400.0);
 
@@ -41,8 +43,12 @@ pub fn create_editor<
                                 .fill(ui_settings.color_palette.background),
                         )
                         .show_inside(ui, |ui| {
-                            ui_state.eqs = params.eqs();
-                            let backup_eqs = ui_state.eqs.clone();
+                            let mut presets = presets.lock().unwrap();
+                            let backup_eqs = params.eqs();
+                            if backup_eqs != ui_state.eqs {
+                                ui_state.preset_selection.mark_as_changed();
+                            }
+                            ui_state.eqs = backup_eqs.clone();
                             ui_state.sample_rate =
                                 params.sample_rate.load(atomic::Ordering::Relaxed);
                             ui_state.show_options = params.show_params.load_options();
@@ -56,7 +62,13 @@ pub fn create_editor<
                                     .unwrap(),
                                 linear_gains: &spectrum_gains,
                             });
-                            egui_lib::draw(ui, ui_state, &ui_settings, &spectrum_data);
+                            egui_lib::draw(
+                                ui,
+                                ui_state,
+                                &mut presets,
+                                &ui_settings,
+                                &spectrum_data,
+                            );
 
                             for ((new_eq, old_eq), band_params) in ui_state
                                 .eqs
