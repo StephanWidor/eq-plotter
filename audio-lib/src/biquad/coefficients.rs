@@ -13,18 +13,22 @@ pub struct Coefficients<F: utils::Float> {
 /// Formulas for coefficients taken from here http://shepazu.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html
 impl<F: utils::Float> Coefficients<F> {
     pub fn from_eq(eq: &eq::Eq<F>, sample_rate: F) -> Self {
-        let gain_db = eq.gain.db();
+        let gain_linear = eq.gain.amplitude();
         let frequency = eq.frequency.hz();
         match eq.eq_type {
-            eq::EqType::Volume => Self::from_volume_db(gain_db),
+            eq::EqType::Volume => Self::from_volume_linear(gain_linear),
             eq::EqType::LowPass => Self::from_lowpass(frequency, eq.q, sample_rate),
             eq::EqType::HighPass => Self::from_highpass(frequency, eq.q, sample_rate),
             eq::EqType::BandPass => Self::from_bandpass(frequency, eq.q, sample_rate),
             eq::EqType::AllPass => Self::from_allpass(frequency, eq.q, sample_rate),
             eq::EqType::Notch => Self::from_notch(frequency, eq.q, sample_rate),
-            eq::EqType::Peak => Self::from_peak_db(gain_db, frequency, eq.q, sample_rate),
-            eq::EqType::LowShelf => Self::from_lowshelf_db(gain_db, frequency, eq.q, sample_rate),
-            eq::EqType::HighShelf => Self::from_highshelf_db(gain_db, frequency, eq.q, sample_rate),
+            eq::EqType::Peak => Self::from_peak_linear(gain_linear, frequency, eq.q, sample_rate),
+            eq::EqType::LowShelf => {
+                Self::from_lowshelf_linear(gain_linear, frequency, eq.q, sample_rate)
+            }
+            eq::EqType::HighShelf => {
+                Self::from_highshelf_linear(gain_linear, frequency, eq.q, sample_rate)
+            }
             eq::EqType::Bypassed => Self::passthrough(),
         }
     }
