@@ -46,6 +46,7 @@ impl<const NUM_BANDS: usize> EqPlotter<NUM_BANDS> {
                 sample_rate: app_settings.init_sample_rate,
                 drag_eq_index: usize::MAX,
                 preset_selection: app_lib::presets::Selection::None,
+                new_preset_name: None,
             }
         };
         let presets = if let Some(presets) = persistence::create_from_json_file::<Presets<NUM_BANDS>>(

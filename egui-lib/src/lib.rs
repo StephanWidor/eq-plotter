@@ -18,6 +18,7 @@ pub struct Params<F: audio_utils::Float, const NUM_BANDS: usize> {
     pub sample_rate: F,
     pub drag_eq_index: usize,
     pub preset_selection: presets::Selection,
+    pub new_preset_name: Option<String>,
 }
 
 #[derive(Debug, Clone)]

@@ -1,6 +1,5 @@
 use crate::*;
 use audio_lib::eq;
-use egui::accesskit::Uuid;
 
 /// Return true if the eq has changed
 pub fn add_slider_controls<F: audio_utils::Float + egui::emath::Numeric>(
@@ -129,12 +128,10 @@ pub fn add_preset_controls<F: audio_utils::Float, const NUM_BANDS: usize>(
 
                 match params.preset_selection.clone() {
                     presets::Selection::None => {
-                        if ui.button("Add").clicked() {
-                            // TODO: preliminary
-                            let name = Uuid::new_v4().to_string();
-                            if presets.add(name.clone(), params.eqs.clone()) {
-                                params.preset_selection = presets::Selection::Selected(name);
-                            }
+                        if params.new_preset_name.is_some() {
+                            add_new_preset_popup(ui, params, presets);
+                        } else if ui.button("Add").clicked() {
+                            params.new_preset_name = Some(String::from(""));
                         }
                     }
                     presets::Selection::Selected(name) => {
@@ -145,21 +142,72 @@ pub fn add_preset_controls<F: audio_utils::Float, const NUM_BANDS: usize>(
                     }
                     presets::Selection::SelectedChanged(name) => {
                         ui.horizontal(|ui| {
-                            if ui.button("Add").clicked() {
-                                // TODO: preliminary
-                                let name = Uuid::new_v4().to_string();
-                                if presets.add(name.clone(), params.eqs.clone()) {
-                                    params.preset_selection = presets::Selection::Selected(name);
+                            if params.new_preset_name.is_some() {
+                                add_new_preset_popup(ui, params, presets);
+                            } else {
+                                if ui.button("Add").clicked() {
+                                    params.new_preset_name = Some(String::from(""));
+                                } else if ui.button("Save").clicked() {
+                                    presets.force_add(name.clone(), params.eqs.clone());
+                                    params.preset_selection =
+                                        presets::Selection::Selected(name.clone());
                                 }
-                            }
-                            if ui.button("Save").clicked() {
-                                presets.force_add(name.clone(), params.eqs.clone());
-                                params.preset_selection =
-                                    presets::Selection::Selected(name.clone());
                             }
                         });
                     }
                 };
             });
         });
+}
+
+fn add_new_preset_popup<F: audio_utils::Float, const NUM_BANDS: usize>(
+    ui: &mut egui::Ui,
+    params: &mut Params<F, NUM_BANDS>,
+    presets: &mut app_lib::presets::Presets<F, NUM_BANDS>,
+) {
+    if let Some(new_preset_name) = params.new_preset_name.as_mut() {
+        let mut should_close = false;
+        egui::containers::modal::Modal::new(egui::Id::new("add_new_preset_modal")).show(
+            ui.ctx(),
+            |ui| {
+                ui.vertical_centered(|ui| {
+                    let name_is_valid =
+                        !new_preset_name.is_empty() && !presets.contains(new_preset_name);
+                    ui.label("New preset name:");
+                    ui.add_space(10.0);
+                    let text_edit_response = ui.text_edit_singleline(new_preset_name);
+                    ui.ctx()
+                        .memory_mut(|mem| mem.request_focus(text_edit_response.id));
+                    ui.add_space(10.0);
+                    ui.horizontal_centered(|ui| {
+                        if ui
+                            .add_enabled(name_is_valid, egui::Button::new("Ok"))
+                            .clicked()
+                        {
+                            if presets.add(new_preset_name.clone(), params.eqs.clone()) {
+                                params.preset_selection =
+                                    presets::Selection::Selected(new_preset_name.clone());
+                                should_close = true;
+                            }
+                        }
+                        if ui.button("Cancel").clicked() {
+                            should_close = true;
+                        }
+                    });
+                    if ui.input(|i| i.key_pressed(egui::Key::Enter)) && name_is_valid {
+                        if presets.add(new_preset_name.clone(), params.eqs.clone()) {
+                            params.preset_selection =
+                                presets::Selection::Selected(new_preset_name.clone());
+                        }
+                        should_close = true;
+                    } else if ui.input(|i| i.key_pressed(egui::Key::Escape)) {
+                        should_close = true;
+                    }
+                });
+            },
+        );
+        if should_close {
+            params.new_preset_name = None;
+        }
+    }
 }
