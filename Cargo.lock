@@ -416,6 +416,7 @@ dependencies = [
  "audio-lib",
  "dirs",
  "serde",
+ "serde_arrays",
  "serde_json",
 ]
 

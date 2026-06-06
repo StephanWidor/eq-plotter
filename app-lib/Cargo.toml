@@ -7,4 +7,5 @@ edition = "2024"
 audio-lib = { workspace = true }
 dirs = { workspace = true }
 serde = { workspace = true }
+serde_arrays = { workspace = true }
 serde_json = { workspace = true }

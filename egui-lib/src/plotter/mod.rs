@@ -64,6 +64,7 @@ pub fn add_plots<
                                     eq.frequency.log_hz() + eq_diff.log_frequency,
                                 );
                                 eq.gain = eq::Gain::Db(eq.gain.db() + eq_diff.gain_db);
+                                params.preset_selection.mark_as_changed();
                             }
                         }
                         if show_options.phase {
