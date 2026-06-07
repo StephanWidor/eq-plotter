@@ -38,30 +38,7 @@ pub fn make_frequency_response<F: utils::Float>(
     }
 }
 
-pub fn impulse_response<F: utils::Float>(
-    process_function: &mut impl FnMut(F) -> F,
-    eps: F,
-    hold_length: usize,
-    max_length: usize,
-) -> Vec<F> {
-    let mut response = Vec::new();
-    response.push(process_function(F::ONE));
-    let mut eps_count = 0;
-    while eps_count <= hold_length && response.len() <= max_length {
-        let filter_out = process_function(F::ZERO);
-        if filter_out.abs() <= eps {
-            eps_count += 1;
-        } else {
-            eps_count = 0;
-        }
-        response.push(filter_out);
-    }
-    response.resize(response.len() + 1 - eps_count, F::ZERO);
-
-    response
-}
-
-pub fn impulse_response_for_coefficients<F: utils::Float>(
+pub fn make_impulse_response<F: utils::Float>(
     coefficients: Coefficients<F>,
     eps: F,
     hold_length: usize,
@@ -69,7 +46,7 @@ pub fn impulse_response_for_coefficients<F: utils::Float>(
 ) -> Vec<F> {
     let mut filter = Filter::new(coefficients);
     let mut process = move |s| filter.process(s);
-    impulse_response(&mut process, eps, hold_length, max_length)
+    utils::make_impulse_response(&mut process, eps, hold_length, max_length)
 }
 
 pub mod multiband {
@@ -107,7 +84,7 @@ pub mod multiband {
             .map(|c| Filter::new(c))
             .collect::<Vec<_>>();
         let mut process = |s| process_sequential(&mut filters, s);
-        super::impulse_response(&mut process, eps, hold_length, max_length)
+        utils::make_impulse_response(&mut process, eps, hold_length, max_length)
     }
 }
 

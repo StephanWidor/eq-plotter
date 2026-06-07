@@ -54,7 +54,7 @@ pub fn add_plot<F: audio_utils::Float + egui::emath::Numeric>(
             }
             for (index, c) in coefficients.iter().enumerate() {
                 if let Some(c) = c {
-                    let impulse_response = biquad::utils::impulse_response_for_coefficients(
+                    let impulse_response = biquad::utils::make_impulse_response(
                         c.clone(),
                         impulse_response_params.eps,
                         impulse_response_params.hold_length,

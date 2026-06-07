@@ -86,6 +86,29 @@ pub fn omega<F: Float>(frequency: F, sample_rate: F) -> F {
     F::TWO_PI * (frequency / sample_rate)
 }
 
+pub fn make_impulse_response<F: Float>(
+    process_function: &mut impl FnMut(F) -> F,
+    eps: F,
+    hold_length: usize,
+    max_length: usize,
+) -> Vec<F> {
+    let mut response = Vec::new();
+    response.push(process_function(F::ONE));
+    let mut eps_count = 0;
+    while eps_count <= hold_length && response.len() <= max_length {
+        let filter_out = process_function(F::ZERO);
+        if filter_out.abs() <= eps {
+            eps_count += 1;
+        } else {
+            eps_count = 0;
+        }
+        response.push(filter_out);
+    }
+    response.resize(response.len() + 1 - eps_count, F::ZERO);
+
+    response
+}
+
 pub fn make_gain_db_response<F: Float>(
     complex_frequency_response: impl Fn(F) -> num::Complex<F>,
 ) -> impl Fn(F) -> F {

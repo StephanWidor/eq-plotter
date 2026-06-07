@@ -200,7 +200,7 @@ fn draw_ir_chart<DB: DrawingBackend>(
     impulse_response_params: &ImpulseResponseParams,
     coefficients: &biquad::coefficients::Coefficients<f32>,
 ) {
-    let impulse_response = biquad::utils::impulse_response_for_coefficients(
+    let impulse_response = biquad::utils::make_impulse_response(
         coefficients.clone(),
         impulse_response_params.eps,
         impulse_response_params.hold_length,
