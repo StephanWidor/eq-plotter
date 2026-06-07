@@ -29,6 +29,12 @@ impl<F: utils::Float, const NUM_BANDS: usize> Presets<F, NUM_BANDS> {
         }
     }
 
+    pub fn new_with_init(init_name: String, init_eqs: [eq::Eq<F>; NUM_BANDS]) -> Self {
+        Self {
+            preset_map: HashMap::from([(init_name, Preset { eqs: init_eqs })]),
+        }
+    }
+
     pub fn add(&mut self, name: String, eqs: [eq::Eq<F>; NUM_BANDS]) -> bool {
         if self.preset_map.contains_key(&name) {
             return false;

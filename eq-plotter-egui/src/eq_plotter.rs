@@ -54,7 +54,7 @@ impl<const NUM_BANDS: usize> EqPlotter<NUM_BANDS> {
         ) {
             presets
         } else {
-            Presets::<NUM_BANDS>::new()
+            Presets::<NUM_BANDS>::new_with_init(String::from("Init"), app_settings.init_eqs)
         };
         Self {
             params: params,
