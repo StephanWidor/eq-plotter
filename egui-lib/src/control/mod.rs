@@ -30,7 +30,7 @@ pub fn add<F: audio_utils::Float + egui::emath::Numeric, const NUM_BANDS: usize>
                     let eq_colors = &settings.color_palette.eq_stroke;
                     let eq_ranges = &settings.app.eq_ranges;
                     let mut eq_has_changed = false;
-                    for (index, eq) in params.eqs.iter_mut().enumerate() {
+                    for (index, eq) in params.multiband_eq.eqs.iter_mut().enumerate() {
                         eq_has_changed |= eqs::add_slider_controls(
                             ui,
                             control_width,

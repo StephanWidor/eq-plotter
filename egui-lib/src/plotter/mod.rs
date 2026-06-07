@@ -26,6 +26,7 @@ pub fn add_plots<
     let drag_eq_index = &mut params.drag_eq_index;
     let sample_rate = params.sample_rate;
     let coefficients = params
+        .multiband_eq
         .eqs
         .iter()
         .map(|eq| {
@@ -59,7 +60,7 @@ pub fn add_plots<
                                 );
                             *drag_eq_index = indexed_eq_diff.index;
                             if let Some(eq_diff) = indexed_eq_diff.diff {
-                                let eq = &mut params.eqs[*drag_eq_index];
+                                let eq = &mut params.multiband_eq.eqs[*drag_eq_index];
                                 eq.frequency = eq::Frequency::LogHz(
                                     eq.frequency.log_hz() + eq_diff.log_frequency,
                                 );

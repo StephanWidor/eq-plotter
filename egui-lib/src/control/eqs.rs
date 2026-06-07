@@ -122,7 +122,7 @@ pub fn add_preset_controls<F: audio_utils::Float, const NUM_BANDS: usize>(
                         }
                     });
                 if selection_changed {
-                    presets.get_inline(&selected_preset_name, &mut params.eqs);
+                    presets.get_inline(&selected_preset_name, &mut params.multiband_eq);
                     params.preset_selection = presets::Selection::Selected(selected_preset_name);
                 }
 
@@ -148,7 +148,7 @@ pub fn add_preset_controls<F: audio_utils::Float, const NUM_BANDS: usize>(
                                 if ui.button("Add").clicked() {
                                     params.new_preset_name = Some(String::from(""));
                                 } else if ui.button("Save").clicked() {
-                                    presets.force_add(name.clone(), params.eqs.clone());
+                                    presets.force_add(name.clone(), params.multiband_eq.clone());
                                     params.preset_selection =
                                         presets::Selection::Selected(name.clone());
                                 }
@@ -184,7 +184,7 @@ fn add_new_preset_popup<F: audio_utils::Float, const NUM_BANDS: usize>(
                             .add_enabled(name_is_valid, egui::Button::new("Ok"))
                             .clicked()
                         {
-                            if presets.add(new_preset_name.clone(), params.eqs.clone()) {
+                            if presets.add(new_preset_name.clone(), params.multiband_eq.clone()) {
                                 params.preset_selection =
                                     presets::Selection::Selected(new_preset_name.clone());
                                 should_close = true;
@@ -195,7 +195,7 @@ fn add_new_preset_popup<F: audio_utils::Float, const NUM_BANDS: usize>(
                         }
                     });
                     if ui.input(|i| i.key_pressed(egui::Key::Enter)) && name_is_valid {
-                        if presets.add(new_preset_name.clone(), params.eqs.clone()) {
+                        if presets.add(new_preset_name.clone(), params.multiband_eq.clone()) {
                             params.preset_selection =
                                 presets::Selection::Selected(new_preset_name.clone());
                         }

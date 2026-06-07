@@ -28,7 +28,7 @@ impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS:
         ) {
             presets
         } else {
-            Presets::<NUM_BANDS>::new_with_init(String::from("Init"), app_settings.init_eqs.clone())
+            Presets::<NUM_BANDS>::new_with_init(String::from("Init"), app_settings.init_eq.clone())
         };
         Self {
             params: params.clone(),

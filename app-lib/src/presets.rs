@@ -1,4 +1,4 @@
-use audio_lib::*;
+use audio_lib::{eq::MultibandEq, *};
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -19,7 +19,7 @@ impl Selection {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(bound = "F: utils::Float")]
 pub struct Presets<F: utils::Float, const NUM_BANDS: usize> {
-    preset_map: HashMap<String, Preset<F, NUM_BANDS>>,
+    preset_map: HashMap<String, MultibandEq<F, NUM_BANDS>>,
 }
 
 impl<F: utils::Float, const NUM_BANDS: usize> Presets<F, NUM_BANDS> {
@@ -29,39 +29,39 @@ impl<F: utils::Float, const NUM_BANDS: usize> Presets<F, NUM_BANDS> {
         }
     }
 
-    pub fn new_with_init(init_name: String, init_eqs: [eq::Eq<F>; NUM_BANDS]) -> Self {
+    pub fn new_with_init(init_name: String, init_eq: MultibandEq<F, NUM_BANDS>) -> Self {
         Self {
-            preset_map: HashMap::from([(init_name, Preset { eqs: init_eqs })]),
+            preset_map: HashMap::from([(init_name, init_eq)]),
         }
     }
 
-    pub fn add(&mut self, name: String, eqs: [eq::Eq<F>; NUM_BANDS]) -> bool {
+    pub fn add(&mut self, name: String, eq: MultibandEq<F, NUM_BANDS>) -> bool {
         if self.preset_map.contains_key(&name) {
             return false;
         }
-        self.preset_map.insert(name, Preset { eqs });
+        self.preset_map.insert(name, eq);
         true
     }
 
-    pub fn force_add(&mut self, name: String, eqs: [eq::Eq<F>; NUM_BANDS]) {
+    pub fn force_add(&mut self, name: String, eq: MultibandEq<F, NUM_BANDS>) {
         if let Some(preset) = self.preset_map.get_mut(&name) {
-            preset.set_eqs(&eqs);
+            preset.set_eqs(&eq.eqs);
         } else {
-            self.preset_map.insert(name, Preset { eqs });
+            self.preset_map.insert(name, eq);
         }
     }
 
-    pub fn get(&self, name: &String) -> Option<&[eq::Eq<F>; NUM_BANDS]> {
-        if let Some(preset) = self.preset_map.get(name) {
-            Some(&preset.eqs)
+    pub fn get(&self, name: &String) -> Option<&MultibandEq<F, NUM_BANDS>> {
+        if let Some(eq) = self.preset_map.get(name) {
+            Some(&eq)
         } else {
             None
         }
     }
 
-    pub fn get_inline(&self, name: &String, eqs: &mut [eq::Eq<F>; NUM_BANDS]) -> bool {
+    pub fn get_inline(&self, name: &String, eq: &mut MultibandEq<F, NUM_BANDS>) -> bool {
         if let Some(preset) = self.preset_map.get(name) {
-            preset.get_eqs(eqs);
+            preset.get_eqs(&mut eq.eqs);
             true
         } else {
             false
@@ -85,32 +85,11 @@ impl<F: utils::Float, const NUM_BANDS: usize> Presets<F, NUM_BANDS> {
     }
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(bound = "F: utils::Float")]
-pub struct Preset<F: utils::Float, const NUM_BANDS: usize> {
-    #[serde(with = "serde_arrays")]
-    pub eqs: [eq::Eq<F>; NUM_BANDS],
-}
-
-impl<F: utils::Float, const NUM_BANDS: usize> Preset<F, NUM_BANDS> {
-    pub fn set_eqs(&mut self, eqs: &[eq::Eq<F>; NUM_BANDS]) {
-        for i in 0..NUM_BANDS {
-            self.eqs[i] = eqs[i].clone();
-        }
-    }
-
-    pub fn get_eqs(&self, eqs: &mut [eq::Eq<F>; NUM_BANDS]) {
-        for i in 0..NUM_BANDS {
-            eqs[i] = self.eqs[i].clone();
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     struct TestSetup {
-        pub eqs: Vec<(String, [eq::Eq<f32>; 2])>,
+        pub eqs: Vec<(String, MultibandEq<f32, 2>)>,
     }
 
     impl TestSetup {
@@ -119,54 +98,60 @@ mod tests {
                 eqs: vec![
                     (
                         String::from("a preset"),
-                        [
-                            eq::Eq {
-                                gain: eq::Gain::Db(0.0),
-                                frequency: eq::Frequency::Hz(1000.0),
-                                q: 0.7,
-                                eq_type: eq::EqType::Peak,
-                            },
-                            eq::Eq {
-                                gain: eq::Gain::Db(-3.0),
-                                frequency: eq::Frequency::Hz(2000.0),
-                                q: 1.4,
-                                eq_type: eq::EqType::LowShelf,
-                            },
-                        ],
+                        MultibandEq {
+                            eqs: [
+                                eq::Eq {
+                                    gain: eq::Gain::Db(0.0),
+                                    frequency: eq::Frequency::Hz(1000.0),
+                                    q: 0.7,
+                                    eq_type: eq::EqType::Peak,
+                                },
+                                eq::Eq {
+                                    gain: eq::Gain::Db(-3.0),
+                                    frequency: eq::Frequency::Hz(2000.0),
+                                    q: 1.4,
+                                    eq_type: eq::EqType::LowShelf,
+                                },
+                            ],
+                        },
                     ),
                     (
                         String::from("another preset"),
-                        [
-                            eq::Eq {
-                                gain: eq::Gain::Db(6.0),
-                                frequency: eq::Frequency::Hz(4000.0),
-                                q: 0.5,
-                                eq_type: eq::EqType::HighPass,
-                            },
-                            eq::Eq {
-                                gain: eq::Gain::Db(3.0),
-                                frequency: eq::Frequency::Hz(1000.0),
-                                q: 1.0,
-                                eq_type: eq::EqType::Peak,
-                            },
-                        ],
+                        MultibandEq {
+                            eqs: [
+                                eq::Eq {
+                                    gain: eq::Gain::Db(6.0),
+                                    frequency: eq::Frequency::Hz(4000.0),
+                                    q: 0.5,
+                                    eq_type: eq::EqType::HighPass,
+                                },
+                                eq::Eq {
+                                    gain: eq::Gain::Db(3.0),
+                                    frequency: eq::Frequency::Hz(1000.0),
+                                    q: 1.0,
+                                    eq_type: eq::EqType::Peak,
+                                },
+                            ],
+                        },
                     ),
                     (
                         String::from("still another preset"),
-                        [
-                            eq::Eq {
-                                gain: eq::Gain::Db(0.0),
-                                frequency: eq::Frequency::Hz(2000.0),
-                                q: 2.0,
-                                eq_type: eq::EqType::Notch,
-                            },
-                            eq::Eq {
-                                gain: eq::Gain::Db(-12.0),
-                                frequency: eq::Frequency::Hz(4000.0),
-                                q: 0.3,
-                                eq_type: eq::EqType::HighShelf,
-                            },
-                        ],
+                        MultibandEq {
+                            eqs: [
+                                eq::Eq {
+                                    gain: eq::Gain::Db(0.0),
+                                    frequency: eq::Frequency::Hz(2000.0),
+                                    q: 2.0,
+                                    eq_type: eq::EqType::Notch,
+                                },
+                                eq::Eq {
+                                    gain: eq::Gain::Db(-12.0),
+                                    frequency: eq::Frequency::Hz(4000.0),
+                                    q: 0.3,
+                                    eq_type: eq::EqType::HighShelf,
+                                },
+                            ],
+                        },
                     ),
                 ],
             }

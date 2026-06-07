@@ -42,7 +42,7 @@ impl<const NUM_BANDS: usize> EqPlotter<NUM_BANDS> {
         } else {
             UiParams::<NUM_BANDS> {
                 show_options: app_lib::settings::ui::ShowOptions::new_all_enabled(),
-                eqs: app_settings.init_eqs.clone(),
+                multiband_eq: app_settings.init_eq.clone(),
                 sample_rate: app_settings.init_sample_rate,
                 drag_eq_index: usize::MAX,
                 preset_selection: app_lib::presets::Selection::None,
@@ -54,7 +54,7 @@ impl<const NUM_BANDS: usize> EqPlotter<NUM_BANDS> {
         ) {
             presets
         } else {
-            Presets::<NUM_BANDS>::new_with_init(String::from("Init"), app_settings.init_eqs)
+            Presets::<NUM_BANDS>::new_with_init(String::from("Init"), app_settings.init_eq)
         };
         Self {
             params: params,

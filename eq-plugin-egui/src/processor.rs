@@ -12,7 +12,7 @@ pub struct Processor<
     const ANALYZER_NUM_BINS: usize,
 > {
     plugin_params: sync::Arc<params::PluginParams<NUM_BANDS, NUM_CHANNELS, ANALYZER_NUM_BINS>>,
-    eqs: [eq::Eq<f32>; NUM_BANDS],
+    multiband_eq: eq::MultibandEq<f32, NUM_BANDS>,
     coefficients: FilterCoefficients<NUM_BANDS>,
     filters: [Filters<NUM_BANDS>; NUM_CHANNELS],
 }
@@ -25,7 +25,9 @@ impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS:
     ) -> Self {
         Self {
             plugin_params: plugin_params,
-            eqs: [Self::INIT_EQ; NUM_BANDS],
+            multiband_eq: eq::MultibandEq {
+                eqs: [Self::INIT_EQ; NUM_BANDS],
+            },
             coefficients: [Self::INIT_FILTER_COEFFICIENTS; NUM_BANDS],
             filters: std::array::from_fn(|_| std::array::from_fn(|_| biquad::filter::State::new())),
         }
@@ -38,7 +40,7 @@ impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS:
             }
         }
         self.update_coefficients(
-            &self.plugin_params.eqs(),
+            &&self.plugin_params.to_multiband_eq(),
             self.plugin_params
                 .sample_rate
                 .load(atomic::Ordering::Relaxed),
@@ -47,7 +49,7 @@ impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS:
 
     pub fn process(&mut self, buffer: &mut nice::Buffer) {
         self.update_coefficients(
-            &self.plugin_params.eqs(),
+            &self.plugin_params.to_multiband_eq(),
             self.plugin_params
                 .sample_rate
                 .load(atomic::Ordering::Relaxed),
@@ -69,12 +71,15 @@ impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS:
         }
     }
 
-    fn update_coefficients(&mut self, new_eqs: &[eq::Eq<f32>], sample_rate: f32) -> bool {
-        assert!(new_eqs.len() >= NUM_BANDS);
+    fn update_coefficients(
+        &mut self,
+        new_multiband_eq: &eq::MultibandEq<f32, NUM_BANDS>,
+        sample_rate: f32,
+    ) -> bool {
         let mut success = true;
         for i in 0..NUM_BANDS {
-            let eq = &mut self.eqs[i];
-            let new_eq = &new_eqs[i];
+            let eq = &mut self.multiband_eq.eqs[i];
+            let new_eq = &new_multiband_eq.eqs[i];
             if *new_eq != *eq {
                 let new_coefficients =
                     biquad::coefficients::Coefficients::from_eq(new_eq, sample_rate);

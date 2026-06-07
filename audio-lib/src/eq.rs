@@ -206,6 +206,27 @@ impl From<Eq<f64>> for Eq<f32> {
     }
 }
 
+#[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(bound = "F: utils::Float")]
+pub struct MultibandEq<F: utils::Float, const NUM_BANDS: usize> {
+    #[serde(with = "serde_arrays")]
+    pub eqs: [Eq<F>; NUM_BANDS],
+}
+
+impl<F: utils::Float, const NUM_BANDS: usize> MultibandEq<F, NUM_BANDS> {
+    pub fn set_eqs(&mut self, eqs: &[Eq<F>; NUM_BANDS]) {
+        for i in 0..NUM_BANDS {
+            self.eqs[i] = eqs[i].clone();
+        }
+    }
+
+    pub fn get_eqs(&self, eqs: &mut [Eq<F>; NUM_BANDS]) {
+        for i in 0..NUM_BANDS {
+            eqs[i] = self.eqs[i].clone();
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

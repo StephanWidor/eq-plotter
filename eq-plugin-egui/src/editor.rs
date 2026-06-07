@@ -13,7 +13,7 @@ pub fn create_editor<
     let editor_state = params.editor_state.clone();
     let ui_state = UiParams {
         show_options: params.show_params.load_options(),
-        eqs: params.eqs(),
+        multiband_eq: params.to_multiband_eq(),
         sample_rate: params.sample_rate.load(atomic::Ordering::Relaxed),
         drag_eq_index: usize::MAX,
         preset_selection: app_lib::presets::Selection::None,
@@ -45,11 +45,11 @@ pub fn create_editor<
                         )
                         .show_inside(ui, |ui| {
                             let mut presets = presets.lock().unwrap();
-                            let backup_eqs = params.eqs();
-                            if backup_eqs != ui_state.eqs {
+                            let backup_eqs = params.to_multiband_eq();
+                            if backup_eqs != ui_state.multiband_eq {
                                 ui_state.preset_selection.mark_as_changed();
                             }
-                            ui_state.eqs = backup_eqs.clone();
+                            ui_state.multiband_eq = backup_eqs.clone();
                             ui_state.sample_rate =
                                 params.sample_rate.load(atomic::Ordering::Relaxed);
                             ui_state.show_options = params.show_params.load_options();
@@ -72,9 +72,10 @@ pub fn create_editor<
                             );
 
                             for ((new_eq, old_eq), band_params) in ui_state
+                                .multiband_eq
                                 .eqs
                                 .iter()
-                                .zip(backup_eqs)
+                                .zip(backup_eqs.eqs)
                                 .zip(params.eq_params.as_ref())
                             {
                                 if new_eq.gain.db() != old_eq.gain.db() {
