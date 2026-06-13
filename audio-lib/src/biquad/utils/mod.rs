@@ -34,13 +34,14 @@ pub fn make_frequency_response<F: utils::Float>(
 
 pub fn make_impulse_response<F: utils::Float>(
     coefficients: Coefficients<F>,
-    eps: F,
-    hold_length: usize,
-    max_length: usize,
+    rel_eps: F,
+    release_time: F,
+    max_time: F,
+    sample_rate: F,
 ) -> Vec<F> {
     let mut filter = Filter::new(coefficients);
     let mut process = move |s| filter.process(s);
-    utils::make_impulse_response(&mut process, eps, hold_length, max_length)
+    utils::make_impulse_response(&mut process, rel_eps, release_time, max_time, sample_rate)
 }
 
 pub fn zeros<F: utils::Float>(coefficients: &Coefficients<F>) -> utils::PolynomRoots<F> {

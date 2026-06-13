@@ -51,6 +51,7 @@ pub fn render_eq_plots(
         &plot_areas[1],
         &chart_style,
         impulse_response_params,
+        sample_rate,
         &coefficients,
     );
     draw_poles_and_zeros_chart(&plot_areas[3], &chart_style, &coefficients);
@@ -197,13 +198,15 @@ fn draw_ir_chart<DB: DrawingBackend>(
     area: &DrawingArea<DB, plotters::coord::Shift>,
     style: &style::ChartStyleData,
     impulse_response_params: &ImpulseResponseParams,
+    sample_rate: f32,
     coefficients: &biquad::coefficients::Coefficients<f32>,
 ) {
     let impulse_response = biquad::make_impulse_response(
         coefficients.clone(),
-        impulse_response_params.eps,
-        impulse_response_params.hold_length,
-        impulse_response_params.max_length,
+        impulse_response_params.rel_eps,
+        impulse_response_params.release_time,
+        impulse_response_params.max_time,
+        sample_rate,
     );
 
     let mut chart = ChartBuilder::on(&area)

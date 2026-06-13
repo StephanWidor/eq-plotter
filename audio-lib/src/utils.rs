@@ -89,23 +89,27 @@ pub fn omega<F: Float>(frequency: F, sample_rate: F) -> F {
 
 pub fn make_impulse_response<F: Float>(
     process_function: &mut impl FnMut(F) -> F,
-    eps: F,
-    hold_length: usize,
-    max_length: usize,
+    rel_eps: F,
+    release_time: F,
+    max_time: F,
+    sample_rate: F,
 ) -> Vec<F> {
     let mut response = Vec::new();
-    response.push(process_function(F::ONE));
-    let mut eps_count = 0;
-    while eps_count <= hold_length && response.len() <= max_length {
-        let filter_out = process_function(F::ZERO);
-        if filter_out.abs() <= eps {
-            eps_count += 1;
-        } else {
-            eps_count = 0;
+    let mut envelope = crate::envelope_follower::EnvelopeFollower::from_attack_and_release_time(
+        F::ZERO,
+        release_time,
+        sample_rate,
+    );
+    let mut max = envelope
+        .process(*response.push_mut(process_function(F::ONE)))
+        .abs();
+    for _ in 1..(max_time * sample_rate).to_usize().unwrap() {
+        let r = envelope.process(response.push_mut(process_function(F::ZERO)).abs());
+        if r <= rel_eps * max {
+            break;
         }
-        response.push(filter_out);
+        max = max.max(r);
     }
-    response.resize(response.len() + 1 - eps_count, F::ZERO);
     response
 }
 

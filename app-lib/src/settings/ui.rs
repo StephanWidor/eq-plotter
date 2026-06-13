@@ -47,17 +47,17 @@ impl<F: utils::Float> Default for EqRanges<F> {
 
 #[derive(Debug, Clone)]
 pub struct ImpulseResponseParams<F: utils::Float> {
-    pub eps: F,
-    pub hold_length: usize,
-    pub max_length: usize,
+    pub rel_eps: F,
+    pub release_time: F,
+    pub max_time: F,
 }
 
 impl<F: utils::Float> Default for ImpulseResponseParams<F> {
     fn default() -> Self {
         Self {
-            eps: F::from(0.001).unwrap(),
-            hold_length: 10,
-            max_length: 1024,
+            rel_eps: F::from(0.01).unwrap(),
+            release_time: F::from(0.01).unwrap(),
+            max_time: F::from(0.5).unwrap(),
         }
     }
 }

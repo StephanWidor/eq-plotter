@@ -36,16 +36,17 @@ pub fn make_frequency_response<
 pub fn impulse_response<F: utils::Float, C: Iterator<Item = Coefficients<F>>>(
     coefficients: C,
     processing_type: ProcessingType,
-    eps: F,
-    hold_length: usize,
-    max_length: usize,
+    rel_eps: F,
+    release_time: F,
+    max_time: F,
+    sample_rate: F,
 ) -> Vec<F> {
     match processing_type {
         ProcessingType::Sequential => {
-            sequential::impulse_response(coefficients, eps, hold_length, max_length)
+            sequential::impulse_response(coefficients, rel_eps, release_time, max_time, sample_rate)
         }
         ProcessingType::Parallel => {
-            parallel::impulse_response(coefficients, eps, hold_length, max_length)
+            parallel::impulse_response(coefficients, rel_eps, release_time, max_time, sample_rate)
         }
     }
 }
@@ -83,16 +84,17 @@ pub mod sequential {
 
     pub fn impulse_response<F: utils::Float, C: Iterator<Item = Coefficients<F>>>(
         coefficients: C,
-        eps: F,
-        hold_length: usize,
-        max_length: usize,
+        rel_eps: F,
+        release_time: F,
+        max_time: F,
+        sample_rate: F,
     ) -> Vec<F> {
         let mut filters = coefficients
             .into_iter()
             .map(|c| Filter::new(c))
             .collect::<Vec<_>>();
         let mut process = |s| process(&mut filters.iter_mut(), s);
-        utils::make_impulse_response(&mut process, eps, hold_length, max_length)
+        utils::make_impulse_response(&mut process, rel_eps, release_time, max_time, sample_rate)
     }
 }
 
@@ -139,16 +141,17 @@ pub mod parallel {
 
     pub fn impulse_response<F: utils::Float, C: Iterator<Item = Coefficients<F>>>(
         coefficients: C,
-        eps: F,
-        hold_length: usize,
-        max_length: usize,
+        rel_eps: F,
+        release_time: F,
+        max_time: F,
+        sample_rate: F,
     ) -> Vec<F> {
         let mut filters = coefficients
             .into_iter()
             .map(|c| Filter::new(c))
             .collect::<Vec<_>>();
         let mut process = |s| process(&mut filters.iter_mut(), s);
-        utils::make_impulse_response(&mut process, eps, hold_length, max_length)
+        utils::make_impulse_response(&mut process, rel_eps, release_time, max_time, sample_rate)
     }
 }
 

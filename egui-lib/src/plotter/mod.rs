@@ -88,6 +88,7 @@ pub fn add_plots<
                                 ui,
                                 &coefficients,
                                 params.multiband_eq.processing_type,
+                                sample_rate,
                                 &settings.app.impulse_response_params,
                                 plot_size,
                                 &settings.color_palette,
