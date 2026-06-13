@@ -97,6 +97,9 @@ pub fn create_editor<
                                 if new_eq.eq_type != old_eq.eq_type {
                                     band_params.set_eq_type(new_eq.eq_type, setter);
                                 }
+                                if new_eq.makeup_gain != old_eq.makeup_gain {
+                                    band_params.set_makeup_gain_db(new_eq.makeup_gain.db(), setter);
+                                }
                             }
 
                             params.show_params.store_options(&ui_state.show_options);

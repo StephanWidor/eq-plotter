@@ -50,6 +50,7 @@ impl<F: utils::Float, const NUM_BANDS: usize> Settings<F, NUM_BANDS> {
                     } else {
                         eq::EqType::Bypassed
                     },
+                    makeup_gain: eq::Gain::Amplitude(F::ONE),
                 }
             }),
             processing_type: eq::MultibandType::Sequential,

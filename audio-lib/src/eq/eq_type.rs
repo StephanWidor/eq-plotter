@@ -126,6 +126,7 @@ mod tests {
             frequency: Frequency::Hz(440.0_f32),
             q: 0.707_f32,
             eq_type: EqType::Peak,
+            makeup_gain: Gain::Amplitude(2_f32),
         };
         let eq_f64: Eq<f64> = Eq::<f64>::from(eq_f32.clone());
 

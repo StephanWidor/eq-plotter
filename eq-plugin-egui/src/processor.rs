@@ -140,6 +140,7 @@ impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS:
         frequency: eq::Frequency::Hz(0_f32),
         q: 0.0,
         eq_type: eq::EqType::Volume,
+        makeup_gain: eq::Gain::Amplitude(0_f32),
     };
     const INIT_PROCESSING_TYPE: eq::MultibandType = eq::MultibandType::Sequential;
 }

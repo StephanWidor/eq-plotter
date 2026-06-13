@@ -15,7 +15,7 @@ impl<F: utils::Float> Coefficients<F> {
     pub fn from_eq(eq: &eq::Eq<F>, sample_rate: F) -> Self {
         let gain_linear = eq.gain.amplitude();
         let frequency = eq.frequency.hz();
-        match eq.eq_type {
+        let mut coefficients = match eq.eq_type {
             eq::EqType::Volume => Self::from_volume_linear(gain_linear),
             eq::EqType::LowPass => Self::from_lowpass(frequency, eq.q, sample_rate),
             eq::EqType::HighPass => Self::from_highpass(frequency, eq.q, sample_rate),
@@ -30,7 +30,17 @@ impl<F: utils::Float> Coefficients<F> {
                 Self::from_highshelf_linear(gain_linear, frequency, eq.q, sample_rate)
             }
             eq::EqType::Bypassed => Self::passthrough(),
-        }
+        };
+        coefficients.add_makeup_gain(eq.makeup_gain);
+        coefficients
+    }
+
+    pub fn add_makeup_gain(&mut self, makeup_gain: eq::Gain<F>) -> &Self {
+        let gain_linear = makeup_gain.amplitude();
+        self.b0 *= gain_linear;
+        self.b1 *= gain_linear;
+        self.b2 *= gain_linear;
+        self
     }
 
     pub const fn muted() -> Self {
