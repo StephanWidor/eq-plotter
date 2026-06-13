@@ -51,6 +51,7 @@ pub fn add_plots<
                                 gain::add_plot::<F, NUM_SPECTRUM_BINS, NUM_SPECTRUM_CHANNELS>(
                                     ui,
                                     &coefficients,
+                                    params.multiband_eq.processing_type,
                                     sample_rate,
                                     *drag_eq_index,
                                     &settings.app.eq_ranges,
@@ -72,6 +73,7 @@ pub fn add_plots<
                             phase::add_plot(
                                 ui,
                                 &coefficients,
+                                params.multiband_eq.processing_type,
                                 sample_rate,
                                 &settings.app.eq_ranges.log_frequency_range,
                                 plot_size,
@@ -85,6 +87,7 @@ pub fn add_plots<
                             impulse_response::add_plot(
                                 ui,
                                 &coefficients,
+                                params.multiband_eq.processing_type,
                                 &settings.app.impulse_response_params,
                                 plot_size,
                                 &settings.color_palette,

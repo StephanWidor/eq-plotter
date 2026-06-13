@@ -1,14 +1,8 @@
+pub mod multiband;
+
 use crate::biquad::{coefficients::Coefficients, filter::*};
 use crate::utils;
 use num::Complex;
-
-pub fn process_sequential<F: utils::Float>(filters: &mut [Filter<F>], sample: F) -> F {
-    let mut output = sample;
-    for filter in filters.iter_mut() {
-        output = filter.process(output);
-    }
-    output
-}
 
 pub fn make_transfer_function<F: utils::Float>(
     coefficients: Coefficients<F>,
@@ -49,45 +43,6 @@ pub fn make_impulse_response<F: utils::Float>(
     utils::make_impulse_response(&mut process, eps, hold_length, max_length)
 }
 
-pub mod multiband {
-    use super::*;
-
-    pub fn make_frequency_response<F: utils::Float, C: IntoIterator<Item = Coefficients<F>>>(
-        coefficients: C,
-        sample_rate: F,
-    ) -> impl Fn(F) -> Complex<F> {
-        let transfer_functions = coefficients
-            .into_iter()
-            .map(|c| make_transfer_function(c))
-            .collect::<Vec<_>>();
-        move |frequency| {
-            let z1 = Complex::from_polar(F::ONE, -utils::omega(frequency, sample_rate));
-            let mut product = Complex::from(F::ONE);
-            for transfer_function in transfer_functions.iter() {
-                product = product * transfer_function(z1);
-            }
-            product
-        }
-    }
-
-    pub fn impulse_response_for_coefficients<
-        F: utils::Float,
-        C: IntoIterator<Item = Coefficients<F>>,
-    >(
-        coefficients: C,
-        eps: F,
-        hold_length: usize,
-        max_length: usize,
-    ) -> Vec<F> {
-        let mut filters = coefficients
-            .into_iter()
-            .map(|c| Filter::new(c))
-            .collect::<Vec<_>>();
-        let mut process = |s| process_sequential(&mut filters, s);
-        utils::make_impulse_response(&mut process, eps, hold_length, max_length)
-    }
-}
-
 pub fn zeros<F: utils::Float>(coefficients: &Coefficients<F>) -> utils::PolynomRoots<F> {
     utils::polynom_roots(coefficients.b0, coefficients.b1, coefficients.b2)
 }
@@ -123,51 +78,37 @@ mod tests {
             b2: 3.2,
         };
         let zeros = zeros(&coefficients);
+
         assert_eq!(zeros.len(), 2);
-        assert_ne!(
-            zeros
-                .clone()
-                .into_iter()
-                .position(|zero| { zero == Complex { re: 0.0, im: 1.0 } }),
-            None
-        );
-        assert_ne!(
-            zeros
-                .into_iter()
-                .position(|zero| { zero == Complex { re: 0.0, im: -1.0 } }),
-            None
-        );
+        for zero_expected in [Complex { re: 0.0, im: 1.0 }, Complex { re: 0.0, im: -1.0 }] {
+            assert!(zeros.iter().find(|zero| **zero == zero_expected).is_some());
+        }
     }
 
     #[test]
     fn example_for_poles() {
         let coefficients = Coefficients {
-            a1: 0.0_f32,
-            a2: -1.0_f32,
+            a1: 0_f32,
+            a2: -1_f32,
             b0: 13.2_f32,
-            b1: 1.0_f32,
+            b1: 1_f32,
             b2: -2.2_f32,
         };
         let poles = poles(&coefficients);
+
         assert_eq!(poles.len(), 2);
-        assert_ne!(
-            poles.clone().into_iter().position(|pole| {
-                pole == Complex {
-                    re: 1.0_f32,
-                    im: 0.0_f32,
-                }
-            }),
-            None
-        );
-        assert_ne!(
-            poles.into_iter().position(|pole| {
-                pole == Complex {
-                    re: -1.0_f32,
-                    im: 0.0_f32,
-                }
-            }),
-            None
-        );
+        for pole_expected in [
+            Complex {
+                re: 1_f32,
+                im: 0_f32,
+            },
+            Complex {
+                re: -1_f32,
+                im: 0_f32,
+            },
+        ] {
+            assert!(poles.iter().find(|pole| **pole == pole_expected).is_some());
+        }
     }
 
     #[test]
@@ -332,31 +273,5 @@ mod tests {
 
         gain_db_back = amplitude_to_db(calc_response(20000.0).abs());
         assert_approx_eq!(gain_db_back, gain_db, 1e-4);
-    }
-
-    #[test]
-    fn validate_transfer_function_multiband() {
-        let sample_rate = 44100.0;
-        let coefficients = [
-            Coefficients::from_bandpass(1000.0, 0.01, sample_rate),
-            Coefficients::from_lowshelf_db(-2.7, 432.1, 5.2, sample_rate),
-            Coefficients::from_highpass(100.0, 2.4, sample_rate),
-        ];
-
-        let single_band_responses = coefficients
-            .iter()
-            .map(|c| make_frequency_response(c.clone(), sample_rate))
-            .collect::<Vec<_>>();
-        let multiband_response = multiband::make_frequency_response(coefficients, sample_rate);
-
-        for i in 1..200 {
-            let frequency = (i * 100) as f64;
-            let mut r0 = num::Complex::from(1.0);
-            for r in single_band_responses.iter() {
-                r0 = r0 * r(frequency);
-            }
-            let r1 = multiband_response(frequency);
-            assert_approx_eq!(r0, r1);
-        }
     }
 }

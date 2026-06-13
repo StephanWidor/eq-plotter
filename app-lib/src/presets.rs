@@ -45,7 +45,7 @@ impl<F: utils::Float, const NUM_BANDS: usize> Presets<F, NUM_BANDS> {
 
     pub fn force_add(&mut self, name: String, eq: MultibandEq<F, NUM_BANDS>) {
         if let Some(preset) = self.preset_map.get_mut(&name) {
-            preset.set_eqs(&eq.eqs);
+            *preset = eq;
         } else {
             self.preset_map.insert(name, eq);
         }
@@ -56,15 +56,6 @@ impl<F: utils::Float, const NUM_BANDS: usize> Presets<F, NUM_BANDS> {
             Some(&eq)
         } else {
             None
-        }
-    }
-
-    pub fn get_inline(&self, name: &String, eq: &mut MultibandEq<F, NUM_BANDS>) -> bool {
-        if let Some(preset) = self.preset_map.get(name) {
-            preset.get_eqs(&mut eq.eqs);
-            true
-        } else {
-            false
         }
     }
 
@@ -113,6 +104,7 @@ mod tests {
                                     eq_type: eq::EqType::LowShelf,
                                 },
                             ],
+                            processing_type: eq::MultibandType::Parallel,
                         },
                     ),
                     (
@@ -132,6 +124,7 @@ mod tests {
                                     eq_type: eq::EqType::Peak,
                                 },
                             ],
+                            processing_type: eq::MultibandType::Sequential,
                         },
                     ),
                     (
@@ -151,6 +144,7 @@ mod tests {
                                     eq_type: eq::EqType::HighShelf,
                                 },
                             ],
+                            processing_type: eq::MultibandType::Parallel,
                         },
                     ),
                 ],

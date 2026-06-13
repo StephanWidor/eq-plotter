@@ -3,6 +3,7 @@ use crate::*;
 pub fn add_plot<F: audio_utils::Float + egui::emath::Numeric>(
     ui: &mut egui::Ui,
     coefficients: &[Option<biquad::coefficients::Coefficients<F>>],
+    multiband_type: eq::MultibandType,
     impulse_response_params: &app_lib::settings::ui::ImpulseResponseParams<F>,
     plot_size: f32,
     color_palette: &colors::ColorPalette,
@@ -41,8 +42,9 @@ pub fn add_plot<F: audio_utils::Float + egui::emath::Numeric>(
         .show(ui, |plot_ui| {
             let active_coefficients = coefficients.iter().filter(|c| c.is_some());
             if active_coefficients.clone().take(2).count() > 1 {
-                let impulse_response = biquad::utils::multiband::impulse_response_for_coefficients(
+                let impulse_response = biquad::multiband::impulse_response(
                     active_coefficients.map(|c| c.as_ref().unwrap().clone()),
+                    multiband_type,
                     impulse_response_params.eps,
                     impulse_response_params.hold_length,
                     impulse_response_params.max_length,
@@ -54,7 +56,7 @@ pub fn add_plot<F: audio_utils::Float + egui::emath::Numeric>(
             }
             for (index, c) in coefficients.iter().enumerate() {
                 if let Some(c) = c {
-                    let impulse_response = biquad::utils::make_impulse_response(
+                    let impulse_response = biquad::make_impulse_response(
                         c.clone(),
                         impulse_response_params.eps,
                         impulse_response_params.hold_length,

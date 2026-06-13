@@ -52,6 +52,7 @@ impl<F: utils::Float, const NUM_BANDS: usize> Settings<F, NUM_BANDS> {
                     },
                 }
             }),
+            processing_type: eq::MultibandType::Sequential,
         }
     }
 }

@@ -4,6 +4,7 @@ use audio_lib::utils as audio_utils;
 pub fn add_plot<F: audio_utils::Float + egui::emath::Numeric>(
     ui: &mut egui::Ui,
     coefficients: &[Option<biquad::coefficients::Coefficients<F>>],
+    multiband_type: eq::MultibandType,
     sample_rate: F,
     log_frequency_range: &std::ops::RangeInclusive<F>,
     plot_size: f32,
@@ -53,11 +54,14 @@ pub fn add_plot<F: audio_utils::Float + egui::emath::Numeric>(
 
             let active_coefficients = coefficients.iter().filter(|c| c.is_some());
             if active_coefficients.clone().take(2).count() > 1 {
-                let multiband_frequency_response =
-                    biquad::utils::multiband::make_frequency_response(
-                        active_coefficients.map(|c| c.as_ref().unwrap().clone()),
-                        sample_rate,
-                    );
+                let active_coefficients_unwrapped = active_coefficients
+                    .map(|c| c.clone().unwrap())
+                    .collect::<Vec<_>>();
+                let multiband_frequency_response = biquad::multiband::make_frequency_response(
+                    active_coefficients_unwrapped.into_iter(),
+                    multiband_type,
+                    sample_rate,
+                );
                 let phase_points = utils::make_log_frequency_points(
                     audio_utils::make_phase_response(multiband_frequency_response),
                     log_frequency_range,
@@ -69,7 +73,7 @@ pub fn add_plot<F: audio_utils::Float + egui::emath::Numeric>(
             }
             for (index, c) in coefficients.iter().enumerate() {
                 if let Some(c) = c {
-                    let response = biquad::utils::make_frequency_response(c.clone(), sample_rate);
+                    let response = biquad::make_frequency_response(c.clone(), sample_rate);
                     let phase_points = utils::make_log_frequency_points(
                         audio_utils::make_phase_response(response),
                         log_frequency_range,

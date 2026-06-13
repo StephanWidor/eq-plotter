@@ -18,6 +18,7 @@ pub fn add_plot<
 >(
     ui: &mut egui::Ui,
     coefficients: &[Option<biquad::coefficients::Coefficients<F>>],
+    multiband_type: eq::MultibandType,
     sample_rate: F,
     last_drag_eq_index: usize,
     eq_ranges: &app_lib::settings::ui::EqRanges<F>,
@@ -92,8 +93,12 @@ pub fn add_plot<
 
         let active_coefficients = coefficients.iter().filter(|c| c.is_some());
         if active_coefficients.clone().take(2).count() > 1 {
-            let multiband_frequency_response = biquad::utils::multiband::make_frequency_response(
-                active_coefficients.map(|c| c.as_ref().unwrap().clone()),
+            let active_coefficients_unwrapped = active_coefficients
+                .map(|c| c.clone().unwrap())
+                .collect::<Vec<_>>();
+            let multiband_frequency_response = biquad::multiband::make_frequency_response(
+                active_coefficients_unwrapped.into_iter(),
+                multiband_type,
                 sample_rate,
             );
             let gain_points = utils::make_log_frequency_points(
@@ -107,7 +112,7 @@ pub fn add_plot<
         }
         for (index, c) in coefficients.iter().enumerate() {
             if let Some(c) = c {
-                let response = biquad::utils::make_frequency_response(c.clone(), sample_rate);
+                let response = biquad::make_frequency_response(c.clone(), sample_rate);
                 let gain_points = utils::make_log_frequency_points(
                     audio_utils::make_gain_db_response(response),
                     log_frequency_range,

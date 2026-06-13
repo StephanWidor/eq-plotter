@@ -4,6 +4,7 @@ use std::sync::{self, atomic};
 
 pub mod eq_params;
 pub mod eq_type;
+pub mod multiband_type;
 pub mod show_params;
 
 pub use eq_params::EqParams;
@@ -23,6 +24,9 @@ pub struct PluginParams<
 
     #[nested(array, group = "eq_params")]
     pub eq_params: [EqParams; NUM_BANDS],
+
+    #[id = "multiband_type"]
+    pub multiband_type: multiband_type::Param,
 
     pub sample_rate: nice::AtomicF32,
 
@@ -50,6 +54,10 @@ impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS:
                     smoothing_length_ms,
                 )
             }),
+            multiband_type: multiband_type::Param::new(
+                format!("Multiband Processing Type"),
+                multiband_type::Wrapper::from(settings.init_eq.processing_type),
+            ),
             sample_rate: nice::AtomicF32::new(settings.init_sample_rate),
             show_params: ShowParams::from_options(&settings.ui.init_show_options),
             analyzer_data: fft::signal_analyzer::SharedData::new(settings.init_sample_rate),
@@ -59,6 +67,17 @@ impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS:
     pub fn to_multiband_eq<F: utils::Float>(&self) -> eq::MultibandEq<F, NUM_BANDS> {
         eq::MultibandEq {
             eqs: std::array::from_fn(|index| self.eq_params[index].to_eq()),
+            processing_type: self.multiband_type.value().into(),
         }
+    }
+
+    pub fn set_multiband_type(
+        &self,
+        multiband_type: eq::MultibandType,
+        setter: &nice::ParamSetter<'_>,
+    ) {
+        setter.begin_set_parameter(&self.multiband_type);
+        setter.set_parameter(&self.multiband_type, multiband_type.into());
+        setter.end_set_parameter(&self.multiband_type);
     }
 }

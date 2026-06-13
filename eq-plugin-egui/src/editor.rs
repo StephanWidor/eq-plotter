@@ -71,6 +71,12 @@ pub fn create_editor<
                                 &spectrum_data,
                             );
 
+                            if ui_state.multiband_eq.processing_type != backup_eqs.processing_type {
+                                params.set_multiband_type(
+                                    ui_state.multiband_eq.processing_type,
+                                    setter,
+                                );
+                            }
                             for ((new_eq, old_eq), band_params) in ui_state
                                 .multiband_eq
                                 .eqs

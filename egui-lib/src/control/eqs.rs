@@ -1,6 +1,27 @@
 use crate::*;
 use audio_lib::eq;
 
+pub fn add_multiband_type_control(
+    ui: &mut egui::Ui,
+    outer_margin: f32,
+    multiband_type: &mut eq::MultibandType,
+) -> bool {
+    let mut type_has_changed = false;
+    egui::Frame::group(ui.style())
+        .corner_radius(5)
+        .outer_margin(outer_margin)
+        .show(ui, |ui| {
+            ui.horizontal(|ui| {
+                for mb_type in eq::MultibandType::ALL.iter() {
+                    let response =
+                        ui.selectable_value(multiband_type, *mb_type, mb_type.to_string());
+                    type_has_changed |= response.changed();
+                }
+            });
+        });
+    type_has_changed
+}
+
 /// Return true if the eq has changed
 pub fn add_slider_controls<F: audio_utils::Float + egui::emath::Numeric>(
     ui: &mut egui::Ui,
@@ -122,8 +143,11 @@ pub fn add_preset_controls<F: audio_utils::Float, const NUM_BANDS: usize>(
                         }
                     });
                 if selection_changed {
-                    presets.get_inline(&selected_preset_name, &mut params.multiband_eq);
-                    params.preset_selection = presets::Selection::Selected(selected_preset_name);
+                    if let Some(preset) = presets.get(&selected_preset_name) {
+                        params.multiband_eq = preset.clone();
+                        params.preset_selection =
+                            presets::Selection::Selected(selected_preset_name);
+                    }
                 }
 
                 match params.preset_selection.clone() {

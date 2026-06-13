@@ -9,6 +9,7 @@ pub trait Float:
     + num::ToPrimitive
     + std::ops::AddAssign
     + std::ops::MulAssign
+    + std::ops::DivAssign
     + serde::Serialize
     + serde::de::DeserializeOwned
     + std::marker::Send
@@ -105,7 +106,6 @@ pub fn make_impulse_response<F: Float>(
         response.push(filter_out);
     }
     response.resize(response.len() + 1 - eps_count, F::ZERO);
-
     response
 }
 
