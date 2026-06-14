@@ -79,11 +79,11 @@ impl EqParams {
 
     pub fn to_eq<F: audio_lib::utils::Float>(&self) -> eq::Eq<F> {
         eq::Eq {
-            gain: eq::Gain::Db(F::from(self.gain_db.value()).unwrap()),
-            frequency: eq::Frequency::LogHz(F::from(self.log_frequency.value()).unwrap()),
-            q: F::from(self.q.value()).unwrap(),
+            gain: eq::Gain::Db(F::from_float(self.gain_db.value())),
+            frequency: eq::Frequency::LogHz(F::from_float(self.log_frequency.value())),
+            q: F::from_float(self.q.value()),
             eq_type: self.eq_type.value().into(),
-            makeup_gain: eq::Gain::Db(F::from(self.makeup_gain_db.value()).unwrap()),
+            makeup_gain: eq::Gain::Db(F::from_float(self.makeup_gain_db.value())),
         }
     }
 

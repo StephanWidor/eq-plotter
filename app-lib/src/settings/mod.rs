@@ -15,7 +15,7 @@ impl<F: utils::Float, const NUM_BANDS: usize> Default for Settings<F, NUM_BANDS>
         let eq_ranges = ui::EqRanges::<F>::default();
         Self {
             init_eq: Self::default_eqs(&eq_ranges.log_frequency_range),
-            init_sample_rate: F::from(48000).unwrap(),
+            init_sample_rate: F::from_integral(48000),
             ui: ui::Settings {
                 eq_ranges: eq_ranges,
                 impulse_response_params: ui::ImpulseResponseParams::default(),
@@ -34,17 +34,17 @@ impl<F: utils::Float, const NUM_BANDS: usize> Settings<F, NUM_BANDS> {
         log_frequency_range: &std::ops::RangeInclusive<F>,
     ) -> eq::MultibandEq<F, NUM_BANDS> {
         let log_frequency_step = (*log_frequency_range.end() - *log_frequency_range.start())
-            / F::from(NUM_BANDS + 1).unwrap();
-        let active_index = (F::from(NUM_BANDS).unwrap() / F::TWO).to_usize().unwrap();
+            / F::from_integral(NUM_BANDS + 1);
+        let active_index = (F::from_integral(NUM_BANDS) / F::TWO).to_usize().unwrap();
         eq::MultibandEq {
             eqs: std::array::from_fn(|i| {
                 let frequency = eq::Frequency::LogHz(
-                    *log_frequency_range.start() + F::from(i + 1).unwrap() * log_frequency_step,
+                    *log_frequency_range.start() + F::from_integral(i + 1) * log_frequency_step,
                 );
                 eq::Eq {
-                    gain: eq::Gain::Db(F::from(3).unwrap()),
+                    gain: eq::Gain::Db(F::from_integral(3)),
                     frequency: frequency,
-                    q: F::from(0.7).unwrap(),
+                    q: F::from_float(0.7),
                     eq_type: if i == active_index {
                         eq::EqType::Peak
                     } else {

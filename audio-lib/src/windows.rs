@@ -10,7 +10,7 @@ pub enum WindowType {
 pub fn center_value<F: utils::Float>(window_type: WindowType) -> F {
     match window_type {
         WindowType::VonHann => F::ONE_HALF,
-        WindowType::Hamming => F::from(25.0 / 46.0).unwrap(),
+        WindowType::Hamming => F::from_float(25.0 / 46.0),
         WindowType::None => F::ONE,
     }
 }
@@ -22,8 +22,8 @@ pub fn make_window<F: utils::Float>(length: usize, window_type: WindowType) -> V
 pub fn make_cosine_window<F: utils::Float>(length: usize, a0: F) -> Vec<F> {
     assert!(length > 1);
     let one_minus_a0 = F::ONE - a0;
-    let step = F::TWO_PI / F::from(length - 1).unwrap();
+    let step = F::TWO_PI / F::from_integral(length - 1);
     (0..length)
-        .map(|i| a0 - one_minus_a0 * (F::from(i).unwrap() * step).cos())
+        .map(|i| a0 - one_minus_a0 * (F::from_integral(i) * step).cos())
         .collect()
 }

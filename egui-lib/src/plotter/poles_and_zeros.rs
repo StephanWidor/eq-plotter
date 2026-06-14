@@ -47,7 +47,7 @@ pub fn add_plot<F: audio_utils::Float + egui::emath::Numeric>(
                 let c = c.as_ref().unwrap();
                 let poles = biquad::poles(c)
                     .iter()
-                    .map(|pole| [pole.re.to_f64(), pole.im.to_f64()])
+                    .map(|pole| [pole.re.cast(), pole.im.cast()])
                     .collect::<Vec<_>>();
                 plot_ui.points(
                     egui_plot::Points::new("Poles", poles)
@@ -58,7 +58,7 @@ pub fn add_plot<F: audio_utils::Float + egui::emath::Numeric>(
 
                 let zeros = biquad::zeros(c)
                     .iter()
-                    .map(|zero| [zero.re.to_f64(), zero.im.to_f64()])
+                    .map(|zero| [zero.re.cast(), zero.im.cast()])
                     .collect::<Vec<_>>();
                 plot_ui.points(
                     egui_plot::Points::new("Zeros", zeros)

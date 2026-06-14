@@ -111,7 +111,7 @@ pub mod parallel {
             count += 1;
         }
         if count > 1 {
-            output /= F::from(count).unwrap()
+            output /= F::from_integral(count)
         }
         output
     }
@@ -133,7 +133,7 @@ pub mod parallel {
                 count += 1;
             }
             if count > 1 {
-                sum = sum / F::from(count).unwrap();
+                sum = sum / F::from_integral(count);
             }
             sum
         }

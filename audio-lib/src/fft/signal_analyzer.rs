@@ -14,9 +14,9 @@ pub struct Coefficients<F: utils::Float> {
 impl<F: utils::Float> Default for Coefficients<F> {
     fn default() -> Self {
         Self {
-            sample_rate: F::from(48000).unwrap(),
-            attack_time: F::from(0.01).unwrap(),
-            release_time: F::from(0.1).unwrap(),
+            sample_rate: F::from_integral(48000),
+            attack_time: F::from_float(0.01),
+            release_time: F::from_float(0.1),
             window_type: windows::WindowType::VonHann,
         }
     }
@@ -138,7 +138,7 @@ impl<F: utils::Float + FftNum, const NUM_BINS: usize, const NUM_CHANNELS: usize>
         }
         if needs_push {
             self.push_gains(shared_linear_gains);
-            let threshold = F::from(0.001).unwrap();
+            let threshold = F::from_float(0.001);
             self.output_muted = (|| {
                 for channel in 0..NUM_CHANNELS {
                     if !self.gain_processors[channel].all_linear_gains_are_below(threshold) {
@@ -221,7 +221,7 @@ impl<F: utils::Float, const NUM_BINS: usize> GainProcessor<F, NUM_BINS> {
     fn make_envelope_coefficients(
         coefficients: &Coefficients<F>,
     ) -> envelope_follower::Coefficients<F> {
-        let time_scale = F::ONE / F::from(Self::FFT_LENGTH).unwrap();
+        let time_scale = F::ONE / F::from_integral(Self::FFT_LENGTH);
         envelope_follower::Coefficients::from_attack_and_release_time(
             coefficients.attack_time * time_scale,
             coefficients.release_time * time_scale,
@@ -231,7 +231,7 @@ impl<F: utils::Float, const NUM_BINS: usize> GainProcessor<F, NUM_BINS> {
 
     fn make_amplitude_square_scale(window_type: windows::WindowType) -> F {
         let scale =
-            F::TWO / (windows::center_value::<F>(window_type) * F::from(1 << NUM_BINS).unwrap());
+            F::TWO / (windows::center_value::<F>(window_type) * F::from_integral(1 << NUM_BINS));
         scale * scale
     }
 }

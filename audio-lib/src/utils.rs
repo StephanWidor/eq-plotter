@@ -1,18 +1,21 @@
-use num::complex::ComplexFloat;
+mod private {
+    pub trait Sealed {}
+    impl Sealed for f32 {}
+    impl Sealed for f64 {}
+}
 
 pub trait Float:
     num_traits::Float
     + num_traits::ConstZero
     + num_traits::ConstOne
     + num_traits::FloatConst
-    + num::FromPrimitive
-    + num::ToPrimitive
     + std::ops::AddAssign
     + std::ops::MulAssign
     + std::ops::DivAssign
     + serde::Serialize
     + serde::de::DeserializeOwned
     + std::marker::Send
+    + private::Sealed
 {
     const TWO: Self;
     const FOUR: Self;
@@ -22,6 +25,16 @@ pub trait Float:
 
     const ONE_HALF: Self;
     const ONE_TWENTIETH: Self;
+
+    fn from_float<T: Float>(f: T) -> Self {
+        Self::from(f).unwrap()
+    }
+    fn from_integral<I: num::PrimInt>(i: I) -> Self {
+        Self::from(i).unwrap()
+    }
+    fn cast<T: Float>(self) -> T {
+        <T as num::NumCast>::from(self).unwrap()
+    }
 }
 impl Float for f32 {
     const TWO: f32 = 2.0_f32;
@@ -116,7 +129,7 @@ pub fn make_impulse_response<F: Float>(
 pub fn make_gain_db_response<F: Float>(
     complex_frequency_response: impl Fn(F) -> num::Complex<F>,
 ) -> impl Fn(F) -> F {
-    move |frequency| amplitude_to_db(complex_frequency_response(frequency).abs())
+    move |frequency| amplitude_to_db(complex_frequency_response(frequency).norm())
 }
 
 pub fn make_phase_response<F: Float>(
@@ -131,7 +144,7 @@ pub fn polynom_roots<F: Float>(c2: F, c1: F, c0: F) -> PolynomRoots<F> {
         if c1 == F::ZERO {
             if c0 == F::ZERO {
                 // any x is a solution here, let's just return zero
-                return PolynomRoots::from_elem(num::Complex::<F>::from(F::ZERO), 1);
+                return PolynomRoots::from_elem(num::Complex::from(F::ZERO), 1);
             }
             return PolynomRoots::new();
         }
@@ -153,7 +166,6 @@ pub fn polynom_roots<F: Float>(c2: F, c1: F, c0: F) -> PolynomRoots<F> {
 mod tests {
     use assert_approx_eq::assert_approx_eq;
     use more_asserts::assert_le;
-    use num::complex::ComplexFloat;
 
     use super::*;
 
@@ -176,7 +188,7 @@ mod tests {
             for solution in solutions.iter() {
                 let find_index = expected
                     .into_iter()
-                    .position(|x| (x - solution).abs() <= 1e-5);
+                    .position(|x| (x - solution).norm() <= 1e-5);
                 assert_ne!(find_index, None);
             }
         };
@@ -206,7 +218,7 @@ mod tests {
             let solutions = polynom_roots(c2, c1, c0);
             for solution in solutions {
                 let eval: num::Complex<f64> = solution * solution * c2 + solution * c1 + c0;
-                let abs_eval = eval.abs();
+                let abs_eval = eval.norm();
                 assert_le!(abs_eval, 1e-10);
             }
         };

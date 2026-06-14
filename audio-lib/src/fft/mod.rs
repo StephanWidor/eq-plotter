@@ -4,7 +4,7 @@ pub mod signal_analyzer;
 
 pub fn frequency_step<F: crate::utils::Float>(fft_length: usize, sample_rate: F) -> F {
     assert!(fft_length > 0);
-    sample_rate / F::from(fft_length).unwrap()
+    sample_rate / F::from_integral(fft_length)
 }
 
 pub use log_frequency_bins::LogFrequencyRangeBin;

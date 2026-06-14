@@ -14,7 +14,7 @@ pub fn add_plot<F: audio_utils::Float + egui::emath::Numeric>(
             impulse_response
                 .iter()
                 .enumerate()
-                .map(|(i, &y)| [i as f64, y.to_f64()])
+                .map(|(i, &y)| [i as f64, y.cast()])
                 .collect(),
         )
     };

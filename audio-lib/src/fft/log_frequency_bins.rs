@@ -45,7 +45,7 @@ impl<F: utils::Float, const NUM_BINS: usize> LogFrequencyRangeBins<F, NUM_BINS> 
             let start_index = last_entry.index_range.end;
             let start_log_frequency = *last_entry.log_frequency_range.end();
             let end_log_frequency = smallest_log_frequency
-                + (F::from(log_index).unwrap() + F::ONE_HALF) * log_frequency_step;
+                + (F::from_integral(log_index) + F::ONE_HALF) * log_frequency_step;
             let end_frequency = utils::log_to_frequency(end_log_frequency);
             let end_index = (end_frequency / frequency_step).ceil().to_usize().unwrap();
             self.bins[log_index] = LogFrequencyRangeBin {

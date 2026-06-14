@@ -12,9 +12,7 @@ pub fn make_log_frequency_points<'a, F: utils::Float>(
 ) -> egui_plot::PlotPoints<'a> {
     egui_plot::PlotPoints::from_explicit_callback(
         move |log_frequency| {
-            frequency_response(F::from(utils::log_to_frequency(log_frequency)).unwrap())
-                .to_f64()
-                .unwrap()
+            frequency_response(F::from_float(utils::log_to_frequency(log_frequency))).cast()
         },
         range_to_f64(log_frequency_range),
         1000,

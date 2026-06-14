@@ -147,8 +147,8 @@ pub fn add_plot<
         IndexedEqDiff {
             index: drag_eq_index,
             diff: Some(EqDiff {
-                log_frequency: F::from(drag_delta.x).unwrap(),
-                gain_db: F::from(drag_delta.y).unwrap(),
+                log_frequency: F::from_float(drag_delta.x),
+                gain_db: F::from_float(drag_delta.y),
             }),
         }
     } else {
@@ -176,16 +176,16 @@ fn make_spectrum_rectangles<
         let min_x = log_frequency_range
             .start()
             .max(*bin.log_frequency_range.start())
-            .to_f64();
+            .cast();
         let max_x = log_frequency_range
             .end()
             .min(*bin.log_frequency_range.end())
-            .to_f64();
+            .cast();
         if min_x > max_x {
             return None;
         }
         let min_y = db_range.start().to_f64().unwrap();
-        let max_y = gain_db.clamp(*db_range.start(), *db_range.end()).to_f64();
+        let max_y = gain_db.clamp(*db_range.start(), *db_range.end()).cast();
         if min_y >= max_y {
             return None;
         }

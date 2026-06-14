@@ -33,14 +33,14 @@ impl<F: utils::Float> EqRanges<F> {
 
 impl<F: utils::Float> Default for EqRanges<F> {
     fn default() -> Self {
-        let db_range = F::from(-40).unwrap()..=F::from(40).unwrap();
-        let frequency_range = F::from(10).unwrap()..=F::from(20000).unwrap();
+        let db_range = F::from_integral(-40)..=F::from_integral(40);
+        let frequency_range = F::from_integral(10)..=F::from_integral(20000);
         let log_frequency_range = utils::frequency_to_log(*frequency_range.start())
             ..=utils::frequency_to_log(*frequency_range.end());
         Self {
             db_range: db_range,
             log_frequency_range: log_frequency_range,
-            q_range: F::from(0.1).unwrap()..=F::from(10).unwrap(),
+            q_range: F::from_float(0.1)..=F::from_integral(10),
         }
     }
 }
@@ -55,9 +55,9 @@ pub struct ImpulseResponseParams<F: utils::Float> {
 impl<F: utils::Float> Default for ImpulseResponseParams<F> {
     fn default() -> Self {
         Self {
-            rel_eps: F::from(0.01).unwrap(),
-            release_time: F::from(0.01).unwrap(),
-            max_time: F::from(0.5).unwrap(),
+            rel_eps: F::from_float(0.01),
+            release_time: F::from_float(0.01),
+            max_time: F::from_float(0.5),
         }
     }
 }
