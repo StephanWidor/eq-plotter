@@ -4,16 +4,13 @@ members = [
     "app-lib",
     "audio-lib",
     "egui-lib",
-    "eq-plotter-egui",
-    "eq-plotter-slint",
-    "eq-plugin-egui",
+    "eq-plugin",
     "xtask",
 ]
 
 [workspace.dependencies]
 assert_approx_eq = "1.1"
 atomic_enum = "0.3.0"
-console_error_panic_hook = "0.1"
 dirs = "6.0"
 eframe = "0.34"
 egui = "0.34"
@@ -27,8 +24,6 @@ serde = { version = "1.0", features = ["derive"] }
 serde_arrays = { version = "0.2" }
 serde_json = "1.0"
 smallvec = "1.15"
-wasm-bindgen-futures = { version = "0.4" }
-web-sys = { version = "0.3" }
 
 app-lib = { path = "app-lib" }
 audio-lib = { path = "audio-lib" }

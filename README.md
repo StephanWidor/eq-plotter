@@ -9,46 +9,16 @@ https://github.com/user-attachments/assets/aac8b0cc-324e-41b8-9f55-36b7f83f08f3
 
 ## Building:
 
-### egui app:
-
-#### native:
-```
-cargo build -p eq-plotter-egui [--release]
-```
-Find the binary in the target folder, or run by
-```
-cargo run --p eq-plotter-egui [--release]
-```
-
-#### wasm:
-```
-cargo build -p eq-plotter-egui --target wasm32-unknown-unknown [--release]
-wasm-bindgen target/wasm32-unknown-unknown/[debug or release]/eq-plotter-egui.wasm --out-dir ./wasm_out --web
-python3 -m http.server --directory ./wasm_out 8080
-```
-Then you can run eq-plotter in your browser under localhost:8080.
-
-### slint app (only partly implemented):
-```
-cargo build -p eq-plotter-slint [--release]
-```
-Find the binary in the target folder, or run by
-```
-cargo run -p eq-plotter-slint [--release]
-```
-
-### nice-plug:
-
 #### Standalone:
 ```
-cargo build -p eq-plugin-egui [--release]
+cargo build -p eq-plugin [--release]
 ```
 Find the binary in the target folder, or run by
 ```
-cargo run --bin eq-plugin-egui [--release]
+cargo run --bin eq-plugin [--release]
 ```
 #### Audio plugin:
 ```
-cargo xtask bundle eq-plugin-egui [--release]
+cargo xtask bundle eq-plugin [--release]
 ```
 VST3 and Clap plugin can then be found in target/bundled

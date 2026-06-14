@@ -1,5 +1,5 @@
 [package]
-name = "eq-plugin-egui"
+name = "eq-plugin"
 version = "0.1.0"
 edition = "2024"
 authors = ["Stephan Widor <stephan@widor.online>"]
