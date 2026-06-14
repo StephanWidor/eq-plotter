@@ -26,6 +26,7 @@ pub fn add_plots<
     let drag_eq_index = &mut params.drag_eq_index;
     let sample_rate = params.sample_rate;
     let coefficients = params
+        .multiband_eq
         .eqs
         .iter()
         .map(|eq| {
@@ -50,6 +51,7 @@ pub fn add_plots<
                                 gain::add_plot::<F, NUM_SPECTRUM_BINS, NUM_SPECTRUM_CHANNELS>(
                                     ui,
                                     &coefficients,
+                                    params.multiband_eq.processing_type,
                                     sample_rate,
                                     *drag_eq_index,
                                     &settings.app.eq_ranges,
@@ -59,7 +61,7 @@ pub fn add_plots<
                                 );
                             *drag_eq_index = indexed_eq_diff.index;
                             if let Some(eq_diff) = indexed_eq_diff.diff {
-                                let eq = &mut params.eqs[*drag_eq_index];
+                                let eq = &mut params.multiband_eq.eqs[*drag_eq_index];
                                 eq.frequency = eq::Frequency::LogHz(
                                     eq.frequency.log_hz() + eq_diff.log_frequency,
                                 );
@@ -71,6 +73,7 @@ pub fn add_plots<
                             phase::add_plot(
                                 ui,
                                 &coefficients,
+                                params.multiband_eq.processing_type,
                                 sample_rate,
                                 &settings.app.eq_ranges.log_frequency_range,
                                 plot_size,
@@ -84,6 +87,8 @@ pub fn add_plots<
                             impulse_response::add_plot(
                                 ui,
                                 &coefficients,
+                                params.multiband_eq.processing_type,
+                                sample_rate,
                                 &settings.app.impulse_response_params,
                                 plot_size,
                                 &settings.color_palette,

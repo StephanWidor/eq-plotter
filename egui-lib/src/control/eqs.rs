@@ -1,6 +1,27 @@
 use crate::*;
 use audio_lib::eq;
 
+pub fn add_multiband_type_control(
+    ui: &mut egui::Ui,
+    outer_margin: f32,
+    multiband_type: &mut eq::MultibandType,
+) -> bool {
+    let mut type_has_changed = false;
+    egui::Frame::group(ui.style())
+        .corner_radius(5)
+        .outer_margin(outer_margin)
+        .show(ui, |ui| {
+            ui.horizontal(|ui| {
+                for mb_type in eq::MultibandType::ALL.iter() {
+                    let response =
+                        ui.selectable_value(multiband_type, *mb_type, mb_type.to_string());
+                    type_has_changed |= response.changed();
+                }
+            });
+        });
+    type_has_changed
+}
+
 /// Return true if the eq has changed
 pub fn add_slider_controls<F: audio_utils::Float + egui::emath::Numeric>(
     ui: &mut egui::Ui,
@@ -12,6 +33,7 @@ pub fn add_slider_controls<F: audio_utils::Float + egui::emath::Numeric>(
 ) -> bool {
     let mut gain_db = eq.gain.db();
     let mut log_frequency = eq.frequency.log_hz();
+    let mut makeup_gain_db = eq.makeup_gain.db();
     let mut eq_has_changed = false;
     egui::Frame::group(ui.style())
         .fill(color)
@@ -69,6 +91,18 @@ pub fn add_slider_controls<F: audio_utils::Float + egui::emath::Numeric>(
                         eq_has_changed = true;
                     }
                 }
+
+                if eq.eq_type != eq::EqType::Bypassed {
+                    let response = ui.add(
+                        egui::Slider::new(&mut makeup_gain_db, eq_ranges.db_range.clone())
+                            .prefix("makeup: ")
+                            .suffix("dB"),
+                    );
+                    if response.changed() {
+                        eq.makeup_gain = eq::Gain::Db(makeup_gain_db);
+                        eq_has_changed = true;
+                    }
+                }
             });
         });
     eq_has_changed
@@ -122,8 +156,11 @@ pub fn add_preset_controls<F: audio_utils::Float, const NUM_BANDS: usize>(
                         }
                     });
                 if selection_changed {
-                    presets.get_inline(&selected_preset_name, &mut params.eqs);
-                    params.preset_selection = presets::Selection::Selected(selected_preset_name);
+                    if let Some(preset) = presets.get(&selected_preset_name) {
+                        params.multiband_eq = preset.clone();
+                        params.preset_selection =
+                            presets::Selection::Selected(selected_preset_name);
+                    }
                 }
 
                 match params.preset_selection.clone() {
@@ -145,12 +182,12 @@ pub fn add_preset_controls<F: audio_utils::Float, const NUM_BANDS: usize>(
                             if params.new_preset_name.is_some() {
                                 add_new_preset_popup(ui, params, presets);
                             } else {
-                                if ui.button("Add").clicked() {
-                                    params.new_preset_name = Some(String::from(""));
-                                } else if ui.button("Save").clicked() {
-                                    presets.force_add(name.clone(), params.eqs.clone());
+                                if ui.button("Save").clicked() {
+                                    presets.force_add(name.clone(), params.multiband_eq.clone());
                                     params.preset_selection =
                                         presets::Selection::Selected(name.clone());
+                                } else if ui.button("Add").clicked() {
+                                    params.new_preset_name = Some(String::from(""));
                                 }
                             }
                         });
@@ -184,7 +221,7 @@ fn add_new_preset_popup<F: audio_utils::Float, const NUM_BANDS: usize>(
                             .add_enabled(name_is_valid, egui::Button::new("Ok"))
                             .clicked()
                         {
-                            if presets.add(new_preset_name.clone(), params.eqs.clone()) {
+                            if presets.add(new_preset_name.clone(), params.multiband_eq.clone()) {
                                 params.preset_selection =
                                     presets::Selection::Selected(new_preset_name.clone());
                                 should_close = true;
@@ -195,7 +232,7 @@ fn add_new_preset_popup<F: audio_utils::Float, const NUM_BANDS: usize>(
                         }
                     });
                     if ui.input(|i| i.key_pressed(egui::Key::Enter)) && name_is_valid {
-                        if presets.add(new_preset_name.clone(), params.eqs.clone()) {
+                        if presets.add(new_preset_name.clone(), params.multiband_eq.clone()) {
                             params.preset_selection =
                                 presets::Selection::Selected(new_preset_name.clone());
                         }

@@ -13,8 +13,7 @@ use audio_lib::*;
 #[serde(bound = "F: audio_utils::Float")]
 pub struct Params<F: audio_utils::Float, const NUM_BANDS: usize> {
     pub show_options: app_lib::settings::ui::ShowOptions,
-    #[serde(with = "serde_arrays")]
-    pub eqs: [eq::Eq<F>; NUM_BANDS],
+    pub multiband_eq: eq::MultibandEq<F, NUM_BANDS>,
     pub sample_rate: F,
     pub drag_eq_index: usize,
     pub preset_selection: presets::Selection,

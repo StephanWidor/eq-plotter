@@ -45,7 +45,7 @@ pub fn add_plot<F: audio_utils::Float + egui::emath::Numeric>(
             let active_coefficients = coefficients.iter().filter(|c| c.is_some());
             for (index, c) in active_coefficients.enumerate() {
                 let c = c.as_ref().unwrap();
-                let poles = biquad::utils::poles(c)
+                let poles = biquad::poles(c)
                     .iter()
                     .map(|pole| [pole.re.to_f64(), pole.im.to_f64()])
                     .collect::<Vec<_>>();
@@ -56,7 +56,7 @@ pub fn add_plot<F: audio_utils::Float + egui::emath::Numeric>(
                         .radius(6.0),
                 );
 
-                let zeros = biquad::utils::zeros(c)
+                let zeros = biquad::zeros(c)
                     .iter()
                     .map(|zero| [zero.re.to_f64(), zero.im.to_f64()])
                     .collect::<Vec<_>>();
@@ -67,7 +67,7 @@ pub fn add_plot<F: audio_utils::Float + egui::emath::Numeric>(
                         .filled(false)
                         .radius(5.0),
                 );
-                if !biquad::utils::is_stable(c) {
+                if !biquad::is_stable(c) {
                     unstable_biquad = true;
                 }
             }

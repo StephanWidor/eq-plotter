@@ -18,7 +18,7 @@ impl EqPlotter {
 
         let eq_plotter = EqPlotter {
             ui: ui,
-            eq: sync::Arc::new(sync::RwLock::new(settings.init_eqs[0].clone())),
+            eq: sync::Arc::new(sync::RwLock::new(settings.init_eq.eqs[0].clone())),
             background_color: background_color,
             sample_rate: settings.init_sample_rate,
         };

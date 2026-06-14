@@ -27,10 +27,15 @@ pub fn add<F: audio_utils::Float + egui::emath::Numeric, const NUM_BANDS: usize>
                         params,
                         presets,
                     );
+                    let mut eq_has_changed = false;
+                    eq_has_changed |= eqs::add_multiband_type_control(
+                        ui,
+                        control_outer_margin,
+                        &mut params.multiband_eq.processing_type,
+                    );
                     let eq_colors = &settings.color_palette.eq_stroke;
                     let eq_ranges = &settings.app.eq_ranges;
-                    let mut eq_has_changed = false;
-                    for (index, eq) in params.eqs.iter_mut().enumerate() {
+                    for (index, eq) in params.multiband_eq.eqs.iter_mut().enumerate() {
                         eq_has_changed |= eqs::add_slider_controls(
                             ui,
                             control_width,

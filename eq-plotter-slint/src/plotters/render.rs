@@ -33,8 +33,7 @@ pub fn render_eq_plots(
     let plot_areas = root_area.split_evenly((2, 2));
 
     let coefficients = biquad::coefficients::Coefficients::from_eq(eq, sample_rate);
-    let frequency_response =
-        biquad::utils::make_frequency_response(coefficients.clone(), sample_rate);
+    let frequency_response = biquad::make_frequency_response(coefficients.clone(), sample_rate);
 
     draw_gain_chart(
         &plot_areas[0],
@@ -52,6 +51,7 @@ pub fn render_eq_plots(
         &plot_areas[1],
         &chart_style,
         impulse_response_params,
+        sample_rate,
         &coefficients,
     );
     draw_poles_and_zeros_chart(&plot_areas[3], &chart_style, &coefficients);
@@ -198,13 +198,15 @@ fn draw_ir_chart<DB: DrawingBackend>(
     area: &DrawingArea<DB, plotters::coord::Shift>,
     style: &style::ChartStyleData,
     impulse_response_params: &ImpulseResponseParams,
+    sample_rate: f32,
     coefficients: &biquad::coefficients::Coefficients<f32>,
 ) {
-    let impulse_response = biquad::utils::impulse_response_for_coefficients(
+    let impulse_response = biquad::make_impulse_response(
         coefficients.clone(),
-        impulse_response_params.eps,
-        impulse_response_params.hold_length,
-        impulse_response_params.max_length,
+        impulse_response_params.rel_eps,
+        impulse_response_params.release_time,
+        impulse_response_params.max_time,
+        sample_rate,
     );
 
     let mut chart = ChartBuilder::on(&area)
@@ -286,7 +288,7 @@ fn draw_poles_and_zeros_chart<DB: DrawingBackend>(
         ))
         .expect("error drawing unit circle");
 
-    let poles = biquad::utils::poles(&coefficients);
+    let poles = biquad::poles(&coefficients);
     if !poles.is_empty() {
         let poles_series = chart
             .draw_series(PointSeries::of_element(
@@ -301,7 +303,7 @@ fn draw_poles_and_zeros_chart<DB: DrawingBackend>(
             .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], RED));
     }
 
-    let zeros = biquad::utils::zeros(&coefficients);
+    let zeros = biquad::zeros(&coefficients);
     if !zeros.is_empty() {
         let zeros_series = chart
             .draw_series(PointSeries::of_element(

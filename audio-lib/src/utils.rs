@@ -9,6 +9,7 @@ pub trait Float:
     + num::ToPrimitive
     + std::ops::AddAssign
     + std::ops::MulAssign
+    + std::ops::DivAssign
     + serde::Serialize
     + serde::de::DeserializeOwned
     + std::marker::Send
@@ -84,6 +85,32 @@ pub fn db_to_amplitude<F: Float>(db: F) -> F {
 
 pub fn omega<F: Float>(frequency: F, sample_rate: F) -> F {
     F::TWO_PI * (frequency / sample_rate)
+}
+
+pub fn make_impulse_response<F: Float>(
+    process_function: &mut impl FnMut(F) -> F,
+    rel_eps: F,
+    release_time: F,
+    max_time: F,
+    sample_rate: F,
+) -> Vec<F> {
+    let mut response = Vec::new();
+    let mut envelope = crate::envelope_follower::EnvelopeFollower::from_attack_and_release_time(
+        F::ZERO,
+        release_time,
+        sample_rate,
+    );
+    let mut max = envelope
+        .process(*response.push_mut(process_function(F::ONE)))
+        .abs();
+    for _ in 1..(max_time * sample_rate).to_usize().unwrap() {
+        let r = envelope.process(response.push_mut(process_function(F::ZERO)).abs());
+        if r <= rel_eps * max {
+            break;
+        }
+        max = max.max(r);
+    }
+    response
 }
 
 pub fn make_gain_db_response<F: Float>(

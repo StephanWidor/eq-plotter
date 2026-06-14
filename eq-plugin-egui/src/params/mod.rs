@@ -4,6 +4,7 @@ use std::sync::{self, atomic};
 
 pub mod eq_params;
 pub mod eq_type;
+pub mod multiband_type;
 pub mod show_params;
 
 pub use eq_params::EqParams;
@@ -24,6 +25,9 @@ pub struct PluginParams<
     #[nested(array, group = "eq_params")]
     pub eq_params: [EqParams; NUM_BANDS],
 
+    #[id = "multiband_type"]
+    pub multiband_type: multiband_type::Param,
+
     pub sample_rate: nice::AtomicF32,
 
     #[nested(group = "show_params")]
@@ -43,20 +47,37 @@ impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS:
             eq_params: std::array::from_fn(|index| {
                 EqParams::from_eq(
                     format!(" [{}]", index + 1).as_str(),
-                    &settings.init_eqs[index],
+                    &settings.init_eq.eqs[index],
                     &eq_ranges.log_frequency_range,
                     &eq_ranges.db_range,
                     &eq_ranges.q_range,
                     smoothing_length_ms,
                 )
             }),
+            multiband_type: multiband_type::Param::new(
+                format!("Multiband Processing Type"),
+                multiband_type::Wrapper::from(settings.init_eq.processing_type),
+            ),
             sample_rate: nice::AtomicF32::new(settings.init_sample_rate),
             show_params: ShowParams::from_options(&settings.ui.init_show_options),
             analyzer_data: fft::signal_analyzer::SharedData::new(settings.init_sample_rate),
         }
     }
 
-    pub fn eqs<F: utils::Float>(&self) -> [eq::Eq<F>; NUM_BANDS] {
-        std::array::from_fn(|index| self.eq_params[index].to_eq())
+    pub fn to_multiband_eq<F: utils::Float>(&self) -> eq::MultibandEq<F, NUM_BANDS> {
+        eq::MultibandEq {
+            eqs: std::array::from_fn(|index| self.eq_params[index].to_eq()),
+            processing_type: self.multiband_type.value().into(),
+        }
+    }
+
+    pub fn set_multiband_type(
+        &self,
+        multiband_type: eq::MultibandType,
+        setter: &nice::ParamSetter<'_>,
+    ) {
+        setter.begin_set_parameter(&self.multiband_type);
+        setter.set_parameter(&self.multiband_type, multiband_type.into());
+        setter.end_set_parameter(&self.multiband_type);
     }
 }
