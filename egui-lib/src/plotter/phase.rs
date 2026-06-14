@@ -51,7 +51,19 @@ pub fn add_plot<F: audio_utils::Float + egui::emath::Numeric>(
                     std::f64::consts::PI,
                 ],
             ));
-
+            for (index, c) in coefficients.iter().enumerate() {
+                if let Some(c) = c {
+                    let response = biquad::make_frequency_response(c.clone(), sample_rate);
+                    let phase_points = utils::make_log_frequency_points(
+                        audio_utils::make_phase_response(response),
+                        log_frequency_range,
+                    );
+                    plot_ui.line(
+                        egui_plot::Line::new("", phase_points)
+                            .color(color_palette.eq_stroke[index % color_palette.eq_stroke.len()]),
+                    );
+                }
+            }
             let active_coefficients = coefficients.iter().filter(|c| c.is_some());
             if active_coefficients.clone().take(2).count() > 1 {
                 let active_coefficients_unwrapped = active_coefficients
@@ -70,19 +82,6 @@ pub fn add_plot<F: audio_utils::Float + egui::emath::Numeric>(
                     egui_plot::Line::new("multiband", phase_points)
                         .color(color_palette.multiband_stroke),
                 );
-            }
-            for (index, c) in coefficients.iter().enumerate() {
-                if let Some(c) = c {
-                    let response = biquad::make_frequency_response(c.clone(), sample_rate);
-                    let phase_points = utils::make_log_frequency_points(
-                        audio_utils::make_phase_response(response),
-                        log_frequency_range,
-                    );
-                    plot_ui.line(
-                        egui_plot::Line::new("", phase_points)
-                            .color(color_palette.eq_stroke[index % color_palette.eq_stroke.len()]),
-                    );
-                }
             }
         });
 }

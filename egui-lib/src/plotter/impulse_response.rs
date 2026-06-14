@@ -41,21 +41,6 @@ pub fn add_plot<F: audio_utils::Float + egui::emath::Numeric>(
         ])
         .legend(egui_plot::Legend::default())
         .show(ui, |plot_ui| {
-            let active_coefficients = coefficients.iter().filter(|c| c.is_some());
-            if active_coefficients.clone().take(2).count() > 1 {
-                let impulse_response = biquad::multiband::impulse_response(
-                    active_coefficients.map(|c| c.as_ref().unwrap().clone()),
-                    multiband_type,
-                    impulse_response_params.rel_eps,
-                    impulse_response_params.release_time,
-                    impulse_response_params.max_time,
-                    sample_rate,
-                );
-                plot_ui.line(
-                    egui_plot::Line::new("multiband", to_plot_points(impulse_response))
-                        .color(color_palette.multiband_stroke),
-                );
-            }
             for (index, c) in coefficients.iter().enumerate() {
                 if let Some(c) = c {
                     let impulse_response = biquad::make_impulse_response(
@@ -70,6 +55,21 @@ pub fn add_plot<F: audio_utils::Float + egui::emath::Numeric>(
                             .color(color_palette.eq_stroke[index % color_palette.eq_stroke.len()]),
                     );
                 }
+            }
+            let active_coefficients = coefficients.iter().filter(|c| c.is_some());
+            if active_coefficients.clone().take(2).count() > 1 {
+                let impulse_response = biquad::multiband::impulse_response(
+                    active_coefficients.map(|c| c.as_ref().unwrap().clone()),
+                    multiband_type,
+                    impulse_response_params.rel_eps,
+                    impulse_response_params.release_time,
+                    impulse_response_params.max_time,
+                    sample_rate,
+                );
+                plot_ui.line(
+                    egui_plot::Line::new("multiband", to_plot_points(impulse_response))
+                        .color(color_palette.multiband_stroke),
+                );
             }
         });
 }

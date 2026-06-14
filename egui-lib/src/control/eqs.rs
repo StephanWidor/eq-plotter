@@ -182,12 +182,12 @@ pub fn add_preset_controls<F: audio_utils::Float, const NUM_BANDS: usize>(
                             if params.new_preset_name.is_some() {
                                 add_new_preset_popup(ui, params, presets);
                             } else {
-                                if ui.button("Add").clicked() {
-                                    params.new_preset_name = Some(String::from(""));
-                                } else if ui.button("Save").clicked() {
+                                if ui.button("Save").clicked() {
                                     presets.force_add(name.clone(), params.multiband_eq.clone());
                                     params.preset_selection =
                                         presets::Selection::Selected(name.clone());
+                                } else if ui.button("Add").clicked() {
+                                    params.new_preset_name = Some(String::from(""));
                                 }
                             }
                         });
