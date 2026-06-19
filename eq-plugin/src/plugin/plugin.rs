@@ -1,4 +1,4 @@
-use crate::*;
+use super::*;
 use audio_lib::persistence;
 use nice::Plugin as NicePlugin;
 use std::sync::{self, atomic};
@@ -19,7 +19,7 @@ impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS:
     Plugin<NUM_BANDS, NUM_CHANNELS, ANALYZER_NUM_BINS>
 {
     pub fn new(
-        app_settings: &AppSettings<NUM_BANDS>,
+        app_settings: &Settings<NUM_BANDS>,
         analyzer_coefficients: &processing::analyzer::Coefficients,
         smoothing_length_ms: f32,
     ) -> Self {
@@ -80,7 +80,7 @@ impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS:
 {
     fn default() -> Self {
         Self::new(
-            &AppSettings::<NUM_BANDS>::default(),
+            &Settings::<NUM_BANDS>::default(),
             &processing::analyzer::Coefficients::default(),
             20_f32,
         )

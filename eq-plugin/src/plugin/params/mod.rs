@@ -1,4 +1,4 @@
-use crate::*;
+use super::*;
 use audio_lib::*;
 use std::sync::{self, atomic};
 
@@ -40,7 +40,7 @@ pub struct PluginParams<
 impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS: usize>
     PluginParams<NUM_BANDS, NUM_CHANNELS, ANALYZER_NUM_BINS>
 {
-    pub fn new(settings: &AppSettings<NUM_BANDS>, smoothing_length_ms: f32) -> Self {
+    pub fn new(settings: &Settings<NUM_BANDS>, smoothing_length_ms: f32) -> Self {
         let eq_ranges = settings.ui.eq_ranges.clone();
         Self {
             editor_state: nice_plug_egui::EguiState::from_size(1000, 700),

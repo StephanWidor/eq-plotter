@@ -1,4 +1,4 @@
-use crate::*;
+use crate::plugin::*;
 use std::sync::{self, atomic};
 
 pub fn create_editor<
@@ -55,7 +55,7 @@ pub fn create_editor<
                             ui_state.show_options = params.show_params.load_options();
                             let spectrum_gains =
                                 params.analyzer_data.linear_gains.consumer.pull_and_read();
-                            let spectrum_data = Some(ui::egui_lib::SpectrumData {
+                            let spectrum_data = Some(crate::ui::egui_lib::SpectrumData {
                                 frequency_bins: &params
                                     .analyzer_data
                                     .frequency_bins
@@ -63,7 +63,7 @@ pub fn create_editor<
                                     .unwrap(),
                                 linear_gains: &spectrum_gains,
                             });
-                            ui::egui_lib::draw(
+                            crate::ui::egui_lib::draw(
                                 ui,
                                 ui_state,
                                 &mut presets,

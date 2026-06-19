@@ -15,7 +15,7 @@ pub struct ShowParams {
 }
 
 impl ShowParams {
-    pub fn from_options(show_options: &ShowOptions) -> Self {
+    pub fn from_options(show_options: &ui::ShowOptions) -> Self {
         Self {
             gain: atomic::AtomicBool::new(show_options.gain),
             signal_gain_spectrum: atomic::AtomicBool::new(show_options.signal_gain_spectrum),
@@ -25,7 +25,7 @@ impl ShowParams {
         }
     }
 
-    pub fn store_options(&self, options: &ShowOptions) {
+    pub fn store_options(&self, options: &ui::ShowOptions) {
         self.gain
             .store(options.gain, std::sync::atomic::Ordering::Relaxed);
         self.signal_gain_spectrum
@@ -37,8 +37,8 @@ impl ShowParams {
             .store(options.poles_and_zeros, atomic::Ordering::Relaxed);
     }
 
-    pub fn load_options(&self) -> ShowOptions {
-        ShowOptions {
+    pub fn load_options(&self) -> ui::ShowOptions {
+        ui::ShowOptions {
             gain: self.gain.load(atomic::Ordering::Relaxed),
             signal_gain_spectrum: self.signal_gain_spectrum.load(atomic::Ordering::Relaxed),
             phase: self.phase.load(atomic::Ordering::Relaxed),

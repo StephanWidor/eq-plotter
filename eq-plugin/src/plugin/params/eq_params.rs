@@ -49,8 +49,12 @@ impl EqParams {
             )
             .with_smoother(nice::SmoothingStyle::Linear(smoothing_length_ms))
             .with_unit(" Hz")
-            .with_value_to_string(sync::Arc::new(ui::egui_lib::utils::log_frequency_to_string))
-            .with_string_to_value(sync::Arc::new(ui::egui_lib::utils::string_to_log_frequency)),
+            .with_value_to_string(sync::Arc::new(
+                crate::ui::egui_lib::utils::log_frequency_to_string,
+            ))
+            .with_string_to_value(sync::Arc::new(
+                crate::ui::egui_lib::utils::string_to_log_frequency,
+            )),
             q: nice::FloatParam::new(
                 format!("q{names_suffix}"),
                 eq.q,
