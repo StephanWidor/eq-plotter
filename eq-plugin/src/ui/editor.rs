@@ -11,7 +11,7 @@ pub fn create_editor<
     ui_settings: UiSettings,
 ) -> Option<Box<dyn nice::Editor>> {
     let editor_state = params.editor_state.clone();
-    let ui_state = UiParams {
+    let ui_state = ui::Params {
         show_options: params.show_params.load_options(),
         multiband_eq: params.to_multiband_eq(),
         sample_rate: params.sample_rate.load(atomic::Ordering::Relaxed),

@@ -1,9 +1,8 @@
-pub mod analyzer;
 pub mod config;
-pub mod editor;
 pub mod params;
 pub mod plugin;
-pub mod processor;
+pub mod processing;
+pub mod ui;
 
 use config::*;
 pub use nice_plug::prelude as nice;
