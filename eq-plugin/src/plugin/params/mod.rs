@@ -40,7 +40,7 @@ pub struct PluginParams<
 impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS: usize>
     PluginParams<NUM_BANDS, NUM_CHANNELS, ANALYZER_NUM_BINS>
 {
-    pub fn new(settings: &Settings<NUM_BANDS>, smoothing_length_ms: f32) -> Self {
+    pub fn new(settings: &Settings<NUM_BANDS>) -> Self {
         let eq_ranges = settings.ui.eq_ranges.clone();
         Self {
             editor_state: nice_plug_egui::EguiState::from_size(1000, 700),
@@ -51,7 +51,7 @@ impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS:
                     &eq_ranges.log_frequency_range,
                     &eq_ranges.db_range,
                     &eq_ranges.q_range,
-                    smoothing_length_ms,
+                    settings.parameter_smoothing_length_ms,
                 )
             }),
             multiband_type: multiband_type::Param::new(

@@ -21,9 +21,8 @@ impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS:
     pub fn new(
         app_settings: &Settings<NUM_BANDS>,
         analyzer_coefficients: &processing::analyzer::Coefficients,
-        smoothing_length_ms: f32,
     ) -> Self {
-        let params = sync::Arc::new(params::PluginParams::new(app_settings, smoothing_length_ms));
+        let params = sync::Arc::new(params::PluginParams::new(app_settings));
         let presets = if let Some(presets) = persistence::create_from_json_file::<Presets<NUM_BANDS>>(
             &Self::presets_file_path(&app_settings.persistence_dir).as_path(),
         ) {
@@ -82,7 +81,6 @@ impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS:
         Self::new(
             &Settings::<NUM_BANDS>::default(),
             &processing::analyzer::Coefficients::default(),
-            20_f32,
         )
     }
 }

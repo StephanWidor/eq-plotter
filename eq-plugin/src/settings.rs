@@ -5,6 +5,7 @@ use audio_lib::*;
 pub struct Settings<F: utils::Float, const NUM_BANDS: usize> {
     pub init_eq: eq::MultibandEq<F, NUM_BANDS>,
     pub init_sample_rate: F,
+    pub parameter_smoothing_length_ms: F,
     pub ui: crate::ui::settings::Settings<F>,
     pub persistence_dir: std::path::PathBuf,
 }
@@ -12,10 +13,10 @@ pub struct Settings<F: utils::Float, const NUM_BANDS: usize> {
 impl<F: utils::Float, const NUM_BANDS: usize> Default for Settings<F, NUM_BANDS> {
     fn default() -> Self {
         let ui_settings = ui::settings::Settings::<F>::default();
-        //let eq_ranges = ui::settings::EqRanges::<F>::default();
         Self {
             init_eq: Self::default_eqs(&ui_settings.eq_ranges.log_frequency_range),
             init_sample_rate: F::from_integral(48000),
+            parameter_smoothing_length_ms: F::from_integral(20),
             ui: ui_settings,
             persistence_dir: dirs::config_dir()
                 .unwrap_or_else(|| std::path::PathBuf::from("."))
