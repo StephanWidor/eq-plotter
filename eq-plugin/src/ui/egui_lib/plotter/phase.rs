@@ -8,7 +8,7 @@ pub fn add_plot<F: audio_utils::Float + egui::emath::Numeric>(
     sample_rate: F,
     log_frequency_range: &std::ops::RangeInclusive<F>,
     plot_size: f32,
-    color_palette: &colors::ColorPalette,
+    color_palette: &crate::ui::colors::ColorPalette,
 ) {
     egui_plot::Plot::new("Phase")
         .allow_zoom(false)

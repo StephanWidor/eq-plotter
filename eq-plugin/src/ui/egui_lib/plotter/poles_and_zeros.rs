@@ -5,7 +5,7 @@ pub fn add_plot<F: audio_utils::Float + egui::emath::Numeric>(
     ui: &mut egui::Ui,
     coefficients: &[Option<biquad::coefficients::Coefficients<F>>],
     plot_size: f32,
-    color_palette: &colors::ColorPalette,
+    color_palette: &crate::ui::colors::ColorPalette,
 ) {
     egui_plot::Plot::new("Poles And Zeros")
         .allow_zoom(false)

@@ -283,16 +283,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "170433209e817da6aae2c51aa0dd443009a613425dd041ebfb2492d1c4c11a25"
 
 [[package]]
-name = "app-lib"
-version = "0.1.0"
-dependencies = [
- "audio-lib",
- "serde",
- "serde_arrays",
- "serde_json",
-]
-
-[[package]]
 name = "arboard"
 version = "3.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1474,7 +1464,6 @@ checksum = "f8970033a4282a7bcf899b38b5ed3a58b732fe093d03785d58648515d8d309da"
 name = "eq-plugin"
 version = "0.1.0"
 dependencies = [
- "app-lib",
  "audio-lib",
  "dirs",
  "eframe",

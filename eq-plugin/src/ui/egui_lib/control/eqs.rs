@@ -28,7 +28,7 @@ pub fn add_slider_controls<F: audio_utils::Float + egui::emath::Numeric>(
     width: f32,
     outer_margin: f32,
     color: egui::Color32,
-    eq_ranges: &app_lib::settings::ui::EqRanges<F>,
+    eq_ranges: &crate::ui::settings::EqRanges<F>,
     eq: &mut eq::Eq<F>,
 ) -> bool {
     let mut gain_db = eq.gain.db();

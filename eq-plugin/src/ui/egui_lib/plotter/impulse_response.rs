@@ -5,9 +5,9 @@ pub fn add_plot<F: audio_utils::Float + egui::emath::Numeric>(
     coefficients: &[Option<biquad::coefficients::Coefficients<F>>],
     multiband_type: eq::MultibandType,
     sample_rate: F,
-    impulse_response_params: &app_lib::settings::ui::ImpulseResponseParams<F>,
+    impulse_response_params: &crate::ui::settings::ImpulseResponseParams<F>,
     plot_size: f32,
-    color_palette: &colors::ColorPalette,
+    color_palette: &crate::ui::colors::ColorPalette,
 ) {
     let to_plot_points = |impulse_response: Vec<F>| {
         egui_plot::PlotPoints::new(

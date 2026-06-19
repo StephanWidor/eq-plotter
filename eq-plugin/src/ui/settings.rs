@@ -1,11 +1,27 @@
+use crate::*;
 use audio_lib::*;
 use std::ops::RangeInclusive;
 
 #[derive(Debug, Clone)]
-pub struct Settings<F: audio_lib::utils::Float> {
+pub struct Settings<F: utils::Float> {
     pub eq_ranges: EqRanges<F>,
     pub impulse_response_params: ImpulseResponseParams<F>,
     pub init_show_options: ShowOptions,
+    pub color_palette: ui::colors::ColorPalette,
+}
+
+#[derive(Debug, Clone)]
+pub struct EqRanges<F: utils::Float> {
+    pub db_range: RangeInclusive<F>,
+    pub log_frequency_range: RangeInclusive<F>,
+    pub q_range: RangeInclusive<F>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ImpulseResponseParams<F: utils::Float> {
+    pub rel_eps: F,
+    pub release_time: F,
+    pub max_time: F,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -17,11 +33,15 @@ pub struct ShowOptions {
     pub poles_and_zeros: bool,
 }
 
-#[derive(Debug, Clone)]
-pub struct EqRanges<F: utils::Float> {
-    pub db_range: RangeInclusive<F>,
-    pub log_frequency_range: RangeInclusive<F>,
-    pub q_range: RangeInclusive<F>,
+impl<F: utils::Float> Default for Settings<F> {
+    fn default() -> Self {
+        Self {
+            eq_ranges: EqRanges::default(),
+            impulse_response_params: ImpulseResponseParams::default(),
+            init_show_options: ShowOptions::new_all_enabled(),
+            color_palette: ui::colors::ColorPalette::default(),
+        }
+    }
 }
 
 impl<F: utils::Float> EqRanges<F> {
@@ -43,13 +63,6 @@ impl<F: utils::Float> Default for EqRanges<F> {
             q_range: F::from_float(0.1)..=F::from_integral(10),
         }
     }
-}
-
-#[derive(Debug, Clone)]
-pub struct ImpulseResponseParams<F: utils::Float> {
-    pub rel_eps: F,
-    pub release_time: F,
-    pub max_time: F,
 }
 
 impl<F: utils::Float> Default for ImpulseResponseParams<F> {

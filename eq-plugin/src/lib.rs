@@ -9,9 +9,9 @@ pub mod ui;
 use config::*;
 pub use nice_plug::prelude as nice;
 
-pub type EqRanges = app_lib::settings::ui::EqRanges<f32>;
-pub type ImpulseResponseParams = app_lib::settings::ui::ImpulseResponseParams<f32>;
-pub type ShowOptions = app_lib::settings::ui::ShowOptions;
+pub type EqRanges = crate::ui::settings::EqRanges<f32>;
+pub type ImpulseResponseParams = crate::ui::settings::ImpulseResponseParams<f32>;
+pub type ShowOptions = crate::ui::settings::ShowOptions;
 pub type AppSettings<const NUM_BANDS: usize> = settings::Settings<f32, NUM_BANDS>;
 pub type Presets<const NUM_BANDS: usize> = presets::Presets<f32, NUM_BANDS>;
 pub type Plugin =

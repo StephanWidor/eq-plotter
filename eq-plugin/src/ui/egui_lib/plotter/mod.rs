@@ -15,7 +15,7 @@ pub fn add_plots<
     ui: &mut egui::Ui,
     available_size: &egui::Vec2,
     params: &mut Params<F, NUM_BANDS>,
-    settings: &Settings<F>,
+    settings: &crate::ui::settings::Settings<F>,
     spectrum_data: &Option<SpectrumData<F, NUM_SPECTRUM_BINS, NUM_SPECTRUM_CHANNELS>>,
 ) {
     let show_options = &mut params.show_options;
@@ -54,7 +54,7 @@ pub fn add_plots<
                                     params.multiband_eq.processing_type,
                                     sample_rate,
                                     *drag_eq_index,
-                                    &settings.app.eq_ranges,
+                                    &settings.eq_ranges,
                                     spectrum_data,
                                     plot_size,
                                     &settings.color_palette,
@@ -75,7 +75,7 @@ pub fn add_plots<
                                 &coefficients,
                                 params.multiband_eq.processing_type,
                                 sample_rate,
-                                &settings.app.eq_ranges.log_frequency_range,
+                                &settings.eq_ranges.log_frequency_range,
                                 plot_size,
                                 &settings.color_palette,
                             );
@@ -89,7 +89,7 @@ pub fn add_plots<
                                 &coefficients,
                                 params.multiband_eq.processing_type,
                                 sample_rate,
-                                &settings.app.impulse_response_params,
+                                &settings.impulse_response_params,
                                 plot_size,
                                 &settings.color_palette,
                             );
@@ -108,10 +108,7 @@ pub fn add_plots<
         });
 }
 
-fn plot_size(
-    show_options: &app_lib::settings::ui::ShowOptions,
-    available_size: &egui::Vec2,
-) -> f32 {
+fn plot_size(show_options: &crate::ui::settings::ShowOptions, available_size: &egui::Vec2) -> f32 {
     let num_rows = (((show_options.gain && show_options.phase)
         || (show_options.impulse_response && show_options.poles_and_zeros))
         as usize

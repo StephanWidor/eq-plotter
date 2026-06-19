@@ -1,6 +1,5 @@
 #![allow(dead_code)]
 
-pub mod colors;
 pub mod control;
 pub mod plotter;
 pub mod utils;
@@ -12,18 +11,12 @@ use audio_lib::*;
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[serde(bound = "F: audio_utils::Float")]
 pub struct Params<F: audio_utils::Float, const NUM_BANDS: usize> {
-    pub show_options: app_lib::settings::ui::ShowOptions,
+    pub show_options: crate::ui::settings::ShowOptions,
     pub multiband_eq: eq::MultibandEq<F, NUM_BANDS>,
     pub sample_rate: F,
     pub drag_eq_index: usize,
     pub preset_selection: presets::Selection,
     pub new_preset_name: Option<String>,
-}
-
-#[derive(Debug, Clone)]
-pub struct Settings<F: audio_utils::Float> {
-    pub app: app_lib::settings::ui::Settings<F>,
-    pub color_palette: colors::ColorPalette,
 }
 
 pub struct SpectrumData<'a, F: audio_utils::Float, const NUM_BINS: usize, const NUM_CHANNELS: usize>
@@ -41,7 +34,7 @@ pub fn draw<
     ui: &mut egui::Ui,
     params: &mut Params<F, NUM_BANDS>,
     presets: &mut presets::Presets<F, NUM_BANDS>,
-    settings: &Settings<F>,
+    settings: &crate::ui::settings::Settings<F>,
     spectrum_data: &Option<SpectrumData<F, NUM_SPECTRUM_BINS, NUM_SPECTRUM_CHANNELS>>,
 ) {
     let ui_size = ui.available_size();

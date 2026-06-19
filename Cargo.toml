@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["app-lib", "audio-lib", "eq-plugin", "xtask"]
+members = ["audio-lib", "eq-plugin", "xtask"]
 
 [workspace.dependencies]
 assert_approx_eq = "1.1"

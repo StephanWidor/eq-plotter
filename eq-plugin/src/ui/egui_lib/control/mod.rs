@@ -1,4 +1,4 @@
-use app_lib::settings::ui::ShowOptions;
+use crate::ui::settings::*;
 
 use super::*;
 
@@ -34,7 +34,7 @@ pub fn add<F: audio_utils::Float + egui::emath::Numeric, const NUM_BANDS: usize>
                         &mut params.multiband_eq.processing_type,
                     );
                     let eq_colors = &settings.color_palette.eq_stroke;
-                    let eq_ranges = &settings.app.eq_ranges;
+                    let eq_ranges = &settings.eq_ranges;
                     for (index, eq) in params.multiband_eq.eqs.iter_mut().enumerate() {
                         eq_has_changed |= eqs::add_slider_controls(
                             ui,

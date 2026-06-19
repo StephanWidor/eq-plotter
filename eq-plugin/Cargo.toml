@@ -23,5 +23,4 @@ num-traits = { workspace = true }
 serde = { workspace = true }
 serde_arrays = { workspace = true }
 
-app-lib = { workspace = true }
 audio-lib = { workspace = true }

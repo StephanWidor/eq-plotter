@@ -20,10 +20,10 @@ pub fn add_plot<
     multiband_type: eq::MultibandType,
     sample_rate: F,
     last_drag_eq_index: usize,
-    eq_ranges: &app_lib::settings::ui::EqRanges<F>,
+    eq_ranges: &crate::ui::settings::EqRanges<F>,
     spectrum_data: &Option<SpectrumData<F, NUM_SPECTRUM_BINS, NUM_SPECTRUM_CHANNELS>>,
     plot_size: f32,
-    color_palette: &colors::ColorPalette,
+    color_palette: &crate::ui::colors::ColorPalette,
 ) -> IndexedEqDiff<F> {
     let gain_plot_id = ui.make_persistent_id("gain_plot_id");
     let plot = egui_plot::Plot::new("Gain (dB)")

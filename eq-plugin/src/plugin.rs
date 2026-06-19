@@ -22,7 +22,6 @@ impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS:
         app_settings: &AppSettings<NUM_BANDS>,
         analyzer_coefficients: &processing::analyzer::Coefficients,
         smoothing_length_ms: f32,
-        color_palette: ui::egui_lib::colors::ColorPalette,
     ) -> Self {
         let params = sync::Arc::new(params::PluginParams::new(app_settings, smoothing_length_ms));
         let presets = if let Some(presets) = persistence::create_from_json_file::<Presets<NUM_BANDS>>(
@@ -37,10 +36,7 @@ impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS:
             presets: sync::Arc::new(sync::Mutex::new(presets)),
             processor: processing::processor::Processor::new(params.clone()),
             analyzer: processing::analyzer::Analyzer::new(params.clone(), analyzer_coefficients),
-            ui_settings: ui::Settings {
-                app: app_settings.ui.clone(),
-                color_palette: color_palette,
-            },
+            ui_settings: app_settings.ui.clone(),
             persistence_dir: app_settings.persistence_dir.clone(),
         }
     }
@@ -87,7 +83,6 @@ impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS:
             &AppSettings::<NUM_BANDS>::default(),
             &processing::analyzer::Coefficients::default(),
             20_f32,
-            ui::egui_lib::colors::ColorPalette::default(),
         )
     }
 }
