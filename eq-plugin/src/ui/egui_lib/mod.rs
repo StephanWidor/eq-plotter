@@ -5,7 +5,7 @@ pub mod control;
 pub mod plotter;
 pub mod utils;
 
-pub use app_lib::presets;
+use crate::presets;
 use audio_lib::utils as audio_utils;
 use audio_lib::*;
 

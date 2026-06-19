@@ -1,4 +1,4 @@
-use audio_lib::{eq::MultibandEq, *};
+use audio_lib::*;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -19,7 +19,7 @@ impl Selection {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(bound = "F: utils::Float")]
 pub struct Presets<F: utils::Float, const NUM_BANDS: usize> {
-    preset_map: HashMap<String, MultibandEq<F, NUM_BANDS>>,
+    preset_map: HashMap<String, eq::MultibandEq<F, NUM_BANDS>>,
 }
 
 impl<F: utils::Float, const NUM_BANDS: usize> Presets<F, NUM_BANDS> {
@@ -29,13 +29,13 @@ impl<F: utils::Float, const NUM_BANDS: usize> Presets<F, NUM_BANDS> {
         }
     }
 
-    pub fn new_with_init(init_name: String, init_eq: MultibandEq<F, NUM_BANDS>) -> Self {
+    pub fn new_with_init(init_name: String, init_eq: eq::MultibandEq<F, NUM_BANDS>) -> Self {
         Self {
             preset_map: HashMap::from([(init_name, init_eq)]),
         }
     }
 
-    pub fn add(&mut self, name: String, eq: MultibandEq<F, NUM_BANDS>) -> bool {
+    pub fn add(&mut self, name: String, eq: eq::MultibandEq<F, NUM_BANDS>) -> bool {
         if self.preset_map.contains_key(&name) {
             return false;
         }
@@ -43,7 +43,7 @@ impl<F: utils::Float, const NUM_BANDS: usize> Presets<F, NUM_BANDS> {
         true
     }
 
-    pub fn force_add(&mut self, name: String, eq: MultibandEq<F, NUM_BANDS>) {
+    pub fn force_add(&mut self, name: String, eq: eq::MultibandEq<F, NUM_BANDS>) {
         if let Some(preset) = self.preset_map.get_mut(&name) {
             *preset = eq;
         } else {
@@ -51,7 +51,7 @@ impl<F: utils::Float, const NUM_BANDS: usize> Presets<F, NUM_BANDS> {
         }
     }
 
-    pub fn get(&self, name: &String) -> Option<&MultibandEq<F, NUM_BANDS>> {
+    pub fn get(&self, name: &String) -> Option<&eq::MultibandEq<F, NUM_BANDS>> {
         if let Some(eq) = self.preset_map.get(name) {
             Some(&eq)
         } else {
@@ -80,7 +80,7 @@ impl<F: utils::Float, const NUM_BANDS: usize> Presets<F, NUM_BANDS> {
 mod tests {
     use super::*;
     struct TestSetup {
-        pub eqs: Vec<(String, MultibandEq<f32, 2>)>,
+        pub eqs: Vec<(String, eq::MultibandEq<f32, 2>)>,
     }
 
     impl TestSetup {
@@ -89,7 +89,7 @@ mod tests {
                 eqs: vec![
                     (
                         String::from("a preset"),
-                        MultibandEq {
+                        eq::MultibandEq {
                             eqs: [
                                 eq::Eq {
                                     gain: eq::Gain::Db(0.0),
@@ -111,7 +111,7 @@ mod tests {
                     ),
                     (
                         String::from("another preset"),
-                        MultibandEq {
+                        eq::MultibandEq {
                             eqs: [
                                 eq::Eq {
                                     gain: eq::Gain::Db(6.0),
@@ -133,7 +133,7 @@ mod tests {
                     ),
                     (
                         String::from("still another preset"),
-                        MultibandEq {
+                        eq::MultibandEq {
                             eqs: [
                                 eq::Eq {
                                     gain: eq::Gain::Db(0.0),

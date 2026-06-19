@@ -16,7 +16,7 @@ pub fn create_editor<
         multiband_eq: params.to_multiband_eq(),
         sample_rate: params.sample_rate.load(atomic::Ordering::Relaxed),
         drag_eq_index: usize::MAX,
-        preset_selection: app_lib::presets::Selection::None,
+        preset_selection: presets::Selection::None,
         new_preset_name: None,
     };
     let min_size = egui::Vec2::new(700.0, 400.0);
