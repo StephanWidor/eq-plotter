@@ -8,7 +8,7 @@ pub fn create_editor<
 >(
     params: sync::Arc<params::PluginParams<NUM_BANDS, NUM_CHANNELS, ANALYZER_NUM_BINS>>,
     presets: sync::Arc<sync::Mutex<Presets<NUM_BANDS>>>,
-    ui_settings: UiSettings,
+    ui_settings: ui::Settings,
 ) -> Option<Box<dyn nice::Editor>> {
     let editor_state = params.editor_state.clone();
     let ui_state = ui::Params {
@@ -55,7 +55,7 @@ pub fn create_editor<
                             ui_state.show_options = params.show_params.load_options();
                             let spectrum_gains =
                                 params.analyzer_data.linear_gains.consumer.pull_and_read();
-                            let spectrum_data = Some(egui_lib::SpectrumData {
+                            let spectrum_data = Some(ui::egui_lib::SpectrumData {
                                 frequency_bins: &params
                                     .analyzer_data
                                     .frequency_bins
@@ -63,7 +63,7 @@ pub fn create_editor<
                                     .unwrap(),
                                 linear_gains: &spectrum_gains,
                             });
-                            egui_lib::draw(
+                            ui::egui_lib::draw(
                                 ui,
                                 ui_state,
                                 &mut presets,

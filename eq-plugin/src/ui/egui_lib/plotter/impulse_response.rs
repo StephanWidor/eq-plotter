@@ -1,4 +1,4 @@
-use crate::*;
+use super::*;
 
 pub fn add_plot<F: audio_utils::Float + egui::emath::Numeric>(
     ui: &mut egui::Ui,

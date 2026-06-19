@@ -11,16 +11,16 @@ description = "Simple Eq Plugin"
 crate-type = ["cdylib", "lib"]
 
 [dependencies]
+eframe = { workspace = true }
 egui = { workspace = true }
 egui_plot = { workspace = true }
+enum-table = { workspace = true }
+nice-plug = { workspace = true }
+nice-plug-egui = { workspace = true }
+num = { workspace = true }
+num-traits = { workspace = true }
 serde = { workspace = true }
+serde_arrays = { workspace = true }
 
-nice-plug = { git = "https://codeberg.org/BillyDM/nice-plug.git", features = [
-    "assert_process_allocs",
-    "standalone",
-] }
-nice-plug-egui = { git = "https://codeberg.org/BillyDM/nice-plug.git" }
-
-app-lib = { path = "../app-lib" }
-audio-lib = { path = "../audio-lib" }
-egui-lib = { workspace = true }
+app-lib = { workspace = true }
+audio-lib = { workspace = true }

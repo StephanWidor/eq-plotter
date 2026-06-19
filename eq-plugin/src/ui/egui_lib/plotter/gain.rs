@@ -1,5 +1,4 @@
-use crate::*;
-use audio_lib::utils as audio_utils;
+use super::*;
 
 pub struct EqDiff<F: audio_utils::Float> {
     pub log_frequency: F,

@@ -3,7 +3,7 @@ mod impulse_response;
 mod phase;
 mod poles_and_zeros;
 
-use crate::*;
+use super::*;
 use audio_lib::{biquad, eq};
 
 pub fn add_plots<

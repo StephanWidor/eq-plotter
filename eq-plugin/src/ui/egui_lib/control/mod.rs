@@ -1,6 +1,6 @@
 use app_lib::settings::ui::ShowOptions;
 
-use crate::*;
+use super::*;
 
 pub mod eqs;
 
