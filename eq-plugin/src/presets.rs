@@ -2,16 +2,17 @@ use audio_lib::*;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-pub enum Selection {
+#[serde(bound = "F: utils::Float")]
+pub enum Selection<F: utils::Float, const NUM_BANDS: usize> {
     None,
-    Selected(String),
-    SelectedChanged(String),
+    Selected(String, eq::MultibandEq<F, NUM_BANDS>),
+    SelectedAndChanged(String, eq::MultibandEq<F, NUM_BANDS>),
 }
 
-impl Selection {
+impl<F: utils::Float, const NUM_BANDS: usize> Selection<F, NUM_BANDS> {
     pub fn mark_as_changed(&mut self) {
-        if let Selection::Selected(selected_preset_name) = &self {
-            *self = Selection::SelectedChanged(selected_preset_name.clone()); // TODO: can we do without cloning?
+        if let Selection::Selected(name, preset) = &self {
+            *self = Selection::SelectedAndChanged(name.clone(), preset.clone()); // TODO: can we do without cloning?
         }
     }
 }

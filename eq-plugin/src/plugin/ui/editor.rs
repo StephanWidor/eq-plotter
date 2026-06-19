@@ -46,8 +46,12 @@ pub fn create_editor<
                         .show_inside(ui, |ui| {
                             let mut presets = presets.lock().unwrap();
                             let backup_eqs = params.to_multiband_eq();
-                            if backup_eqs != ui_state.multiband_eq {
-                                ui_state.preset_selection.mark_as_changed();
+                            if let presets::Selection::Selected(_, preset) =
+                                &ui_state.preset_selection
+                            {
+                                if backup_eqs != *preset {
+                                    ui_state.preset_selection.mark_as_changed();
+                                }
                             }
                             ui_state.multiband_eq = backup_eqs.clone();
                             ui_state.sample_rate =
