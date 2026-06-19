@@ -55,7 +55,7 @@ pub fn create_editor<
                             ui_state.show_options = params.show_params.load_options();
                             let spectrum_gains =
                                 params.analyzer_data.linear_gains.consumer.pull_and_read();
-                            let spectrum_data = Some(crate::ui::egui_lib::SpectrumData {
+                            let spectrum_data = Some(ui::SpectrumData {
                                 frequency_bins: &params
                                     .analyzer_data
                                     .frequency_bins
@@ -63,7 +63,7 @@ pub fn create_editor<
                                     .unwrap(),
                                 linear_gains: &spectrum_gains,
                             });
-                            crate::ui::egui_lib::draw(
+                            crate::ui::draw(
                                 ui,
                                 ui_state,
                                 &mut presets,
