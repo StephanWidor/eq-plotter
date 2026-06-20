@@ -1,5 +1,8 @@
+use audio_lib::biquad;
+use audio_lib::utils;
+
 use crate::*;
-use std::sync;
+use std::sync::{self, atomic};
 
 pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn nice::Editor>> {
     let editor_state = params.editor_state.clone();
@@ -45,6 +48,12 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                                     [1.0, 1.0],
                                 ));
 
+                                let gain_points = make_gain_response_points(
+                                    params.get_biquad_coefficients(),
+                                    params.sample_rate.load(atomic::Ordering::Relaxed),
+                                );
+                                plot_ui.line(egui_plot::Line::new("gain response", gain_points));
+
                                 plot_ui.points(
                                     egui_plot::Points::new("F", egui_plot::PlotPoints::from(f))
                                         .shape(egui_plot::MarkerShape::Circle)
@@ -75,4 +84,33 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                 });
         },
     )
+}
+
+pub fn make_gain_response_points<'a>(
+    coefficients: [biquad::coefficients::Coefficients<f32>; 3],
+    sample_rate: f32,
+) -> egui_plot::PlotPoints<'a> {
+    let gain_response =
+        utils::make_gain_db_response(biquad::multiband::parallel_sum::make_frequency_response(
+            coefficients.into_iter(),
+            sample_rate,
+        ));
+    let log_frequency_range = utils::frequency_to_log(20.0)..=utils::frequency_to_log(20000.0);
+    let log_frequency_length = log_frequency_range.end() - log_frequency_range.start();
+    let x_to_log_frequency =
+        move |x| (log_frequency_range.start() + x * log_frequency_length) as f32;
+    let x_to_frequency = move |x| utils::log_to_frequency(x_to_log_frequency(x));
+    let gain_db_range = -12_f32..=12_f32;
+    let gain_db_length = gain_db_range.end() - gain_db_range.start();
+    let gain_to_normalized = move |gain_db: f32| {
+        let gain_clamped = gain_db.clamp(*gain_db_range.start(), *gain_db_range.end());
+        ((gain_clamped - gain_db_range.start()) / gain_db_length) as f64
+    };
+
+    let gain_points = egui_plot::PlotPoints::from_explicit_callback(
+        move |x| gain_to_normalized(gain_response(x_to_frequency(x))),
+        0.0..=1.0,
+        1000,
+    );
+    gain_points
 }
