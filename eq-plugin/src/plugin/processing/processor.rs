@@ -71,11 +71,22 @@ impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS:
                     }
                 }
             }
-            eq::MultibandType::Parallel => {
+            eq::MultibandType::ParallelSum => {
                 for channel in 0..buffer_slice.len() {
                     let channel_samples = buffer_slice.get_mut(channel).unwrap();
                     for sample in (*channel_samples).iter_mut() {
-                        *sample = biquad::multiband::parallel::process(
+                        *sample = biquad::multiband::parallel_sum::process(
+                            self.active_channel_filters(channel),
+                            *sample,
+                        );
+                    }
+                }
+            }
+            eq::MultibandType::ParallelAverage => {
+                for channel in 0..buffer_slice.len() {
+                    let channel_samples = buffer_slice.get_mut(channel).unwrap();
+                    for sample in (*channel_samples).iter_mut() {
+                        *sample = biquad::multiband::parallel_average::process(
                             self.active_channel_filters(channel),
                             *sample,
                         );

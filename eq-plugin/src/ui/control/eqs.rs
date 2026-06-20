@@ -12,11 +12,12 @@ pub fn add_multiband_type_control(
         .outer_margin(outer_margin)
         .show(ui, |ui| {
             ui.horizontal(|ui| {
-                for mb_type in eq::MultibandType::ALL.iter() {
-                    let response =
-                        ui.selectable_value(multiband_type, *mb_type, mb_type.to_string());
-                    type_has_changed |= response.changed();
-                }
+                type_has_changed |= ui
+                    .selectable_value(multiband_type, eq::MultibandType::Sequential, "Sequential")
+                    .changed();
+                type_has_changed |= ui
+                    .selectable_value(multiband_type, eq::MultibandType::ParallelSum, "Parallel")
+                    .changed();
             });
         });
     type_has_changed

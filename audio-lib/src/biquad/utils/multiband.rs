@@ -10,7 +10,8 @@ pub fn process<'a, F: utils::Float + 'a, Iter: Iterator<Item = &'a mut Filter<F>
 ) -> F {
     match processing_type {
         ProcessingType::Sequential => sequential::process(filters, sample),
-        ProcessingType::Parallel => parallel::process(filters, sample),
+        ProcessingType::ParallelSum => parallel_sum::process(filters, sample),
+        ProcessingType::ParallelAverage => parallel_average::process(filters, sample),
     }
 }
 
@@ -27,9 +28,14 @@ pub fn make_frequency_response<
             coefficients,
             sample_rate,
         )),
-        ProcessingType::Parallel => {
-            Box::new(parallel::make_frequency_response(coefficients, sample_rate))
-        }
+        ProcessingType::ParallelSum => Box::new(parallel_sum::make_frequency_response(
+            coefficients,
+            sample_rate,
+        )),
+        ProcessingType::ParallelAverage => Box::new(parallel_average::make_frequency_response(
+            coefficients,
+            sample_rate,
+        )),
     }
 }
 
@@ -45,9 +51,20 @@ pub fn impulse_response<F: utils::Float, C: Iterator<Item = Coefficients<F>>>(
         ProcessingType::Sequential => {
             sequential::impulse_response(coefficients, rel_eps, release_time, max_time, sample_rate)
         }
-        ProcessingType::Parallel => {
-            parallel::impulse_response(coefficients, rel_eps, release_time, max_time, sample_rate)
-        }
+        ProcessingType::ParallelSum => parallel_sum::impulse_response(
+            coefficients,
+            rel_eps,
+            release_time,
+            max_time,
+            sample_rate,
+        ),
+        ProcessingType::ParallelAverage => parallel_average::impulse_response(
+            coefficients,
+            rel_eps,
+            release_time,
+            max_time,
+            sample_rate,
+        ),
     }
 }
 
@@ -98,7 +115,61 @@ pub mod sequential {
     }
 }
 
-pub mod parallel {
+pub mod parallel_sum {
+    use super::*;
+
+    pub fn process<'a, F: utils::Float + 'a, Iter: Iterator<Item = &'a mut Filter<F>>>(
+        filters: Iter,
+        sample: F,
+    ) -> F {
+        let mut output = F::ZERO;
+        for filter in filters {
+            output += filter.process(sample);
+        }
+        output
+    }
+
+    pub fn make_frequency_response<F: utils::Float, C: Iterator<Item = Coefficients<F>>>(
+        coefficients: C,
+        sample_rate: F,
+    ) -> impl Fn(F) -> Complex<F> {
+        let transfer_functions = coefficients
+            .into_iter()
+            .map(|c| make_transfer_function(c.clone()))
+            .collect::<Vec<_>>();
+        move |frequency| {
+            let z1 = Complex::from_polar(F::ONE, -utils::omega(frequency, sample_rate));
+            let mut sum = Complex::from(F::ZERO);
+            for transfer_function in transfer_functions.iter() {
+                sum = sum + transfer_function(z1);
+            }
+            sum
+        }
+    }
+
+    pub fn impulse_response<F: utils::Float, C: Iterator<Item = Coefficients<F>>>(
+        coefficients: C,
+        rel_eps: F,
+        release_time: F,
+        max_time: F,
+        sample_rate: F,
+    ) -> Vec<F> {
+        let mut filters = coefficients
+            .into_iter()
+            .map(|c| Filter::new(c))
+            .collect::<Vec<_>>();
+        let mut process = |s| process(&mut filters.iter_mut(), s);
+        return utils::make_impulse_response(
+            &mut process,
+            rel_eps,
+            release_time,
+            max_time,
+            sample_rate,
+        );
+    }
+}
+
+pub mod parallel_average {
     use super::*;
     pub fn process<'a, F: utils::Float + 'a, Iter: Iterator<Item = &'a mut Filter<F>>>(
         filters: Iter,
@@ -151,7 +222,13 @@ pub mod parallel {
             .map(|c| Filter::new(c))
             .collect::<Vec<_>>();
         let mut process = |s| process(&mut filters.iter_mut(), s);
-        utils::make_impulse_response(&mut process, rel_eps, release_time, max_time, sample_rate)
+        return utils::make_impulse_response(
+            &mut process,
+            rel_eps,
+            release_time,
+            max_time,
+            sample_rate,
+        );
     }
 }
 
@@ -205,7 +282,7 @@ mod tests {
             .map(|c| crate::biquad::make_frequency_response(c.clone(), sample_rate))
             .collect::<Vec<_>>();
         let multiband_response =
-            parallel::make_frequency_response(coefficients.into_iter(), sample_rate);
+            parallel_average::make_frequency_response(coefficients.into_iter(), sample_rate);
 
         for i in 1..200 {
             let frequency = (i * 100) as f64;

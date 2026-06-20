@@ -3,14 +3,16 @@ use enum_table::Enumable;
 #[derive(Debug, PartialEq, Clone, Copy, Enumable, serde::Serialize, serde::Deserialize)]
 pub enum MultibandType {
     Sequential,
-    Parallel,
+    ParallelSum,
+    ParallelAverage,
 }
 
 impl MultibandType {
     pub const ALL: &'static [MultibandType] = Enumable::VARIANTS;
     pub const VARIANT_COUNT: usize = Self::COUNT;
 
-    pub const ALL_NAMES: [&'static str; Self::COUNT] = ["Sequential", "Parallel"];
+    pub const ALL_NAMES: [&'static str; Self::COUNT] =
+        ["Sequential", "Parallel Sum", "Parallel Average"];
     pub fn to_string(&self) -> &str {
         Self::ALL_NAMES[*self as usize]
     }
