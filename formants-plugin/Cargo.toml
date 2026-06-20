@@ -1,0 +1,27 @@
+[package]
+name = "formants-plugin"
+version = "0.1.0"
+edition = "2024"
+authors = ["Stephan Widor <stephan@widor.online>"]
+license = "GPL-3.0-or-later"
+homepage = "https://widor.online"
+description = "Simple Formants Plugin"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+dirs = { workspace = true }
+eframe = { workspace = true }
+egui = { workspace = true }
+egui_plot = { workspace = true }
+enum-table = { workspace = true }
+nice-plug = { workspace = true }
+nice-plug-egui = { workspace = true }
+nalgebra = { workspace = true }
+num = { workspace = true }
+num-traits = { workspace = true }
+serde = { workspace = true }
+serde_arrays = { workspace = true }
+
+audio-lib = { workspace = true }

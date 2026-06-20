@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["audio-lib", "eq-plugin", "xtask"]
+members = ["audio-lib", "eq-plugin", "formants-plugin", "xtask"]
 
 [workspace.dependencies]
 assert_approx_eq = "1.1"
@@ -11,6 +11,7 @@ egui = "0.34"
 egui_plot = "0.35"
 enum-table = "3.0"
 more-asserts = "0.3"
+nalgebra = "0.35"
 nice-plug = { version = "0.1", features = [
     "assert_process_allocs",
     "standalone",
