@@ -3,7 +3,7 @@ use std::ops::RangeInclusive;
 use audio_lib::*;
 
 pub fn range_to_f64<F: utils::Float>(range: &RangeInclusive<F>) -> RangeInclusive<f64> {
-    range.start().to_f64().unwrap()..=range.end().to_f64().unwrap()
+    range.start().cast::<f64>()..=range.end().cast::<f64>()
 }
 
 pub fn make_log_frequency_points<'a, F: utils::Float>(
