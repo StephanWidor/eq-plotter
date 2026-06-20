@@ -152,6 +152,7 @@ impl<const NUM_BANDS: usize, const NUM_CHANNELS: usize, const ANALYZER_NUM_BINS:
         nice::ClapFeature::AudioEffect,
         nice::ClapFeature::Equalizer,
         nice::ClapFeature::Mono,
+        nice::ClapFeature::Stereo,
     ];
 }
 
