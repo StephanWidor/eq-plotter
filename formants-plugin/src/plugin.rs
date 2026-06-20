@@ -108,7 +108,7 @@ impl nice::Plugin for Plugin {
         &mut self,
         _async_executor: nice::AsyncExecutor<Self>,
     ) -> Option<Box<dyn nice::Editor>> {
-        None
+        editor::create_editor(self.params.clone())
     }
 }
 
