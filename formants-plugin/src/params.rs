@@ -8,8 +8,8 @@ use std::ops::RangeInclusive;
 const SMOOTHING_LENGTH: f32 = 20_f32;
 
 const FREQUENCY_BOUNDS: nalgebra::Matrix2x4<f32> = nalgebra::matrix![
-        320_f32, 1000_f32, 1000_f32,300_f32;
-        800_f32, 1400_f32, 1600_f32,3000_f32];
+        320_f32, 1000_f32, 600_f32,300_f32;
+        800_f32, 1400_f32, 2000_f32,3000_f32];
 
 #[derive(nice::Params)]
 pub struct FormantParams {
