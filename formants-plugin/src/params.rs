@@ -102,8 +102,8 @@ impl PluginParams {
                 format!("Mix"),
                 -12_f32,
                 nice::FloatRange::Linear {
-                    min: -100_f32,
-                    max: 6_f32,
+                    min: -32_f32,
+                    max: 0_f32,
                 },
             )
             .with_smoother(nice::SmoothingStyle::Linear(SMOOTHING_LENGTH)),
