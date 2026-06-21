@@ -3,6 +3,7 @@ use std::sync::atomic;
 use super::*;
 use audio_lib::*;
 use nice_plug::params::Params;
+use std::ops::RangeInclusive;
 
 const SMOOTHING_LENGTH: f32 = 20_f32;
 
@@ -14,6 +15,9 @@ const FREQUENCY_BOUNDS: nalgebra::Matrix2x4<f32> = nalgebra::matrix![
 pub struct FormantParams {
     #[id = "Frequency"]
     pub normalized_frequency: nice::FloatParam,
+
+    #[id = "Q"]
+    pub q: nice::FloatParam,
 
     #[id = "Gain (dB)"]
     pub gain_db: nice::FloatParam,
@@ -31,16 +35,47 @@ impl FormantParams {
                 },
             )
             .with_smoother(nice::SmoothingStyle::Linear(SMOOTHING_LENGTH)),
+            q: nice::FloatParam::new(
+                format!("Q{names_suffix}"),
+                10_f32,
+                nice::FloatRange::Linear {
+                    min: 1_f32,
+                    max: 20_f32,
+                },
+            )
+            .with_smoother(nice::SmoothingStyle::Linear(SMOOTHING_LENGTH)),
             gain_db: nice::FloatParam::new(
                 format!("Gain (dB){names_suffix}"),
                 6_f32,
                 nice::FloatRange::Linear {
-                    min: -100_f32,
-                    max: 6_f32,
+                    min: -32_f32,
+                    max: 12_f32,
                 },
             )
             .with_smoother(nice::SmoothingStyle::Linear(SMOOTHING_LENGTH)),
         }
+    }
+
+    pub fn set_normalized_frequency(
+        &self,
+        normalized_frequency: f32,
+        setter: &nice::ParamSetter<'_>,
+    ) {
+        setter.begin_set_parameter(&self.normalized_frequency);
+        setter.set_parameter(&self.normalized_frequency, normalized_frequency);
+        setter.end_set_parameter(&self.normalized_frequency);
+    }
+
+    pub fn set_q(&self, q: f32, setter: &nice::ParamSetter<'_>) {
+        setter.begin_set_parameter(&self.q);
+        setter.set_parameter(&self.q, q);
+        setter.end_set_parameter(&self.q);
+    }
+
+    pub fn set_gain_db(&self, gain_db: f32, setter: &nice::ParamSetter<'_>) {
+        setter.begin_set_parameter(&self.gain_db);
+        setter.set_parameter(&self.gain_db, gain_db);
+        setter.end_set_parameter(&self.gain_db);
     }
 }
 
@@ -76,13 +111,29 @@ impl PluginParams {
         }
     }
 
+    pub fn set_dry_gain_db(&self, gain_db: f32, setter: &nice::ParamSetter<'_>) {
+        setter.begin_set_parameter(&self.dry_gain_db);
+        setter.set_parameter(&self.dry_gain_db, gain_db);
+        setter.end_set_parameter(&self.dry_gain_db);
+    }
+
     pub fn get_biquad_coefficients(&self) -> [biquad::coefficients::Coefficients<f32>; 3] {
         use biquad::coefficients::Coefficients;
         let frequencies = self.get_frequencies();
         let sample_rate = self.sample_rate.load(atomic::Ordering::Relaxed);
         [
-            Self::get_coefficients(frequencies[0], 10_f32, sample_rate),
-            Self::get_coefficients(frequencies[1], 10_f32, sample_rate),
+            Self::get_coefficients(
+                frequencies[0],
+                self.formants[0].q.value(),
+                self.formants[0].gain_db.value(),
+                sample_rate,
+            ),
+            Self::get_coefficients(
+                frequencies[1],
+                self.formants[1].q.value(),
+                self.formants[1].gain_db.value(),
+                sample_rate,
+            ),
             Coefficients::from_volume_db(self.dry_gain_db.value()),
         ]
     }
@@ -100,12 +151,16 @@ impl PluginParams {
 
     fn get_coefficients(
         frequency: f32,
+        q: f32,
         gain_db: f32,
         sample_rate: f32,
     ) -> biquad::coefficients::Coefficients<f32> {
-        let mut c =
-            biquad::coefficients::Coefficients::from_bandpass(frequency, 10_f32, sample_rate);
+        let mut c = biquad::coefficients::Coefficients::from_bandpass(frequency, q, sample_rate);
         c.add_makeup_gain(eq::Gain::Db(gain_db));
         c
     }
+}
+
+pub fn to_range_inclusive(float_range: &nice::FloatRange) -> RangeInclusive<f32> {
+    float_range.unnormalize(0_f32)..=float_range.unnormalize(1_f32)
 }
