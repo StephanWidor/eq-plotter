@@ -7,9 +7,32 @@ use std::ops::RangeInclusive;
 
 const SMOOTHING_LENGTH: f32 = 20_f32;
 
-const FREQUENCY_BOUNDS: nalgebra::Matrix2x4<f32> = nalgebra::matrix![
+struct FrequencyBounds {
+    pub matrix: nalgebra::Matrix2x4<f32>,
+    pub f_ranges: [RangeInclusive<f32>; 2],
+}
+
+impl Default for FrequencyBounds {
+    fn default() -> Self {
+        let matrix: nalgebra::Matrix2x4<f32> = nalgebra::matrix![
         320_f32, 1000_f32, 600_f32,300_f32;
         800_f32, 1400_f32, 2000_f32,3000_f32];
+        let f_ranges: [RangeInclusive<f32>; 2] =
+            std::array::from_fn(|i| matrix.row(i).min()..=matrix.row(i).max());
+        Self {
+            matrix: matrix,
+            f_ranges: f_ranges,
+        }
+    }
+}
+
+impl FrequencyBounds {
+    pub fn frequency_to_normalized(&self, frequency: f32, index: usize) -> f32 {
+        assert!(index < 2);
+        ((frequency - self.f_ranges[index].start()) / range::get_length(&self.f_ranges[index]))
+            .clamp(0_f32, 1_f32)
+    }
+}
 
 #[derive(nice::Params)]
 pub struct FormantParams {
@@ -18,9 +41,6 @@ pub struct FormantParams {
 
     #[id = "Q"]
     pub q: nice::FloatParam,
-
-    #[id = "Gain (dB)"]
-    pub gain_db: nice::FloatParam,
 }
 
 impl FormantParams {
@@ -44,15 +64,6 @@ impl FormantParams {
                 },
             )
             .with_smoother(nice::SmoothingStyle::Linear(SMOOTHING_LENGTH)),
-            gain_db: nice::FloatParam::new(
-                format!("Gain (dB){names_suffix}"),
-                6_f32,
-                nice::FloatRange::Linear {
-                    min: -32_f32,
-                    max: 12_f32,
-                },
-            )
-            .with_smoother(nice::SmoothingStyle::Linear(SMOOTHING_LENGTH)),
         }
     }
 
@@ -71,12 +82,6 @@ impl FormantParams {
         setter.set_parameter(&self.q, q);
         setter.end_set_parameter(&self.q);
     }
-
-    pub fn set_gain_db(&self, gain_db: f32, setter: &nice::ParamSetter<'_>) {
-        setter.begin_set_parameter(&self.gain_db);
-        setter.set_parameter(&self.gain_db, gain_db);
-        setter.end_set_parameter(&self.gain_db);
-    }
 }
 
 #[derive(nice::Params)]
@@ -91,6 +96,8 @@ pub struct PluginParams {
     pub dry_gain_db: nice::FloatParam,
 
     pub sample_rate: nice::AtomicF32,
+
+    frequency_bounds: FrequencyBounds,
 }
 
 impl PluginParams {
@@ -111,6 +118,7 @@ impl PluginParams {
             )
             .with_smoother(nice::SmoothingStyle::Linear(SMOOTHING_LENGTH)),
             sample_rate: nice::AtomicF32::new(48000_f32),
+            frequency_bounds: FrequencyBounds::default(),
         }
     }
 
@@ -128,13 +136,13 @@ impl PluginParams {
             Self::get_coefficients(
                 frequencies[0],
                 self.formants[0].q.value(),
-                self.formants[0].gain_db.value(),
+                self.gain_db_for_frequency(frequencies[0], 0),
                 sample_rate,
             ),
             Self::get_coefficients(
                 frequencies[1],
                 self.formants[1].q.value(),
-                self.formants[1].gain_db.value(),
+                self.gain_db_for_frequency(frequencies[1], 1),
                 sample_rate,
             ),
             Coefficients::from_volume_db(self.dry_gain_db.value()),
@@ -149,7 +157,18 @@ impl PluginParams {
             f[0] * f[1],
             (1_f32 - f[0]) * f[1]
         ];
-        FREQUENCY_BOUNDS * v
+        self.frequency_bounds.matrix * v
+    }
+
+    fn gain_db_for_frequency(&self, frequency: f32, index: usize) -> f32 {
+        let bounds_normalized_frequency = self
+            .frequency_bounds
+            .frequency_to_normalized(frequency, index);
+        if index == 0 {
+            12_f32 - bounds_normalized_frequency * 6_f32
+        } else {
+            6_f32 + bounds_normalized_frequency * 6_f32
+        }
     }
 
     fn get_coefficients(
@@ -162,8 +181,4 @@ impl PluginParams {
         c.add_makeup_gain(eq::Gain::Db(gain_db));
         c
     }
-}
-
-pub fn to_range_inclusive(float_range: &nice::FloatRange) -> RangeInclusive<f32> {
-    float_range.unnormalize(0_f32)..=float_range.unnormalize(1_f32)
 }

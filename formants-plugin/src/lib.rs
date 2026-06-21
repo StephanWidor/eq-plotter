@@ -1,6 +1,7 @@
 pub mod editor;
 pub mod params;
 pub mod plugin;
+pub mod range;
 
 pub use nice_plug::prelude as nice;
 pub use plugin::Plugin;

@@ -87,23 +87,12 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                                     let q_response = ui.add(
                                         egui::Slider::new(
                                             &mut q,
-                                            params::to_range_inclusive(&formant.q.range()),
+                                            range::to_range_inclusive(&formant.q.range()),
                                         )
                                         .prefix("q: "),
                                     );
                                     if q_response.changed() {
                                         formant.set_q(q, setter);
-                                    }
-                                    let mut gain = formant.gain_db.value();
-                                    let gain_response = ui.add(
-                                        egui::Slider::new(
-                                            &mut gain,
-                                            params::to_range_inclusive(&formant.gain_db.range()),
-                                        )
-                                        .suffix("dB"),
-                                    );
-                                    if gain_response.changed() {
-                                        formant.set_gain_db(gain, setter);
                                     }
                                 });
                             }
@@ -113,7 +102,7 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                                 let gain_response = ui.add(
                                     egui::Slider::new(
                                         &mut dry_gain,
-                                        params::to_range_inclusive(&params.dry_gain_db.range()),
+                                        range::to_range_inclusive(&params.dry_gain_db.range()),
                                     )
                                     .suffix("dB"),
                                 );
@@ -137,9 +126,8 @@ pub fn make_gain_response_points<'a>(
             sample_rate,
         ));
     let log_frequency_range = utils::frequency_to_log(20.0)..=utils::frequency_to_log(20000.0);
-    let log_frequency_length = log_frequency_range.end() - log_frequency_range.start();
-    let x_to_log_frequency =
-        move |x| (log_frequency_range.start() + x * log_frequency_length) as f32;
+    let log_frequency_length = range::get_length(&log_frequency_range);
+    let x_to_log_frequency = move |x| log_frequency_range.start() + x as f32 * log_frequency_length;
     let x_to_frequency = move |x| utils::log_to_frequency(x_to_log_frequency(x));
     let gain_db_range = -12_f32..=12_f32;
     let gain_db_length = gain_db_range.end() - gain_db_range.start();
