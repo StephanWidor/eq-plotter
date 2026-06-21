@@ -47,7 +47,18 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                                             .height(plot_size)
                                             .show_background(false)
                                             .show_axes(false)
-                                            .show_grid(false);
+                                            .show_grid(false)
+                                            .label_formatter(|_, point| {
+                                                let frequencies =
+                                                    params.normalized_to_frequencies([
+                                                        point.x as f32,
+                                                        point.y as f32,
+                                                    ]);
+                                                format!(
+                                                    "f0: {:.0}\nf1: {:.0}",
+                                                    frequencies[0], frequencies[1]
+                                                )
+                                            });
 
                                         let f: [f64; 2] = std::array::from_fn(|i| {
                                             formants[i].normalized_frequency.value() as f64

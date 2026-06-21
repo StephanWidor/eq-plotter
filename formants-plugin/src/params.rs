@@ -149,8 +149,7 @@ impl PluginParams {
         ]
     }
 
-    fn get_frequencies(&self) -> nalgebra::Vector2<f32> {
-        let f: [f32; 2] = std::array::from_fn(|i| self.formants[i].normalized_frequency.value());
+    pub fn normalized_to_frequencies(&self, f: [f32; 2]) -> nalgebra::Vector2<f32> {
         let v = nalgebra::vector![
             (1_f32 - f[0]) * (1_f32 - f[1]),
             f[0] * (1_f32 - f[1]),
@@ -158,6 +157,12 @@ impl PluginParams {
             (1_f32 - f[0]) * f[1]
         ];
         self.frequency_bounds.matrix * v
+    }
+
+    fn get_frequencies(&self) -> nalgebra::Vector2<f32> {
+        self.normalized_to_frequencies(std::array::from_fn(|i| {
+            self.formants[i].normalized_frequency.value()
+        }))
     }
 
     fn gain_db_for_frequency(&self, frequency: f32, index: usize) -> f32 {
