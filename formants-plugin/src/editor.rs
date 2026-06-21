@@ -6,8 +6,10 @@ use std::sync::{self, atomic};
 
 pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn nice::Editor>> {
     let editor_state = params.editor_state.clone();
-    let min_size = egui::Vec2::new(400.0, 400.0);
-
+    let min_size = {
+        let state_size = params.editor_state.size();
+        egui::Vec2::new(state_size.0 as f32, state_size.1 as f32)
+    };
     nice_plug_egui::create_egui_editor(
         params.editor_state.clone(),
         (),
@@ -31,7 +33,7 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                                 .fill(egui::Color32::from_rgb(32, 35, 38)),
                         )
                         .show_inside(ui, |ui| {
-                            let plot_size = 0.8 * ui.available_height().min(ui.available_width());
+                            let plot_size = ui.available_width().min(0.8 * ui.available_height());
                             let formants = &params.formants;
                             ui.vertical(|ui| {
                                 let plot = egui_plot::Plot::new("Formant Space")
@@ -80,7 +82,7 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                             for i in 0..2 {
                                 let formant = &formants[i];
                                 ui.horizontal(|ui| {
-                                    ui.add(egui::Label::new(format!("Formant {i}")));
+                                    ui.add(egui::Label::new(format!("F{i} ")));
                                     let mut q = formant.q.value();
                                     let q_response = ui.add(
                                         egui::Slider::new(
@@ -98,7 +100,6 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                                             &mut gain,
                                             params::to_range_inclusive(&formant.gain_db.range()),
                                         )
-                                        .prefix("gain: ")
                                         .suffix("dB"),
                                     );
                                     if gain_response.changed() {
@@ -107,14 +108,13 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                                 });
                             }
                             ui.horizontal(|ui| {
-                                ui.add(egui::Label::new(format!("Dry Mix")));
+                                ui.add(egui::Label::new(format!("Dry")));
                                 let mut dry_gain = params.dry_gain_db.value();
                                 let gain_response = ui.add(
                                     egui::Slider::new(
                                         &mut dry_gain,
                                         params::to_range_inclusive(&params.dry_gain_db.range()),
                                     )
-                                    .prefix("gain: ")
                                     .suffix("dB"),
                                 );
                                 if gain_response.changed() {

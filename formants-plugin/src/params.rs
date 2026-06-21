@@ -96,7 +96,7 @@ pub struct PluginParams {
 impl PluginParams {
     pub fn new() -> Self {
         Self {
-            editor_state: nice_plug_egui::EguiState::from_size(1000, 700),
+            editor_state: nice_plug_egui::EguiState::from_size(400, 500),
             formants: [FormantParams::new("[1]"), FormantParams::new("[2]")],
             dry_gain_db: nice::FloatParam::new(
                 format!("Mix"),
