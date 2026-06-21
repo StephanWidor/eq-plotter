@@ -103,7 +103,7 @@ pub struct PluginParams {
 impl PluginParams {
     pub fn new() -> Self {
         Self {
-            editor_state: nice_plug_egui::EguiState::from_size(400, 500),
+            editor_state: nice_plug_egui::EguiState::from_size(420, 500),
             formants: [
                 FormantParams::new(10_f32, "[1]"),
                 FormantParams::new(20_f32, "[2]"),
