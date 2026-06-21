@@ -24,7 +24,7 @@ pub struct FormantParams {
 }
 
 impl FormantParams {
-    pub fn new(names_suffix: &str) -> Self {
+    pub fn new(default_q: f32, names_suffix: &str) -> Self {
         Self {
             normalized_frequency: nice::FloatParam::new(
                 format!("Frequency{names_suffix}"),
@@ -37,7 +37,7 @@ impl FormantParams {
             .with_smoother(nice::SmoothingStyle::Linear(SMOOTHING_LENGTH)),
             q: nice::FloatParam::new(
                 format!("Q{names_suffix}"),
-                10_f32,
+                default_q,
                 nice::FloatRange::Linear {
                     min: 1_f32,
                     max: 20_f32,
@@ -97,7 +97,10 @@ impl PluginParams {
     pub fn new() -> Self {
         Self {
             editor_state: nice_plug_egui::EguiState::from_size(400, 500),
-            formants: [FormantParams::new("[1]"), FormantParams::new("[2]")],
+            formants: [
+                FormantParams::new(10_f32, "[1]"),
+                FormantParams::new(20_f32, "[2]"),
+            ],
             dry_gain_db: nice::FloatParam::new(
                 format!("Mix"),
                 -12_f32,
