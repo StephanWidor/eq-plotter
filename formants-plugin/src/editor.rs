@@ -31,55 +31,96 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                                 .fill(egui::Color32::from_rgb(32, 35, 38)),
                         )
                         .show_inside(ui, |ui| {
-                            let plot_size = ui.available_height().min(ui.available_width());
-                            let plot = egui_plot::Plot::new("Formant Space")
-                                .allow_zoom(false)
-                                .allow_drag(false)
-                                .allow_scroll(false)
-                                .width(plot_size)
-                                .height(plot_size);
+                            let plot_size = 0.8 * ui.available_height().min(ui.available_width());
+                            let formants = &params.formants;
+                            ui.vertical(|ui| {
+                                let plot = egui_plot::Plot::new("Formant Space")
+                                    .allow_zoom(false)
+                                    .allow_drag(false)
+                                    .allow_scroll(false)
+                                    .width(plot_size)
+                                    .height(plot_size)
+                                    .show_axes(false);
 
-                            let f: [f64; 2] = std::array::from_fn(|i| {
-                                params.formants[i].normalized_frequency.value() as f64
-                            });
-                            let plot_response = plot.show(ui, |plot_ui| {
-                                plot_ui.set_plot_bounds(egui_plot::PlotBounds::from_min_max(
-                                    [0.0, 0.0],
-                                    [1.0, 1.0],
-                                ));
+                                let f: [f64; 2] = std::array::from_fn(|i| {
+                                    formants[i].normalized_frequency.value() as f64
+                                });
+                                let plot_response = plot.show(ui, |plot_ui| {
+                                    plot_ui.set_plot_bounds(egui_plot::PlotBounds::from_min_max(
+                                        [0.0, 0.0],
+                                        [1.0, 1.0],
+                                    ));
 
-                                let gain_points = make_gain_response_points(
-                                    params.get_biquad_coefficients(),
-                                    params.sample_rate.load(atomic::Ordering::Relaxed),
-                                );
-                                plot_ui.line(egui_plot::Line::new("gain response", gain_points));
+                                    let gain_points = make_gain_response_points(
+                                        params.get_biquad_coefficients(),
+                                        params.sample_rate.load(atomic::Ordering::Relaxed),
+                                    );
+                                    plot_ui
+                                        .line(egui_plot::Line::new("gain response", gain_points));
 
-                                plot_ui.points(
-                                    egui_plot::Points::new("F", egui_plot::PlotPoints::from(f))
-                                        .shape(egui_plot::MarkerShape::Circle)
-                                        .color(egui::Color32::ORANGE)
-                                        .filled(true)
-                                        .radius(5.0),
-                                );
-                                plot_ui.pointer_coordinate()
-                            });
-                            if plot_response.response.is_pointer_button_down_on() {
-                                if let Some(drag_position) = plot_response.inner {
-                                    let new_f = [drag_position.x as f32, drag_position.y as f32];
-                                    for i in 0..2 {
-                                        setter.begin_set_parameter(
-                                            &params.formants[i].normalized_frequency,
-                                        );
-                                        setter.set_parameter(
-                                            &params.formants[i].normalized_frequency,
-                                            (new_f[i]).clamp(0_f32, 1_f32),
-                                        );
-                                        setter.end_set_parameter(
-                                            &params.formants[i].normalized_frequency,
-                                        );
+                                    plot_ui.points(
+                                        egui_plot::Points::new("F", egui_plot::PlotPoints::from(f))
+                                            .shape(egui_plot::MarkerShape::Circle)
+                                            .color(egui::Color32::ORANGE)
+                                            .filled(true)
+                                            .radius(5.0),
+                                    );
+                                    plot_ui.pointer_coordinate()
+                                });
+                                if plot_response.response.is_pointer_button_down_on() {
+                                    if let Some(drag_position) = plot_response.inner {
+                                        let new_f =
+                                            [drag_position.x as f32, drag_position.y as f32];
+                                        for i in 0..2 {
+                                            formants[i].set_normalized_frequency(new_f[i], setter);
+                                        }
                                     }
                                 }
+                            });
+                            for i in 0..2 {
+                                let formant = &formants[i];
+                                ui.horizontal(|ui| {
+                                    ui.add(egui::Label::new(format!("Formant {i}")));
+                                    let mut q = formant.q.value();
+                                    let q_response = ui.add(
+                                        egui::Slider::new(
+                                            &mut q,
+                                            params::to_range_inclusive(&formant.q.range()),
+                                        )
+                                        .prefix("q: "),
+                                    );
+                                    if q_response.changed() {
+                                        formant.set_q(q, setter);
+                                    }
+                                    let mut gain = formant.gain_db.value();
+                                    let gain_response = ui.add(
+                                        egui::Slider::new(
+                                            &mut gain,
+                                            params::to_range_inclusive(&formant.gain_db.range()),
+                                        )
+                                        .prefix("gain: ")
+                                        .suffix("dB"),
+                                    );
+                                    if gain_response.changed() {
+                                        formant.set_gain_db(gain, setter);
+                                    }
+                                });
                             }
+                            ui.horizontal(|ui| {
+                                ui.add(egui::Label::new(format!("Dry Mix")));
+                                let mut dry_gain = params.dry_gain_db.value();
+                                let gain_response = ui.add(
+                                    egui::Slider::new(
+                                        &mut dry_gain,
+                                        params::to_range_inclusive(&params.dry_gain_db.range()),
+                                    )
+                                    .prefix("gain: ")
+                                    .suffix("dB"),
+                                );
+                                if gain_response.changed() {
+                                    params.set_dry_gain_db(dry_gain, setter);
+                                }
+                            })
                         });
                 });
         },
