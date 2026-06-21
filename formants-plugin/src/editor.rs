@@ -49,8 +49,9 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                                             .show_axes(false)
                                             .show_grid(false)
                                             .label_formatter(|_, point| {
-                                                let frequencies =
-                                                    params.normalized_to_frequencies([
+                                                let frequencies = params
+                                                    .frequency_transform
+                                                    .normalized_to_frequencies([
                                                         point.x as f32,
                                                         point.y as f32,
                                                     ]);

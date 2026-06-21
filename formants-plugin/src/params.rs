@@ -7,30 +7,42 @@ use std::ops::RangeInclusive;
 
 const SMOOTHING_LENGTH: f32 = 20_f32;
 
-struct FrequencyBounds {
-    pub matrix: nalgebra::Matrix2x4<f32>,
+/// For transforming/distorting f coordinates in [0;1]^2 into formant frequencies
+pub struct FrequencyTransform {
+    pub bounds_matrix: nalgebra::Matrix2x4<f32>,
     pub f_ranges: [RangeInclusive<f32>; 2],
 }
 
-impl Default for FrequencyBounds {
+impl Default for FrequencyTransform {
     fn default() -> Self {
-        let matrix: nalgebra::Matrix2x4<f32> = nalgebra::matrix![
-        320_f32, 1000_f32, 600_f32,300_f32;
-        800_f32, 1400_f32, 2000_f32,3000_f32];
+        let bounds_matrix: nalgebra::Matrix2x4<f32> = nalgebra::matrix![
+            320_f32, 1000_f32, 600_f32,  300_f32;
+            800_f32, 1400_f32, 2000_f32, 3000_f32];
         let f_ranges: [RangeInclusive<f32>; 2] =
-            std::array::from_fn(|i| matrix.row(i).min()..=matrix.row(i).max());
+            std::array::from_fn(|i| bounds_matrix.row(i).min()..=bounds_matrix.row(i).max());
         Self {
-            matrix: matrix,
+            bounds_matrix: bounds_matrix,
             f_ranges: f_ranges,
         }
     }
 }
 
-impl FrequencyBounds {
-    pub fn frequency_to_normalized(&self, frequency: f32, index: usize) -> f32 {
+impl FrequencyTransform {
+    pub fn single_frequency_to_normalized(&self, frequency: f32, index: usize) -> f32 {
         assert!(index < 2);
         ((frequency - self.f_ranges[index].start()) / range::get_length(&self.f_ranges[index]))
             .clamp(0_f32, 1_f32)
+    }
+
+    pub fn normalized_to_frequencies(&self, f_normalized: [f32; 2]) -> [f32; 2] {
+        let v = self.bounds_matrix
+            * nalgebra::vector![
+                (1_f32 - f_normalized[0]) * (1_f32 - f_normalized[1]),
+                f_normalized[0] * (1_f32 - f_normalized[1]),
+                f_normalized[0] * f_normalized[1],
+                (1_f32 - f_normalized[0]) * f_normalized[1]
+            ];
+        [v[0], v[1]]
     }
 }
 
@@ -97,7 +109,7 @@ pub struct PluginParams {
 
     pub sample_rate: nice::AtomicF32,
 
-    frequency_bounds: FrequencyBounds,
+    pub frequency_transform: FrequencyTransform,
 }
 
 impl PluginParams {
@@ -118,7 +130,7 @@ impl PluginParams {
             )
             .with_smoother(nice::SmoothingStyle::Linear(SMOOTHING_LENGTH)),
             sample_rate: nice::AtomicF32::new(48000_f32),
-            frequency_bounds: FrequencyBounds::default(),
+            frequency_transform: FrequencyTransform::default(),
         }
     }
 
@@ -149,26 +161,17 @@ impl PluginParams {
         ]
     }
 
-    pub fn normalized_to_frequencies(&self, f: [f32; 2]) -> nalgebra::Vector2<f32> {
-        let v = nalgebra::vector![
-            (1_f32 - f[0]) * (1_f32 - f[1]),
-            f[0] * (1_f32 - f[1]),
-            f[0] * f[1],
-            (1_f32 - f[0]) * f[1]
-        ];
-        self.frequency_bounds.matrix * v
-    }
-
-    fn get_frequencies(&self) -> nalgebra::Vector2<f32> {
-        self.normalized_to_frequencies(std::array::from_fn(|i| {
-            self.formants[i].normalized_frequency.value()
-        }))
+    fn get_frequencies(&self) -> [f32; 2] {
+        self.frequency_transform
+            .normalized_to_frequencies(std::array::from_fn(|i| {
+                self.formants[i].normalized_frequency.value()
+            }))
     }
 
     fn gain_db_for_frequency(&self, frequency: f32, index: usize) -> f32 {
         let bounds_normalized_frequency = self
-            .frequency_bounds
-            .frequency_to_normalized(frequency, index);
+            .frequency_transform
+            .single_frequency_to_normalized(frequency, index);
         if index == 0 {
             12_f32 - bounds_normalized_frequency * 6_f32
         } else {
