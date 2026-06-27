@@ -152,7 +152,7 @@ pub struct FrequencyTransform {
 impl Default for FrequencyTransform {
     fn default() -> Self {
         let bounds_matrix: nalgebra::Matrix2x4<f32> = nalgebra::matrix![
-            320_f32, 1000_f32, 600_f32,  320_f32;
+            300_f32, 1000_f32, 1000_f32,  260_f32;
             800_f32, 1400_f32, 2000_f32, 3200_f32];
         let f_ranges: [RangeInclusive<f32>; 2] =
             std::array::from_fn(|i| bounds_matrix.row(i).min()..=bounds_matrix.row(i).max());
