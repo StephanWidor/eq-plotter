@@ -13,13 +13,13 @@ crate-type = ["cdylib", "lib"]
 [dependencies]
 egui = { workspace = true }
 egui_plot = { workspace = true }
-serde = { workspace = true }
-
-nice-plug = { git = "https://codeberg.org/BillyDM/nice-plug.git", features = [
+nice-plug = { version = "0.1", features = [
     "assert_process_allocs",
     "standalone",
 ] }
-nice-plug-egui = { git = "https://codeberg.org/BillyDM/nice-plug.git" }
+nice-plug-egui = "0.1"
+serde = { workspace = true }
+
 
 app-lib = { path = "../app-lib" }
 audio-lib = { path = "../audio-lib" }
