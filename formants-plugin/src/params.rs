@@ -7,43 +7,89 @@ use std::ops::RangeInclusive;
 
 const SMOOTHING_LENGTH: f32 = 20_f32;
 
-/// For transforming/distorting f coordinates in [0;1]^2 into formant frequencies
-pub struct FrequencyTransform {
-    pub bounds_matrix: nalgebra::Matrix2x4<f32>,
-    pub f_ranges: [RangeInclusive<f32>; 2],
+#[derive(nice::Params)]
+pub struct PluginParams {
+    #[persist = "editor_state"]
+    pub editor_state: std::sync::Arc<nice_plug_egui::EguiState>,
+
+    #[nested(array, group = "Formant")]
+    pub formants: [FormantParams; 2],
+
+    #[id = "Dry Gain (dB)"]
+    pub dry_gain_db: nice::FloatParam,
+
+    pub sample_rate: nice::AtomicF32,
+
+    pub frequency_transform: FrequencyTransform,
 }
 
-impl Default for FrequencyTransform {
-    fn default() -> Self {
-        let bounds_matrix: nalgebra::Matrix2x4<f32> = nalgebra::matrix![
-            320_f32, 1000_f32, 600_f32,  320_f32;
-            800_f32, 1400_f32, 2000_f32, 3200_f32];
-        let f_ranges: [RangeInclusive<f32>; 2] =
-            std::array::from_fn(|i| bounds_matrix.row(i).min()..=bounds_matrix.row(i).max());
+impl PluginParams {
+    pub fn new() -> Self {
         Self {
-            bounds_matrix: bounds_matrix,
-            f_ranges: f_ranges,
+            editor_state: nice_plug_egui::EguiState::from_size(420, 500),
+            formants: [
+                FormantParams::new(10_f32, "[1]"),
+                FormantParams::new(20_f32, "[2]"),
+            ],
+            dry_gain_db: nice::FloatParam::new(
+                format!("Mix"),
+                -36_f32,
+                nice::FloatRange::Linear {
+                    min: -60_f32,
+                    max: 0_f32,
+                },
+            )
+            .with_smoother(nice::SmoothingStyle::Linear(SMOOTHING_LENGTH)),
+            sample_rate: nice::AtomicF32::new(48000_f32),
+            frequency_transform: FrequencyTransform::default(),
         }
     }
-}
 
-impl FrequencyTransform {
-    pub fn single_frequency_to_normalized(&self, frequency: f32, index: usize) -> f32 {
-        assert!(index < 2);
-        ((frequency - self.f_ranges[index].start()) / range::get_length(&self.f_ranges[index]))
-            .clamp(0_f32, 1_f32)
+    pub fn set_dry_gain_db(&self, gain_db: f32, setter: &nice::ParamSetter<'_>) {
+        setter.begin_set_parameter(&self.dry_gain_db);
+        setter.set_parameter(&self.dry_gain_db, gain_db);
+        setter.end_set_parameter(&self.dry_gain_db);
     }
 
-    pub fn normalized_to_frequencies(&self, f_normalized: [f32; 2]) -> [f32; 2] {
-        let f_01 = f_normalized[0] * f_normalized[1];
-        let v = self.bounds_matrix
-            * nalgebra::vector![
-                1_f32 - f_normalized[0] - f_normalized[1] + f_01,
-                f_normalized[0] - f_01,
-                f_01,
-                f_normalized[1] - f_01
-            ];
-        [v[0], v[1]]
+    pub fn get_multiband_coefficients(&self) -> [biquad::coefficients::Coefficients<f32>; 3] {
+        use biquad::coefficients::Coefficients;
+        let frequencies = self.get_frequencies();
+        let sample_rate = self.sample_rate.load(atomic::Ordering::Relaxed);
+        [
+            Self::get_single_band_coefficients(
+                frequencies[0],
+                self.formants[0].q.value(),
+                self.frequency_transform
+                    .gain_db_for_frequency(frequencies[0], 0),
+                sample_rate,
+            ),
+            Self::get_single_band_coefficients(
+                frequencies[1],
+                self.formants[1].q.value(),
+                self.frequency_transform
+                    .gain_db_for_frequency(frequencies[1], 1),
+                sample_rate,
+            ),
+            Coefficients::from_volume_db(self.dry_gain_db.value()),
+        ]
+    }
+
+    fn get_frequencies(&self) -> [f32; 2] {
+        self.frequency_transform
+            .normalized_to_frequencies(std::array::from_fn(|i| {
+                self.formants[i].normalized_frequency.value()
+            }))
+    }
+
+    fn get_single_band_coefficients(
+        frequency: f32,
+        q: f32,
+        gain_db: f32,
+        sample_rate: f32,
+    ) -> biquad::coefficients::Coefficients<f32> {
+        let mut c = biquad::coefficients::Coefficients::from_bandpass(frequency, q, sample_rate);
+        c.add_makeup_gain(eq::Gain::Db(gain_db));
+        c
     }
 }
 
@@ -97,97 +143,48 @@ impl FormantParams {
     }
 }
 
-#[derive(nice::Params)]
-pub struct PluginParams {
-    #[persist = "editor_state"]
-    pub editor_state: std::sync::Arc<nice_plug_egui::EguiState>,
-
-    #[nested(array, group = "Formant")]
-    pub formants: [FormantParams; 2],
-
-    #[id = "Dry Gain (dB)"]
-    pub dry_gain_db: nice::FloatParam,
-
-    pub sample_rate: nice::AtomicF32,
-
-    pub frequency_transform: FrequencyTransform,
+/// For transforming/distorting f coordinates in [0;1]^2 into formant frequencies
+pub struct FrequencyTransform {
+    pub bounds_matrix: nalgebra::Matrix2x4<f32>,
+    pub f_ranges: [RangeInclusive<f32>; 2],
 }
 
-impl PluginParams {
-    pub fn new() -> Self {
+impl Default for FrequencyTransform {
+    fn default() -> Self {
+        let bounds_matrix: nalgebra::Matrix2x4<f32> = nalgebra::matrix![
+            320_f32, 1000_f32, 600_f32,  320_f32;
+            800_f32, 1400_f32, 2000_f32, 3200_f32];
+        let f_ranges: [RangeInclusive<f32>; 2] =
+            std::array::from_fn(|i| bounds_matrix.row(i).min()..=bounds_matrix.row(i).max());
         Self {
-            editor_state: nice_plug_egui::EguiState::from_size(420, 500),
-            formants: [
-                FormantParams::new(10_f32, "[1]"),
-                FormantParams::new(20_f32, "[2]"),
-            ],
-            dry_gain_db: nice::FloatParam::new(
-                format!("Mix"),
-                -36_f32,
-                nice::FloatRange::Linear {
-                    min: -60_f32,
-                    max: 0_f32,
-                },
-            )
-            .with_smoother(nice::SmoothingStyle::Linear(SMOOTHING_LENGTH)),
-            sample_rate: nice::AtomicF32::new(48000_f32),
-            frequency_transform: FrequencyTransform::default(),
+            bounds_matrix: bounds_matrix,
+            f_ranges: f_ranges,
         }
     }
+}
 
-    pub fn set_dry_gain_db(&self, gain_db: f32, setter: &nice::ParamSetter<'_>) {
-        setter.begin_set_parameter(&self.dry_gain_db);
-        setter.set_parameter(&self.dry_gain_db, gain_db);
-        setter.end_set_parameter(&self.dry_gain_db);
+impl FrequencyTransform {
+    pub fn normalized_to_frequencies(&self, f_normalized: [f32; 2]) -> [f32; 2] {
+        let f_01 = f_normalized[0] * f_normalized[1];
+        let v = self.bounds_matrix
+            * nalgebra::vector![
+                1_f32 - f_normalized[0] - f_normalized[1] + f_01,
+                f_normalized[0] - f_01,
+                f_01,
+                f_normalized[1] - f_01
+            ];
+        [v[0], v[1]]
     }
 
-    pub fn get_multiband_coefficients(&self) -> [biquad::coefficients::Coefficients<f32>; 3] {
-        use biquad::coefficients::Coefficients;
-        let frequencies = self.get_frequencies();
-        let sample_rate = self.sample_rate.load(atomic::Ordering::Relaxed);
-        [
-            Self::get_single_band_coefficients(
-                frequencies[0],
-                self.formants[0].q.value(),
-                self.gain_db_for_frequency(frequencies[0], 0),
-                sample_rate,
-            ),
-            Self::get_single_band_coefficients(
-                frequencies[1],
-                self.formants[1].q.value(),
-                self.gain_db_for_frequency(frequencies[1], 1),
-                sample_rate,
-            ),
-            Coefficients::from_volume_db(self.dry_gain_db.value()),
-        ]
-    }
-
-    fn get_frequencies(&self) -> [f32; 2] {
-        self.frequency_transform
-            .normalized_to_frequencies(std::array::from_fn(|i| {
-                self.formants[i].normalized_frequency.value()
-            }))
-    }
-
-    fn gain_db_for_frequency(&self, frequency: f32, index: usize) -> f32 {
-        let bounds_normalized_frequency = self
-            .frequency_transform
-            .single_frequency_to_normalized(frequency, index);
+    pub fn gain_db_for_frequency(&self, frequency: f32, index: usize) -> f32 {
+        assert!(index < 2);
+        let ratio = ((frequency - self.f_ranges[index].start())
+            / range::get_length(&self.f_ranges[index]))
+        .clamp(0_f32, 1_f32);
         if index == 0 {
-            12_f32 - bounds_normalized_frequency * 6_f32
+            12_f32 - ratio * 6_f32
         } else {
-            6_f32 + bounds_normalized_frequency * 6_f32
+            6_f32 + ratio * 6_f32
         }
-    }
-
-    fn get_single_band_coefficients(
-        frequency: f32,
-        q: f32,
-        gain_db: f32,
-        sample_rate: f32,
-    ) -> biquad::coefficients::Coefficients<f32> {
-        let mut c = biquad::coefficients::Coefficients::from_bandpass(frequency, q, sample_rate);
-        c.add_makeup_gain(eq::Gain::Db(gain_db));
-        c
     }
 }
