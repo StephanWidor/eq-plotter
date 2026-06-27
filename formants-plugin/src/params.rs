@@ -140,18 +140,18 @@ impl PluginParams {
         setter.end_set_parameter(&self.dry_gain_db);
     }
 
-    pub fn get_biquad_coefficients(&self) -> [biquad::coefficients::Coefficients<f32>; 3] {
+    pub fn get_multiband_coefficients(&self) -> [biquad::coefficients::Coefficients<f32>; 3] {
         use biquad::coefficients::Coefficients;
         let frequencies = self.get_frequencies();
         let sample_rate = self.sample_rate.load(atomic::Ordering::Relaxed);
         [
-            Self::get_coefficients(
+            Self::get_single_band_coefficients(
                 frequencies[0],
                 self.formants[0].q.value(),
                 self.gain_db_for_frequency(frequencies[0], 0),
                 sample_rate,
             ),
-            Self::get_coefficients(
+            Self::get_single_band_coefficients(
                 frequencies[1],
                 self.formants[1].q.value(),
                 self.gain_db_for_frequency(frequencies[1], 1),
@@ -179,7 +179,7 @@ impl PluginParams {
         }
     }
 
-    fn get_coefficients(
+    fn get_single_band_coefficients(
         frequency: f32,
         q: f32,
         gain_db: f32,

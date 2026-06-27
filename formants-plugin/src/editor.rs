@@ -73,7 +73,7 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                                             );
 
                                             let gain_points = make_gain_response_points(
-                                                params.get_biquad_coefficients(),
+                                                params.get_multiband_coefficients(),
                                                 params.sample_rate.load(atomic::Ordering::Relaxed),
                                             );
                                             plot_ui.line(

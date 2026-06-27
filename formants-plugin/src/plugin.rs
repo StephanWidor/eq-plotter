@@ -90,7 +90,7 @@ impl nice::Plugin for Plugin {
     ) -> nice::ProcessStatus {
         assert!(buffer.channels() <= NUM_CHANNELS);
         let buffer_slice = buffer.as_slice();
-        let coefficients = self.params.get_biquad_coefficients();
+        let coefficients = self.params.get_multiband_coefficients();
         for channel in 0..buffer_slice.len() {
             let channel_samples = buffer_slice.get_mut(channel).unwrap();
             let filters = &mut self.filters[channel];
