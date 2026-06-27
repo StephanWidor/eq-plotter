@@ -26,11 +26,8 @@ pub struct PluginParams {
 impl PluginParams {
     pub fn new() -> Self {
         Self {
-            editor_state: nice_plug_egui::EguiState::from_size(420, 500),
-            formants: [
-                FormantParams::new(10_f32, "[1]"),
-                FormantParams::new(20_f32, "[2]"),
-            ],
+            editor_state: nice_plug_egui::EguiState::from_size(450, 500),
+            formants: [FormantParams::new("[1]"), FormantParams::new("[2]")],
             dry_gain_db: nice::FloatParam::new(
                 format!("Mix"),
                 -36_f32,
@@ -58,14 +55,14 @@ impl PluginParams {
         [
             Self::get_single_band_coefficients(
                 frequencies[0],
-                self.formants[0].q.value(),
+                self.frequency_transform.q_for_frequency(frequencies[0], 0),
                 self.frequency_transform
                     .gain_db_for_frequency(frequencies[0], 0),
                 sample_rate,
             ),
             Self::get_single_band_coefficients(
                 frequencies[1],
-                self.formants[1].q.value(),
+                self.frequency_transform.q_for_frequency(frequencies[1], 1),
                 self.frequency_transform
                     .gain_db_for_frequency(frequencies[1], 1),
                 sample_rate,
@@ -97,13 +94,10 @@ impl PluginParams {
 pub struct FormantParams {
     #[id = "Frequency"]
     pub normalized_frequency: nice::FloatParam,
-
-    #[id = "Q"]
-    pub q: nice::FloatParam,
 }
 
 impl FormantParams {
-    pub fn new(default_q: f32, names_suffix: &str) -> Self {
+    pub fn new(names_suffix: &str) -> Self {
         Self {
             normalized_frequency: nice::FloatParam::new(
                 format!("Frequency{names_suffix}"),
@@ -111,15 +105,6 @@ impl FormantParams {
                 nice::FloatRange::Linear {
                     min: 0_f32,
                     max: 1_f32,
-                },
-            )
-            .with_smoother(nice::SmoothingStyle::Linear(SMOOTHING_LENGTH)),
-            q: nice::FloatParam::new(
-                format!("Q{names_suffix}"),
-                default_q,
-                nice::FloatRange::Linear {
-                    min: 1_f32,
-                    max: 20_f32,
                 },
             )
             .with_smoother(nice::SmoothingStyle::Linear(SMOOTHING_LENGTH)),
@@ -134,12 +119,6 @@ impl FormantParams {
         setter.begin_set_parameter(&self.normalized_frequency);
         setter.set_parameter(&self.normalized_frequency, normalized_frequency);
         setter.end_set_parameter(&self.normalized_frequency);
-    }
-
-    pub fn set_q(&self, q: f32, setter: &nice::ParamSetter<'_>) {
-        setter.begin_set_parameter(&self.q);
-        setter.set_parameter(&self.q, q);
-        setter.end_set_parameter(&self.q);
     }
 }
 
@@ -177,14 +156,25 @@ impl FrequencyTransform {
     }
 
     pub fn gain_db_for_frequency(&self, frequency: f32, index: usize) -> f32 {
-        assert!(index < 2);
-        let ratio = ((frequency - self.f_ranges[index].start())
-            / range::get_length(&self.f_ranges[index]))
-        .clamp(0_f32, 1_f32);
+        let ratio = self.frequency_ratio(frequency, index);
         if index == 0 {
             12_f32 - ratio * 6_f32
         } else {
             6_f32 + ratio * 6_f32
         }
+    }
+
+    pub fn q_for_frequency(&self, frequency: f32, index: usize) -> f32 {
+        if index == 0 {
+            10_f32
+        } else {
+            8_f32 + self.frequency_ratio(frequency, index) * 10_f32
+        }
+    }
+
+    fn frequency_ratio(&self, frequency: f32, index: usize) -> f32 {
+        assert!(index < 2);
+        ((frequency - self.f_ranges[index].start()) / range::get_length(&self.f_ranges[index]))
+            .clamp(0_f32, 1_f32)
     }
 }

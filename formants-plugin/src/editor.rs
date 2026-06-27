@@ -33,7 +33,7 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                                 .fill(egui::Color32::from_rgb(32, 35, 38)),
                         )
                         .show_inside(ui, |ui| {
-                            let plot_size = ui.available_width().min(0.8 * ui.available_height());
+                            let plot_size = ui.available_width().min(0.9 * ui.available_height());
                             let formants = &params.formants;
                             ui.vertical(|ui| {
                                 egui::Frame::group(ui.style())
@@ -109,23 +109,6 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                                             }
                                         }
                                     });
-                                for i in 0..2 {
-                                    let formant = &formants[i];
-                                    ui.horizontal(|ui| {
-                                        ui.add(egui::Label::new(format!("F{i} ")));
-                                        let mut q = formant.q.value();
-                                        let q_response = ui.add(
-                                            egui::Slider::new(
-                                                &mut q,
-                                                range::to_range_inclusive(&formant.q.range()),
-                                            )
-                                            .prefix("q: "),
-                                        );
-                                        if q_response.changed() {
-                                            formant.set_q(q, setter);
-                                        }
-                                    });
-                                }
                                 ui.horizontal(|ui| {
                                     ui.add(egui::Label::new(format!("Dry")));
                                     let mut dry_gain = params.dry_gain_db.value();
