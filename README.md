@@ -7,6 +7,8 @@ Playing around to learn some Rust:
 
 https://github.com/user-attachments/assets/aac8b0cc-324e-41b8-9f55-36b7f83f08f3
 
+https://github.com/user-attachments/assets/636d4e64-b5f5-48c4-9452-c03b9a082ea7
+
 ## Building:
 
 Depending on what you want to build, replace PLUGIN by "eq-plugin" or "formants-plugin"
