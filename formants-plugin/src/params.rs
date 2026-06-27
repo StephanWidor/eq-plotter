@@ -35,12 +35,13 @@ impl FrequencyTransform {
     }
 
     pub fn normalized_to_frequencies(&self, f_normalized: [f32; 2]) -> [f32; 2] {
+        let f_01 = f_normalized[0] * f_normalized[1];
         let v = self.bounds_matrix
             * nalgebra::vector![
-                (1_f32 - f_normalized[0]) * (1_f32 - f_normalized[1]),
-                f_normalized[0] * (1_f32 - f_normalized[1]),
-                f_normalized[0] * f_normalized[1],
-                (1_f32 - f_normalized[0]) * f_normalized[1]
+                1_f32 - f_normalized[0] - f_normalized[1] + f_01,
+                f_normalized[0] - f_01,
+                f_01,
+                f_normalized[1] - f_01
             ];
         [v[0], v[1]]
     }
