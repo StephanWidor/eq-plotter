@@ -12,8 +12,11 @@ pub struct PluginParams {
     #[persist = "editor_state"]
     pub editor_state: std::sync::Arc<nice_plug_egui::EguiState>,
 
-    #[nested(array, group = "Formant")]
-    pub formants: [FormantParams; 2],
+    #[id = "x"]
+    pub x: nice::FloatParam,
+
+    #[id = "y"]
+    pub y: nice::FloatParam,
 
     #[id = "Dry Gain (dB)"]
     pub dry_gain_db: nice::FloatParam,
@@ -27,7 +30,24 @@ impl PluginParams {
     pub fn new() -> Self {
         Self {
             editor_state: nice_plug_egui::EguiState::from_size(450, 500),
-            formants: [FormantParams::new("[1]"), FormantParams::new("[2]")],
+            x: nice::FloatParam::new(
+                "x",
+                0.5_f32,
+                nice::FloatRange::Linear {
+                    min: 0_f32,
+                    max: 1_f32,
+                },
+            )
+            .with_smoother(nice::SmoothingStyle::Linear(SMOOTHING_LENGTH)),
+            y: nice::FloatParam::new(
+                "y",
+                0.5_f32,
+                nice::FloatRange::Linear {
+                    min: 0_f32,
+                    max: 1_f32,
+                },
+            )
+            .with_smoother(nice::SmoothingStyle::Linear(SMOOTHING_LENGTH)),
             dry_gain_db: nice::FloatParam::new(
                 format!("Mix"),
                 -36_f32,
@@ -40,6 +60,18 @@ impl PluginParams {
             sample_rate: nice::AtomicF32::new(48000_f32),
             frequency_transform: FrequencyTransform::default(),
         }
+    }
+
+    pub fn set_x(&self, x: f32, setter: &nice::ParamSetter<'_>) {
+        setter.begin_set_parameter(&self.x);
+        setter.set_parameter(&self.x, x);
+        setter.end_set_parameter(&self.x);
+    }
+
+    pub fn set_y(&self, y: f32, setter: &nice::ParamSetter<'_>) {
+        setter.begin_set_parameter(&self.y);
+        setter.set_parameter(&self.y, y);
+        setter.end_set_parameter(&self.y);
     }
 
     pub fn set_dry_gain_db(&self, gain_db: f32, setter: &nice::ParamSetter<'_>) {
@@ -73,9 +105,7 @@ impl PluginParams {
 
     fn get_frequencies(&self) -> [f32; 2] {
         self.frequency_transform
-            .normalized_to_frequencies(std::array::from_fn(|i| {
-                self.formants[i].normalized_frequency.value()
-            }))
+            .coordinates_to_frequencies(self.x.value(), self.y.value())
     }
 
     fn get_single_band_coefficients(
@@ -96,36 +126,10 @@ pub struct FormantParams {
     pub normalized_frequency: nice::FloatParam,
 }
 
-impl FormantParams {
-    pub fn new(names_suffix: &str) -> Self {
-        Self {
-            normalized_frequency: nice::FloatParam::new(
-                format!("Frequency{names_suffix}"),
-                0.5_f32,
-                nice::FloatRange::Linear {
-                    min: 0_f32,
-                    max: 1_f32,
-                },
-            )
-            .with_smoother(nice::SmoothingStyle::Linear(SMOOTHING_LENGTH)),
-        }
-    }
-
-    pub fn set_normalized_frequency(
-        &self,
-        normalized_frequency: f32,
-        setter: &nice::ParamSetter<'_>,
-    ) {
-        setter.begin_set_parameter(&self.normalized_frequency);
-        setter.set_parameter(&self.normalized_frequency, normalized_frequency);
-        setter.end_set_parameter(&self.normalized_frequency);
-    }
-}
-
-/// For transforming/distorting f coordinates in [0;1]^2 into formant frequencies
+/// For transforming/distorting coordinates (x,y) in [0;1]^2 into formant frequencies
 pub struct FrequencyTransform {
     pub bounds_matrix: nalgebra::Matrix2x4<f32>,
-    pub f_ranges: [RangeInclusive<f32>; 2],
+    pub frequency_ranges: [RangeInclusive<f32>; 2],
 }
 
 impl Default for FrequencyTransform {
@@ -137,21 +141,15 @@ impl Default for FrequencyTransform {
             std::array::from_fn(|i| bounds_matrix.row(i).min()..=bounds_matrix.row(i).max());
         Self {
             bounds_matrix: bounds_matrix,
-            f_ranges: f_ranges,
+            frequency_ranges: f_ranges,
         }
     }
 }
 
 impl FrequencyTransform {
-    pub fn normalized_to_frequencies(&self, f_normalized: [f32; 2]) -> [f32; 2] {
-        let f_01 = f_normalized[0] * f_normalized[1];
-        let v = self.bounds_matrix
-            * nalgebra::vector![
-                1_f32 - f_normalized[0] - f_normalized[1] + f_01,
-                f_normalized[0] - f_01,
-                f_01,
-                f_normalized[1] - f_01
-            ];
+    pub fn coordinates_to_frequencies(&self, x: f32, y: f32) -> [f32; 2] {
+        let xy = x * y;
+        let v = self.bounds_matrix * nalgebra::vector![1_f32 - x - y + xy, x - xy, xy, y - xy];
         [v[0], v[1]]
     }
 
@@ -174,7 +172,8 @@ impl FrequencyTransform {
 
     fn frequency_ratio(&self, frequency: f32, index: usize) -> f32 {
         assert!(index < 2);
-        ((frequency - self.f_ranges[index].start()) / range::get_length(&self.f_ranges[index]))
-            .clamp(0_f32, 1_f32)
+        ((frequency - self.frequency_ranges[index].start())
+            / range::get_length(&self.frequency_ranges[index]))
+        .clamp(0_f32, 1_f32)
     }
 }

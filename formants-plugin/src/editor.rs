@@ -34,7 +34,8 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                         )
                         .show_inside(ui, |ui| {
                             let plot_size = ui.available_width().min(0.9 * ui.available_height());
-                            let formants = &params.formants;
+                            let x = params.x.value() as f64;
+                            let y = params.y.value() as f64;
                             ui.vertical(|ui| {
                                 egui::Frame::group(ui.style())
                                     .corner_radius(5)
@@ -51,19 +52,16 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                                             .label_formatter(|_, point| {
                                                 let frequencies = params
                                                     .frequency_transform
-                                                    .normalized_to_frequencies([
+                                                    .coordinates_to_frequencies(
                                                         point.x as f32,
                                                         point.y as f32,
-                                                    ]);
+                                                    );
                                                 format!(
                                                     "f0: {:.0}\nf1: {:.0}",
                                                     frequencies[0], frequencies[1]
                                                 )
                                             });
 
-                                        let f: [f64; 2] = std::array::from_fn(|i| {
-                                            formants[i].normalized_frequency.value() as f64
-                                        });
                                         let plot_response = plot.show(ui, |plot_ui| {
                                             plot_ui.set_plot_bounds(
                                                 egui_plot::PlotBounds::from_min_max(
@@ -87,7 +85,7 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                                             plot_ui.points(
                                                 egui_plot::Points::new(
                                                     "F",
-                                                    egui_plot::PlotPoints::from(f),
+                                                    egui_plot::PlotPoints::from([x, y]),
                                                 )
                                                 .shape(egui_plot::MarkerShape::Circle)
                                                 .color(egui::Color32::ORANGE)
@@ -98,14 +96,8 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                                         });
                                         if plot_response.response.is_pointer_button_down_on() {
                                             if let Some(drag_position) = plot_response.inner {
-                                                let new_f = [
-                                                    drag_position.x as f32,
-                                                    drag_position.y as f32,
-                                                ];
-                                                for i in 0..2 {
-                                                    formants[i]
-                                                        .set_normalized_frequency(new_f[i], setter);
-                                                }
+                                                params.set_x(drag_position.x as f32, setter);
+                                                params.set_y(drag_position.y as f32, setter);
                                             }
                                         }
                                     });
