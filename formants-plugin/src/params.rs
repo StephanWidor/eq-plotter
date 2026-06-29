@@ -177,3 +177,28 @@ impl FrequencyTransform {
         .clamp(0_f32, 1_f32)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use assert_approx_eq::assert_approx_eq;
+
+    #[test]
+    fn test_bounds() {
+        let bound_coords = [
+            [0_f32, 0_f32],
+            [1_f32, 0_f32],
+            [1_f32, 1_f32],
+            [0_f32, 1_f32],
+        ];
+        let transform = FrequencyTransform::default();
+        for i in 0..4 {
+            let [x, y] = bound_coords[i];
+            let bound = transform.bounds_matrix.column(i);
+            let frequencies = transform.coordinates_to_frequencies(x, y);
+            for j in 0..2 {
+                assert_approx_eq!(bound[j], frequencies[j]);
+            }
+        }
+    }
+}

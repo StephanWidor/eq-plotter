@@ -11,6 +11,7 @@ description = "Simple Formants Plugin"
 crate-type = ["cdylib", "lib"]
 
 [dependencies]
+assert_approx_eq = { workspace = true }
 dirs = { workspace = true }
 eframe = { workspace = true }
 egui = { workspace = true }
