@@ -164,6 +164,19 @@ impl FrequencyTransform {
         }
     }
 
+    pub fn y_from_x_and_frequencies(&self, x: f32, frequencies: [f32; 2]) -> f32 {
+        let m = &self.bounds_matrix;
+        let a: [f32; 2] = std::array::from_fn(|i| m.row(i)[0] - m.row(i)[1]);
+        let b: [f32; 2] = std::array::from_fn(|i| m.row(i)[0] - m.row(i)[3]);
+        let c: [f32; 2] =
+            std::array::from_fn(|i| m.row(i)[0] - m.row(i)[1] + m.row(i)[2] - m.row(i)[3]);
+        (c[0] * frequencies[1] - c[1] * frequencies[0]
+            + (a[1] * c[0] - a[0] * c[1]) * x
+            + c[1] * m.row(0)[0]
+            - c[0] * m.row(1)[0])
+            / (b[0] * c[1] - b[1] * c[0])
+    }
+
     fn frequency_ratio(&self, frequency: f32, index: usize) -> f32 {
         assert!(index < 2);
         ((frequency - self.frequency_ranges[index].start())
@@ -193,6 +206,27 @@ mod test {
             for j in 0..2 {
                 assert_approx_eq!(bound[j], frequencies[j]);
             }
+        }
+    }
+
+    #[test]
+    fn test_y_from_x() {
+        let test_coords = [
+            [0_f32, 0_f32],
+            [0_f32, 0.5_f32],
+            [0_f32, 1_f32],
+            [0.5_f32, 0_f32],
+            [0.5_f32, 0.5_f32],
+            [0.5_f32, 1_f32],
+            [1_f32, 0_f32],
+            [1_f32, 0.5_f32],
+            [1_f32, 1_f32],
+        ];
+        let transform = FrequencyTransform::default();
+        for [x, y] in test_coords {
+            let frequencies = transform.coordinates_to_frequencies(x, y);
+            let y_from_x = transform.y_from_x_and_frequencies(x, frequencies);
+            assert_approx_eq!(y, y_from_x);
         }
     }
 }
