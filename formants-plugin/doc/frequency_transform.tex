@@ -1,0 +1,86 @@
+\documentclass[a4paper]{article}
+\usepackage[latin1]{inputenc}
+\usepackage{latexsym}
+\usepackage{amssymb}
+\usepackage{svg}
+\emergencystretch 20mm
+\setlength{\oddsidemargin}{0pt} \setlength{\evensidemargin}{0pt}
+\setlength{\marginparwidth}{1in}
+\setlength{\marginparsep}{0pt} \setlength{\topmargin}{0pt}
+\setlength{\headheight}{0pt}
+\setlength{\headsep}{0pt} \setlength{\topskip}{0pt} \setlength{\footskip}{0pt}
+\setlength{\textwidth}{\paperwidth} \addtolength{\textwidth}{-2in}
+\setlength{\textheight}{\paperheight} \addtolength{\textheight}{-2in}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+\setlength{\unitlength}{1sp}
+
+\newcommand{\m}[2]{\left(\begin{array}{#1} #2 \end{array}\right)}
+
+\begin{document}
+
+\paragraph{Goal}\hspace{1mm}
+
+We want to ``distort'' the vowel trapezium into the unit square, so that we have two independent parameters $x, y$ for formants.
+In order to do this, we put the bounding points of the trapezium into a (2x4)-Matrix $M:=(b_l, b_r, t_r, t_l)$.
+
+Parameters $x, y \in[0,1]$ then give resulting frequencies $f_0, f_1$ by
+
+$f:=\m{c}{f_0\\f_1}=M\m{c}{(1-x)(1-y)\\x(1-y)\\xy\\(1-x)y}=M\m{c}{1-x-y+xy\\x-xy\\xy\\y-xy}$.
+\footnote{We are using indices starting with $0$, which might be unusual, but makes implementing in Rust easier later}
+
+\includesvg[width=0.8\textwidth, pretex=\fontsize{5}{5}\selectfont]{frequency_transform}
+
+\paragraph{Frequencies from x and y}\hspace{1mm}
+
+For $i\in{0,1}$ it is
+
+$f_i=m_{i0}+(m_{i1}-m_{i1})x+(m_{i3}-m_{i1})y+(m_{i0}-m_{i1}+m_{i2}-m_{i3})xy$.
+
+Defining
+\\ $a_i:=m_{i0}-m_{i1}$,
+\\ $b_i:=m_{i0}-m_{i3}$, and
+\\ $c_i:=m_{i0}-m_{i1}+m_{i2}-m_{i3}$,
+
+we get $f_i=m_{i0}-a_ix-b_iy+c_ixy$.
+
+\paragraph{x and y from frequencies}\hspace{1mm}
+
+Solving for $xy$ in the formula for $f_i$ gives
+
+$xy=\frac{f_i+a_ix+b_iy-m_{i0}}{c_i}$ for $i\in{0,1}$.
+
+That is
+
+$\frac{f_0+a_0x+b_0y-m_{00}}{c_0}=\frac{f_1+a_1x+b_1y-m_{10}}{c_1}$,
+
+and therefore
+
+$y=\frac{c_0(a_1x+f_1-m_{10})-c_1(a_0x+f_0-m_{00})}{b_0c_1-b_1c_0}$
+
+$=\frac{a_1c_0-a_0c_1}{b_0c_1-b_1c_0}x+\frac{c_0(f_1-m_{10})-c_1(f_0-m_{00})}{b_0c_1-b_1c_0}$.
+
+\newpage
+Defining
+\\ $u:=a_1c_0-a_0c_1$,
+\\ $v:=b_0c_1-b_1c_0$, and
+\\ $w:=c_0(f_1-m_{10})-c_1(f_0-m_{00})$
+
+gives
+
+$y=\frac{u}{v}x+\frac{w}{v}$.
+
+Inserting that into the formula for $f_i$:
+
+$f_i=m_{i0}-a_ix-b_iy+c_ixy
+\\ =m_{i0}-a_ix-b_i(\frac{u}{v}x+\frac{w}{v})+c_ix(\frac{u}{v}x+\frac{w}{v})
+\\ =m_{i0}-a_ix-\frac{b_iu}{v}x-\frac{b_iw}{v}+\frac{c_iu}{v}x^2+\frac{c_iw}{v}x
+\\ =\frac{c_iu}{v}x^2+(\frac{c_iw-b_iu}{v}-a_i)x+m_{i0}-\frac{b_iw}{v}$.
+
+That means, for given $f_0, f_1$, we can solve for parameters $x, y\in[0,1]$ by solving the quadratic equation
+
+$0=\frac{c_iu}{v}x^2+(\frac{c_iw-b_iu}{v}-a_i)x+m_{i0}-\frac{b_iw}{v}-f_i$
+
+for $i=0$ or $i=1$, and then calculate $y$ from $x$.
+
+\end{document}
