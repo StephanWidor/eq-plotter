@@ -120,12 +120,6 @@ impl PluginParams {
     }
 }
 
-#[derive(nice::Params)]
-pub struct FormantParams {
-    #[id = "Frequency"]
-    pub normalized_frequency: nice::FloatParam,
-}
-
 /// For transforming/distorting coordinates (x,y) in [0;1]^2 into formant frequencies
 pub struct FrequencyTransform {
     pub bounds_matrix: nalgebra::Matrix2x4<f32>,
