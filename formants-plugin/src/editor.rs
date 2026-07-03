@@ -76,7 +76,6 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                                             );
                                             plot_ui.line(
                                                 egui_plot::Line::new("gain response", gain_points)
-                                                    //.color(egui::Color32::from_white_alpha(32)),
                                                     .color(egui::Color32::from_rgba_unmultiplied(
                                                         255, 165, 0, 32,
                                                     )),
