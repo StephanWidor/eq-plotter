@@ -1,3 +1,5 @@
+use audio_lib::utils;
+
 use super::*;
 use std::ops::RangeInclusive;
 
@@ -6,6 +8,12 @@ use std::ops::RangeInclusive;
 pub struct FrequencyTransform {
     pub bounds_matrix: nalgebra::Matrix2x4<f32>,
     pub frequency_ranges: [RangeInclusive<f32>; 2],
+    m0: [f32; 2],
+    a: [f32; 2],
+    b: [f32; 2],
+    c: [f32; 2],
+    u: f32,
+    v: f32,
 }
 
 impl Default for FrequencyTransform {
@@ -15,18 +23,38 @@ impl Default for FrequencyTransform {
             800_f32, 1400_f32, 2000_f32, 3200_f32];
         let f_ranges: [RangeInclusive<f32>; 2] =
             std::array::from_fn(|i| bounds_matrix.row(i).min()..=bounds_matrix.row(i).max());
+        let a = std::array::from_fn(|i| bounds_matrix.row(i)[0] - bounds_matrix.row(i)[1]);
+        let b = std::array::from_fn(|i| bounds_matrix.row(i)[0] - bounds_matrix.row(i)[3]);
+        let c = std::array::from_fn(|i| {
+            bounds_matrix.row(i)[0] - bounds_matrix.row(i)[1] + bounds_matrix.row(i)[2]
+                - bounds_matrix.row(i)[3]
+        });
+        let u = a[1] * c[0] - a[0] * c[1];
+        let v = b[0] * c[1] - b[1] * c[0];
         Self {
             bounds_matrix: bounds_matrix,
             frequency_ranges: f_ranges,
+            m0: std::array::from_fn(|i| bounds_matrix.row(i)[0]),
+            a: a,
+            b: b,
+            c: c,
+            u: u,
+            v: v,
         }
     }
 }
 
 impl FrequencyTransform {
+    pub fn coordinates_to_frequency(&self, x: f32, y: f32, index: usize) -> f32 {
+        assert!(index < 2);
+        self.m0[index] - self.a[index] * x - self.b[index] * y + self.c[index] * x * y
+    }
+
     pub fn coordinates_to_frequencies(&self, x: f32, y: f32) -> [f32; 2] {
-        let xy = x * y;
-        let v = self.bounds_matrix * nalgebra::vector![1_f32 - x - y + xy, x - xy, xy, y - xy];
-        [v[0], v[1]]
+        [
+            self.coordinates_to_frequency(x, y, 0),
+            self.coordinates_to_frequency(x, y, 1),
+        ]
     }
 
     pub fn gain_db_for_frequency(&self, frequency: f32, index: usize) -> f32 {
@@ -46,17 +74,35 @@ impl FrequencyTransform {
         }
     }
 
-    pub fn y_from_x_and_frequencies(&self, x: f32, frequencies: [f32; 2]) -> f32 {
-        let m = &self.bounds_matrix;
-        let a: [f32; 2] = std::array::from_fn(|i| m.row(i)[0] - m.row(i)[1]);
-        let b: [f32; 2] = std::array::from_fn(|i| m.row(i)[0] - m.row(i)[3]);
-        let c: [f32; 2] =
-            std::array::from_fn(|i| m.row(i)[0] - m.row(i)[1] + m.row(i)[2] - m.row(i)[3]);
-        (c[0] * frequencies[1] - c[1] * frequencies[0]
-            + (a[1] * c[0] - a[0] * c[1]) * x
-            + c[1] * m.row(0)[0]
-            - c[0] * m.row(1)[0])
-            / (b[0] * c[1] - b[1] * c[0])
+    pub fn xy_from_frequencies(&self, frequencies: [f32; 2]) -> Option<[f32; 2]> {
+        if self.v == 0_f32 {
+            return None;
+        }
+        let w =
+            self.c[0] * (frequencies[1] - self.m0[1]) - self.c[1] * (frequencies[0] - self.m0[0]);
+        let c_2 = self.c[0] * self.u / self.v;
+        let c_1 = (self.c[0] * w - self.b[0] * self.u) / self.v - self.a[0];
+        let c_0 = self.m0[0] - self.b[0] * w / self.v - frequencies[0];
+        let polynom_roots = utils::polynom_roots(c_2, c_1, c_0);
+        const EPS: f32 = 1e-4_f32;
+        for root in polynom_roots {
+            if root.re >= 0_f32 - EPS && root.re <= 1_f32 + EPS && root.im.abs() <= EPS {
+                let x = root.re.clamp(0_f32, 1_f32);
+                let y = (self.u * x / self.v + w / self.v).clamp(0_f32, 1_f32);
+                return Some([x, y]);
+            }
+        }
+        None
+    }
+
+    // swdebug: remove
+    pub fn y_from_x_and_frequencies(&self, x: f32, frequencies: [f32; 2]) -> Option<f32> {
+        if self.v == 0_f32 {
+            return None;
+        }
+        let w =
+            self.c[0] * (frequencies[1] - self.m0[1]) - self.c[1] * (frequencies[0] - self.m0[0]);
+        Some(self.u * x / self.v + w / self.v)
     }
 
     fn frequency_ratio(&self, frequency: f32, index: usize) -> f32 {
@@ -93,22 +139,36 @@ mod test {
 
     #[test]
     fn test_y_from_x() {
-        let test_coords = [
-            [0_f32, 0_f32],
-            [0_f32, 0.5_f32],
-            [0_f32, 1_f32],
-            [0.5_f32, 0_f32],
-            [0.5_f32, 0.5_f32],
-            [0.5_f32, 1_f32],
-            [1_f32, 0_f32],
-            [1_f32, 0.5_f32],
-            [1_f32, 1_f32],
-        ];
         let transform = FrequencyTransform::default();
-        for [x, y] in test_coords {
-            let frequencies = transform.coordinates_to_frequencies(x, y);
-            let y_from_x = transform.y_from_x_and_frequencies(x, frequencies);
-            assert_approx_eq!(y, y_from_x);
+        const EPS: f32 = 1e-5_f32;
+        for i in 0..=10 {
+            for j in 0..=10 {
+                let [x, y] = [i as f32 * 0.1, j as f32 * 0.1];
+                let frequencies = transform.coordinates_to_frequencies(x, y);
+                let y_from_x = transform.y_from_x_and_frequencies(x, frequencies);
+                assert!(y_from_x.is_some());
+                let diff = (y - y_from_x.unwrap()).abs();
+                assert!(diff <= EPS);
+            }
+        }
+    }
+
+    #[test]
+    fn test_xy_from_frequencies() {
+        let t = FrequencyTransform::default();
+        const EPS: f32 = 1e-4_f32;
+        for i in 0..=10 {
+            for j in 0..=10 {
+                let [x, y] = [i as f32 * 0.1, j as f32 * 0.1];
+                let frequencies = t.coordinates_to_frequencies(x, y);
+                let xy_back = t.xy_from_frequencies(frequencies);
+                assert!(xy_back.is_some());
+                let [x_back, y_back] = xy_back.unwrap();
+                let diff_x = (x - x_back).abs();
+                assert!(diff_x <= EPS);
+                let diff_y = (y - y_back).abs();
+                assert!(diff_y <= EPS);
+            }
         }
     }
 }
