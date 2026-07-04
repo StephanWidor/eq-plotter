@@ -4,3 +4,6 @@ wasm_out/
 **/*.rs.bk
 *.pdb
 .vscode/
+*.aux
+*.log
+svg-inkscape/

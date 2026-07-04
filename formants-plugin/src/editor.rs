@@ -4,20 +4,65 @@ use audio_lib::utils;
 use crate::*;
 use std::sync::{self, atomic};
 
+struct UiState {
+    vowels_map: Vec<(String, Option<[f32; 2]>)>,
+}
+
+impl UiState {
+    fn default_from_frequency_transform(t: &params::FrequencyTransform) -> Self {
+        Self {
+            vowels_map: vec![
+                (String::from("U"), t.xy_from_frequencies([320_f32, 800_f32])),
+                (
+                    String::from("O"),
+                    t.xy_from_frequencies([500_f32, 1000_f32]),
+                ),
+                (
+                    String::from("A"),
+                    t.xy_from_frequencies([1000_f32, 1400_f32]),
+                ),
+                (
+                    String::from("Ö"),
+                    t.xy_from_frequencies([500_f32, 1500_f32]),
+                ),
+                (
+                    String::from("Ü"),
+                    t.xy_from_frequencies([320_f32, 1650_f32]),
+                ),
+                (
+                    String::from("Ä"),
+                    t.xy_from_frequencies([800_f32, 2000_f32]),
+                ),
+                (
+                    String::from("E"),
+                    t.xy_from_frequencies([470_f32, 2300_f32]),
+                ),
+                (
+                    String::from("I"),
+                    t.xy_from_frequencies([260_f32, 3200_f32]),
+                ),
+            ],
+        }
+    }
+}
+
 pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn nice::Editor>> {
     let editor_state = params.editor_state.clone();
     let min_size = {
         let state_size = params.editor_state.size();
         egui::Vec2::new(state_size.0 as f32, state_size.1 as f32)
     };
+
+    let ui_state = UiState::default_from_frequency_transform(&params.frequency_transform);
+
     nice_plug_egui::create_egui_editor(
         params.editor_state.clone(),
-        (),
+        ui_state,
         nice_plug_egui::EguiSettings::default(),
         |egui_ctx, _, _| {
             egui_ctx.set_theme(egui::Theme::Dark);
         },
-        move |ui, setter, _, _| {
+        move |ui, setter, _, ui_state| {
             if !editor_state.is_open() {
                 return;
             }
@@ -65,10 +110,20 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                                         let plot_response = plot.show(ui, |plot_ui| {
                                             plot_ui.set_plot_bounds(
                                                 egui_plot::PlotBounds::from_min_max(
-                                                    [0.0, 0.0],
-                                                    [1.0, 1.0],
+                                                    [-0.1, -0.1],
+                                                    [1.1, 1.1],
                                                 ),
                                             );
+
+                                            for (vowel, xy) in ui_state.vowels_map.as_slice() {
+                                                if let Some([x, y]) = xy {
+                                                    plot_ui.text(egui_plot::Text::new(
+                                                        vowel,
+                                                        egui_plot::PlotPoint::new(*x, *y),
+                                                        egui::RichText::new(vowel).size(16.0),
+                                                    ));
+                                                }
+                                            }
 
                                             let gain_points = make_gain_response_points(
                                                 params.get_multiband_coefficients(),
@@ -76,7 +131,6 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                                             );
                                             plot_ui.line(
                                                 egui_plot::Line::new("gain response", gain_points)
-                                                    //.color(egui::Color32::from_white_alpha(32)),
                                                     .color(egui::Color32::from_rgba_unmultiplied(
                                                         255, 165, 0, 32,
                                                     )),
