@@ -1,6 +1,9 @@
+use nalgebra::*;
 use std::sync::atomic;
 
 use super::*;
+
+pub const NUM_CONTROL_POINTS: usize = 4;
 
 #[derive(nice::Params)]
 pub struct Point {
@@ -43,7 +46,7 @@ pub struct Path {
     pub t: nice::FloatParam,
 
     #[nested(array, group = "control_points")]
-    pub control_points: [Point; 2],
+    pub control_points: [Point; NUM_CONTROL_POINTS],
 }
 
 impl Path {
@@ -58,7 +61,12 @@ impl Path {
                     max: 1_f32,
                 },
             ),
-            control_points: [Point::new(0_f32, 0_f32), Point::new(1_f32, 1_f32)],
+            control_points: [
+                Point::new(0.1_f32, 0.6_f32),
+                Point::new(0.2_f32, 0_f32),
+                Point::new(0.5_f32, 0.8_f32),
+                Point::new(1_f32, 0.6_f32),
+            ],
         }
     }
 
@@ -74,14 +82,44 @@ impl Path {
         setter.end_set_parameter(&self.t);
     }
 
+    pub fn bezier_matrix(&self) -> Matrix2x4<f32> {
+        let control_points: [[f32; 2]; NUM_CONTROL_POINTS] =
+            std::array::from_fn(|col| self.control_points[col].load_xy::<f32>());
+
+        Matrix2x4::<f32>::from_fn(|r, c| control_points[c][r]) * Self::BEZIER_BASE
+    }
+
     pub fn get_xy<F: audio_lib::utils::Float>(&self) -> [F; 2] {
-        let t = F::from_float(self.t.value());
-        let one_minus_t = F::ONE - t;
-        let start = self.control_points[0].load_xy::<F>();
-        let end = self.control_points[1].load_xy::<F>();
+        let matrix = self.bezier_matrix();
+        let t = self.t.value();
         [
-            F::from_float(one_minus_t * start[0] + t * end[0]),
-            F::from_float(one_minus_t * start[1] + t * end[1]),
+            F::from_float(Self::calc_horner(&matrix.row(0), t)),
+            F::from_float(Self::calc_horner(&matrix.row(1), t)),
         ]
     }
+
+    pub fn calc_horner(
+        row: &Matrix<
+            f32,
+            Const<1>,
+            Const<4>,
+            ViewStorage<'_, f32, Const<1>, Const<4>, Const<1>, Const<2>>,
+        >,
+        t: f32,
+    ) -> f32 {
+        let n = row.ncols();
+        let mut accumulator = row[n - 1];
+        for j in 2..=n {
+            accumulator *= t;
+            accumulator += row[n - j];
+        }
+        accumulator
+    }
+
+    pub const BEZIER_BASE: Matrix4<f32> = nalgebra::matrix![
+        1.0, -3.0, 3.0, -1.0; //
+        0.0, 3.0, -6.0, 3.0; //
+        0.0, 0.0, 3.0, -3.0; //
+        0.0, 0.0, 0.0, 1.0; //
+    ];
 }

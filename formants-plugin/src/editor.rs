@@ -1,7 +1,6 @@
+use crate::*;
 use audio_lib::biquad;
 use audio_lib::utils;
-
-use crate::*;
 use std::sync::{self, atomic};
 
 struct UiState {
@@ -112,7 +111,8 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                                                 )
                                             });
 
-                                        let control_point_ids: [egui::Id; 2] =
+                                        let control_point_ids: [egui::Id;
+                                            params::path::NUM_CONTROL_POINTS] =
                                             std::array::from_fn(|i| {
                                                 ui.make_persistent_id(format!(
                                                     "control_point_{}",
@@ -182,7 +182,7 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                                             );
 
                                             if params.path.enabled.value() {
-                                                for i in 0..2 {
+                                                for i in 0..params::path::NUM_CONTROL_POINTS {
                                                     plot_ui.points(
                                                         egui_plot::Points::new(
                                                             "Path Start",
@@ -193,7 +193,11 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                                                         )
                                                         .id(control_point_ids[i])
                                                         .shape(egui_plot::MarkerShape::Circle)
-                                                        .color(egui::Color32::LIGHT_GRAY)
+                                                        .color(
+                                                            egui::Color32::from_rgba_unmultiplied(
+                                                                255, 255, 0, 32,
+                                                            ),
+                                                        )
                                                         .filled(true)
                                                         .radius(4.0),
                                                     );
@@ -292,19 +296,15 @@ pub fn make_gain_response_points<'a>(
 }
 
 pub fn make_path_points<'a>(path: &params::Path) -> egui_plot::PlotPoints<'a> {
-    let p = [
-        path.control_points[0].load_xy::<f64>(),
-        path.control_points[1].load_xy::<f64>(),
-    ];
+    let matrix = path.bezier_matrix();
     egui_plot::PlotPoints::from_parametric_callback(
         move |t| {
-            if t == 0.0 {
-                (p[0][0], p[0][1])
-            } else {
-                (p[1][0], p[1][1])
-            }
+            (
+                params::Path::calc_horner(&matrix.row(0), t as f32) as f64,
+                params::Path::calc_horner(&matrix.row(1), t as f32) as f64,
+            )
         },
         0.0..=1.0,
-        2,
+        100,
     )
 }
