@@ -104,7 +104,7 @@ impl PluginParams {
 
     pub fn get_xy<F: audio_lib::utils::Float>(&self) -> [F; 2] {
         if self.path.enabled.value() {
-            self.path.get_xy::<F>()
+            self.path.get_point::<F>()
         } else {
             [F::from_float(self.x.value()), F::from_float(self.y.value())]
         }
@@ -112,7 +112,7 @@ impl PluginParams {
 
     fn get_frequencies(&self) -> [f32; 2] {
         if self.path.enabled.value() {
-            let [x, y] = self.path.get_xy::<f32>();
+            let [x, y] = self.path.get_point::<f32>();
             self.frequency_transform.coordinates_to_frequencies(x, y)
         } else {
             self.frequency_transform

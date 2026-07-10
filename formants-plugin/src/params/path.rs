@@ -46,12 +46,14 @@ pub struct Path {
     pub t: nice::FloatParam,
 
     #[nested(array, group = "control_points")]
-    pub control_points: [Point; NUM_CONTROL_POINTS],
+    control_points: [Point; NUM_CONTROL_POINTS],
+
+    spline_coefficients: [[nice::AtomicF32; 4]; 2],
 }
 
 impl Path {
     pub fn new() -> Self {
-        Self {
+        let path = Self {
             enabled: nice::BoolParam::new("Enabled", false),
             t: nice::FloatParam::new(
                 "t",
@@ -67,7 +69,12 @@ impl Path {
                 Point::new(0.5_f32, 0.8_f32),
                 Point::new(1_f32, 0.6_f32),
             ],
-        }
+            spline_coefficients: std::array::from_fn(|_| {
+                std::array::from_fn(|_| nice::AtomicF32::new(0_f32))
+            }),
+        };
+        path.update_coefficients();
+        path
     }
 
     pub fn set_enabled(&self, enabled: bool, setter: &nice::ParamSetter<'_>) {
@@ -82,41 +89,66 @@ impl Path {
         setter.end_set_parameter(&self.t);
     }
 
-    pub fn bezier_matrix(&self) -> Matrix2x4<f32> {
-        let control_points: [[f32; 2]; NUM_CONTROL_POINTS] =
-            std::array::from_fn(|col| self.control_points[col].load_xy::<f32>());
-
-        Matrix2x4::<f32>::from_fn(|r, c| control_points[c][r]) * Self::BEZIER_BASE
+    pub fn set_control_point(&self, x: f32, y: f32, i: usize) {
+        assert!(i < NUM_CONTROL_POINTS);
+        self.control_points[i].store_xy(x, y);
+        self.update_coefficients();
     }
 
-    pub fn get_xy<F: audio_lib::utils::Float>(&self) -> [F; 2] {
-        let matrix = self.bezier_matrix();
-        let t = self.t.value();
+    pub fn get_control_point<F: audio_lib::utils::Float>(&self, i: usize) -> [F; 2] {
+        assert!(i < NUM_CONTROL_POINTS);
+        self.control_points[i].load_xy()
+    }
+
+    pub fn get_point<F: audio_lib::utils::Float>(&self) -> [F; 2] {
+        self.get_point_for_t(self.t.value())
+    }
+
+    pub fn get_point_for_t<F: audio_lib::utils::Float>(&self, t: f32) -> [F; 2] {
         [
-            F::from_float(Self::calc_horner(&matrix.row(0), t)),
-            F::from_float(Self::calc_horner(&matrix.row(1), t)),
+            F::from_float(Self::calc_horner(&self.get_coefficients(0), t)),
+            F::from_float(Self::calc_horner(&self.get_coefficients(1), t)),
         ]
     }
 
-    pub fn calc_horner(
-        row: &Matrix<
-            f32,
-            Const<1>,
-            Const<4>,
-            ViewStorage<'_, f32, Const<1>, Const<4>, Const<1>, Const<2>>,
-        >,
-        t: f32,
-    ) -> f32 {
-        let n = row.ncols();
-        let mut accumulator = row[n - 1];
-        for j in 2..=n {
-            accumulator *= t;
-            accumulator += row[n - j];
+    /// coefficients[0] + coefficients[1] * t + coefficients[2] * t^2 + ... + coefficients[N-1] * t^(N-1)
+    /// (calculated via horner scheme)
+    pub fn calc_horner<const N: usize>(coefficients: &[f32; N], t: f32) -> f32 {
+        let mut accumulator = coefficients[N - 1];
+        for j in 2..=N {
+            accumulator = accumulator * t + coefficients[N - j];
         }
         accumulator
     }
 
-    pub const BEZIER_BASE: Matrix4<f32> = nalgebra::matrix![
+    pub fn get_coefficients(&self, i: usize) -> [f32; NUM_CONTROL_POINTS] {
+        assert!(i < 2);
+        let c = &self.spline_coefficients[i];
+        std::array::from_fn(|j| c[j].load(atomic::Ordering::Relaxed))
+    }
+
+    fn update_coefficients(&self) {
+        for i in 0..2 {
+            let c = &self.spline_coefficients[i];
+            for j in 0..4 {
+                c[j].store(
+                    (self.geometry_row(i) * Self::SPLINE_BASE.column(j))[0],
+                    atomic::Ordering::Relaxed,
+                );
+            }
+        }
+    }
+
+    fn geometry_row(&self, i: usize) -> SMatrix<f32, 1, NUM_CONTROL_POINTS> {
+        assert!(i < 2);
+        if i == 0 {
+            SMatrix::from_fn(|_, j| self.control_points[j].x.load(atomic::Ordering::Relaxed))
+        } else {
+            SMatrix::from_fn(|_, j| self.control_points[j].y.load(atomic::Ordering::Relaxed))
+        }
+    }
+
+    const SPLINE_BASE: Matrix4<f32> = nalgebra::matrix![    // bezier atm
         1.0, -3.0, 3.0, -1.0; //
         0.0, 3.0, -6.0, 3.0; //
         0.0, 0.0, 3.0, -3.0; //
