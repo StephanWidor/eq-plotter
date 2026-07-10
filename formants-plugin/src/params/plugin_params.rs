@@ -1,9 +1,6 @@
 use super::*;
 use audio_lib::*;
-use nice_plug::params::Params;
 use std::sync::atomic;
-
-const SMOOTHING_LENGTH: f32 = 20_f32;
 
 #[derive(nice::Params)]
 pub struct PluginParams {
@@ -15,6 +12,9 @@ pub struct PluginParams {
 
     #[id = "y"]
     pub y: nice::FloatParam,
+
+    #[nested(group = "Path")]
+    pub path: Path,
 
     #[id = "Dry Gain (dB)"]
     pub dry_gain_db: nice::FloatParam,
@@ -46,6 +46,7 @@ impl PluginParams {
                 },
             )
             .with_smoother(nice::SmoothingStyle::Linear(SMOOTHING_LENGTH)),
+            path: Path::new(),
             dry_gain_db: nice::FloatParam::new(
                 format!("Mix"),
                 -36_f32,
@@ -101,9 +102,22 @@ impl PluginParams {
         ]
     }
 
+    pub fn get_xy<F: audio_lib::utils::Float>(&self) -> [F; 2] {
+        if self.path.enabled.value() {
+            self.path.get_point::<F>()
+        } else {
+            [F::from_float(self.x.value()), F::from_float(self.y.value())]
+        }
+    }
+
     fn get_frequencies(&self) -> [f32; 2] {
-        self.frequency_transform
-            .coordinates_to_frequencies(self.x.value(), self.y.value())
+        if self.path.enabled.value() {
+            let [x, y] = self.path.get_point::<f32>();
+            self.frequency_transform.coordinates_to_frequencies(x, y)
+        } else {
+            self.frequency_transform
+                .coordinates_to_frequencies(self.x.value(), self.y.value())
+        }
     }
 
     fn get_single_band_coefficients(

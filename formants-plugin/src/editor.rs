@@ -1,11 +1,11 @@
+use crate::*;
 use audio_lib::biquad;
 use audio_lib::utils;
-
-use crate::*;
 use std::sync::{self, atomic};
 
 struct UiState {
     vowels_map: Vec<(String, Option<[f32; 2]>)>,
+    hovered_control_point_index: usize,
 }
 
 impl UiState {
@@ -42,6 +42,7 @@ impl UiState {
                     t.xy_from_frequencies([260_f32, 3200_f32]),
                 ),
             ],
+            hovered_control_point_index: usize::MAX,
         }
     }
 }
@@ -79,9 +80,12 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                         )
                         .show_inside(ui, |ui| {
                             let plot_size = ui.available_width().min(0.9 * ui.available_height());
-                            let x = params.x.value() as f64;
-                            let y = params.y.value() as f64;
+                            let [x, y] = params.get_xy::<f64>();
                             ui.vertical(|ui| {
+                                let mut path_enabled = params.path.enabled.value();
+                                if ui.checkbox(&mut path_enabled, "Path Mode").clicked() {
+                                    params.path.set_enabled(path_enabled, setter);
+                                }
                                 egui::Frame::group(ui.style())
                                     .corner_radius(5)
                                     .show(ui, |ui| {
@@ -107,6 +111,23 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                                                 )
                                             });
 
+                                        let control_point_ids: [egui::Id;
+                                            params::path::NUM_CONTROL_POINTS] =
+                                            std::array::from_fn(|i| {
+                                                ui.make_persistent_id(format!(
+                                                    "control_point_{}",
+                                                    i
+                                                ))
+                                            });
+                                        let item_id_to_control_point_index =
+                                            |id: &Option<egui::Id>| match id {
+                                                None => None,
+                                                Some(id) => {
+                                                    control_point_ids.iter().position(|point_id| {
+                                                        point_id.value() == id.value()
+                                                    })
+                                                }
+                                            };
                                         let plot_response = plot.show(ui, |plot_ui| {
                                             plot_ui.set_plot_bounds(
                                                 egui_plot::PlotBounds::from_min_max(
@@ -136,6 +157,18 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                                                     )),
                                             );
 
+                                            if params.path.enabled.value() {
+                                                let path_points = make_path_points(&params.path);
+                                                plot_ui.line(
+                                                    egui_plot::Line::new("path", path_points)
+                                                        .color(
+                                                            egui::Color32::from_rgba_unmultiplied(
+                                                                255, 255, 0, 32,
+                                                            ),
+                                                        ),
+                                                );
+                                            }
+
                                             plot_ui.points(
                                                 egui_plot::Points::new(
                                                     "F",
@@ -144,15 +177,63 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                                                 .shape(egui_plot::MarkerShape::Circle)
                                                 .color(egui::Color32::ORANGE)
                                                 .filled(true)
-                                                .radius(5.0),
+                                                .radius(5.0)
+                                                .allow_hover(!params.path.enabled.value()),
                                             );
+
+                                            if params.path.enabled.value() {
+                                                for i in 0..params::path::NUM_CONTROL_POINTS {
+                                                    plot_ui.points(
+                                                        egui_plot::Points::new(
+                                                            "Path Start",
+                                                            egui_plot::PlotPoints::from(
+                                                                params.path.get_control_point(i),
+                                                            ),
+                                                        )
+                                                        .id(control_point_ids[i])
+                                                        .shape(egui_plot::MarkerShape::Circle)
+                                                        .color(
+                                                            egui::Color32::from_rgba_unmultiplied(
+                                                                255, 255, 0, 32,
+                                                            ),
+                                                        )
+                                                        .filled(true)
+                                                        .radius(4.0),
+                                                    );
+                                                }
+                                            }
+
                                             plot_ui.pointer_coordinate()
                                         });
                                         if plot_response.response.is_pointer_button_down_on() {
-                                            if let Some(drag_position) = plot_response.inner {
-                                                params.set_x(drag_position.x as f32, setter);
-                                                params.set_y(drag_position.y as f32, setter);
+                                            if ui_state.hovered_control_point_index == usize::MAX {
+                                                if let Some(hovered_control_point_index) =
+                                                    item_id_to_control_point_index(
+                                                        &plot_response.hovered_plot_item,
+                                                    )
+                                                {
+                                                    ui_state.hovered_control_point_index =
+                                                        hovered_control_point_index;
+                                                }
                                             }
+                                            if params.path.enabled.value() {
+                                                if ui_state.hovered_control_point_index < usize::MAX
+                                                    && let Some(drag_position) = plot_response.inner
+                                                {
+                                                    params.path.set_control_point(
+                                                        drag_position.x as f32,
+                                                        drag_position.y as f32,
+                                                        ui_state.hovered_control_point_index,
+                                                    );
+                                                }
+                                            } else {
+                                                if let Some(drag_position) = plot_response.inner {
+                                                    params.set_x(drag_position.x as f32, setter);
+                                                    params.set_y(drag_position.y as f32, setter);
+                                                }
+                                            }
+                                        } else {
+                                            ui_state.hovered_control_point_index = usize::MAX
                                         }
                                     });
                                 ui.horizontal(|ui| {
@@ -167,6 +248,16 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                                     );
                                     if gain_response.changed() {
                                         params.set_dry_gain_db(dry_gain, setter);
+                                    }
+                                    if params.path.enabled.value() {
+                                        let mut path_t = params.path.t.value();
+                                        let t_response = ui.add(egui::Slider::new(
+                                            &mut path_t,
+                                            range::to_range_inclusive(&params.path.t.range()),
+                                        ));
+                                        if t_response.changed() {
+                                            params.path.set_t(path_t, setter);
+                                        }
                                     }
                                 })
                             });
@@ -199,5 +290,19 @@ pub fn make_gain_response_points<'a>(
         move |x| gain_to_normalized(gain_response(x_to_frequency(x))),
         0.0..=1.0,
         1000,
+    )
+}
+
+pub fn make_path_points<'a>(path: &params::Path) -> egui_plot::PlotPoints<'a> {
+    let c = [path.get_coefficients(0), path.get_coefficients(1)];
+    egui_plot::PlotPoints::from_parametric_callback(
+        move |t| {
+            (
+                params::Path::calc_horner(&c[0], t as f32) as f64,
+                params::Path::calc_horner(&c[1], t as f32) as f64,
+            )
+        },
+        0.0..=1.0,
+        100,
     )
 }
