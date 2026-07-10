@@ -48,6 +48,7 @@ pub struct Path {
     #[nested(array, group = "control_points")]
     control_points: [Point; NUM_CONTROL_POINTS],
 
+    spline_base: Matrix4<f32>,
     spline_coefficients: [[nice::AtomicF32; 4]; 2],
 }
 
@@ -69,6 +70,12 @@ impl Path {
                 Point::new(0.5_f32, 0.8_f32),
                 Point::new(1_f32, 0.6_f32),
             ],
+            spline_base: (1_f32 / 3_f32)
+                * nalgebra::matrix![
+                    3_f32, -19_f32, 32_f32, -16_f32;
+                    0_f32, 24_f32, -56_f32, 32_f32;
+                    0_f32, -8_f32, 40_f32, -32_f32;
+                    0_f32, 3_f32, -16_f32, 16_f32],
             spline_coefficients: std::array::from_fn(|_| {
                 std::array::from_fn(|_| nice::AtomicF32::new(0_f32))
             }),
@@ -132,7 +139,7 @@ impl Path {
             let c = &self.spline_coefficients[i];
             for j in 0..4 {
                 c[j].store(
-                    (self.geometry_row(i) * Self::SPLINE_BASE.column(j))[0],
+                    (self.geometry_row(i) * self.spline_base.column(j))[0],
                     atomic::Ordering::Relaxed,
                 );
             }
@@ -147,11 +154,4 @@ impl Path {
             SMatrix::from_fn(|_, j| self.control_points[j].y.load(atomic::Ordering::Relaxed))
         }
     }
-
-    const SPLINE_BASE: Matrix4<f32> = nalgebra::matrix![    // bezier atm
-        1.0, -3.0, 3.0, -1.0; //
-        0.0, 3.0, -6.0, 3.0; //
-        0.0, 0.0, 3.0, -3.0; //
-        0.0, 0.0, 0.0, 1.0; //
-    ];
 }
