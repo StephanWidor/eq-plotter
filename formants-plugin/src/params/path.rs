@@ -1,5 +1,4 @@
 use nalgebra::*;
-use std::sync::atomic;
 
 use super::*;
 
@@ -7,33 +6,48 @@ pub const NUM_CONTROL_POINTS: usize = 4;
 
 #[derive(nice::Params)]
 pub struct Point {
-    #[persist = "x"]
-    pub x: nice::AtomicF32,
+    #[id = "x"]
+    pub x: nice::FloatParam,
 
-    #[persist = "y"]
-    pub y: nice::AtomicF32,
+    #[id = "y"]
+    pub y: nice::FloatParam,
 }
 
 impl Point {
     pub fn new(x: f32, y: f32) -> Self {
         Self {
-            x: nice::AtomicF32::new(x),
-            y: nice::AtomicF32::new(y),
+            x: nice::FloatParam::new(
+                "x",
+                x,
+                nice::FloatRange::Linear {
+                    min: 0_f32,
+                    max: 1_f32,
+                },
+            )
+            .with_smoother(nice::SmoothingStyle::Linear(SMOOTHING_LENGTH)),
+            y: nice::FloatParam::new(
+                "y",
+                y,
+                nice::FloatRange::Linear {
+                    min: 0_f32,
+                    max: 1_f32,
+                },
+            )
+            .with_smoother(nice::SmoothingStyle::Linear(SMOOTHING_LENGTH)),
         }
     }
 
-    pub fn load_xy<F: audio_lib::utils::Float>(&self) -> [F; 2] {
-        [
-            F::from_float(self.x.load(atomic::Ordering::Relaxed)),
-            F::from_float(self.y.load(atomic::Ordering::Relaxed)),
-        ]
+    pub fn get<F: audio_lib::utils::Float>(&self) -> [F; 2] {
+        [F::from_float(self.x.value()), F::from_float(self.y.value())]
     }
 
-    pub fn store_xy(&self, x: f32, y: f32) {
-        self.x
-            .store(x.clamp(0_f32, 1_f32), atomic::Ordering::Relaxed);
-        self.y
-            .store(y.clamp(0_f32, 1_f32), atomic::Ordering::Relaxed);
+    pub fn set(&self, x: f32, y: f32, setter: &nice::ParamSetter<'_>) {
+        setter.begin_set_parameter(&self.x);
+        setter.begin_set_parameter(&self.y);
+        setter.set_parameter(&self.x, x);
+        setter.set_parameter(&self.y, y);
+        setter.end_set_parameter(&self.x);
+        setter.end_set_parameter(&self.y);
     }
 }
 
@@ -46,15 +60,14 @@ pub struct Path {
     pub t: nice::FloatParam,
 
     #[nested(array, group = "control_points")]
-    control_points: [Point; NUM_CONTROL_POINTS],
+    pub control_points: [Point; NUM_CONTROL_POINTS],
 
     spline_base: Matrix4<f32>,
-    spline_coefficients: [[nice::AtomicF32; 4]; 2],
 }
 
 impl Path {
     pub fn new() -> Self {
-        let path = Self {
+        Self {
             enabled: nice::BoolParam::new("Enabled", false),
             t: nice::FloatParam::new(
                 "t",
@@ -72,16 +85,11 @@ impl Path {
             ],
             spline_base: (1_f32 / 3_f32)
                 * nalgebra::matrix![
-                    3_f32, -19_f32, 32_f32, -16_f32;
-                    0_f32, 24_f32, -56_f32, 32_f32;
-                    0_f32, -8_f32, 40_f32, -32_f32;
-                    0_f32, 3_f32, -16_f32, 16_f32],
-            spline_coefficients: std::array::from_fn(|_| {
-                std::array::from_fn(|_| nice::AtomicF32::new(0_f32))
-            }),
-        };
-        path.update_coefficients();
-        path
+                    3_f32,   0_f32,   0_f32,   0_f32;
+                    -19_f32, 24_f32,  -8_f32,  3_f32;
+                    32_f32,  -56_f32, 40_f32,  -16_f32;
+                    -16_f32, 32_f32,  -32_f32, 16_f32],
+        }
     }
 
     pub fn set_enabled(&self, enabled: bool, setter: &nice::ParamSetter<'_>) {
@@ -96,62 +104,43 @@ impl Path {
         setter.end_set_parameter(&self.t);
     }
 
-    pub fn set_control_point(&self, x: f32, y: f32, i: usize) {
-        assert!(i < NUM_CONTROL_POINTS);
-        self.control_points[i].store_xy(x, y);
-        self.update_coefficients();
-    }
-
-    pub fn get_control_point<F: audio_lib::utils::Float>(&self, i: usize) -> [F; 2] {
-        assert!(i < NUM_CONTROL_POINTS);
-        self.control_points[i].load_xy()
-    }
-
     pub fn get_point<F: audio_lib::utils::Float>(&self) -> [F; 2] {
-        self.get_point_for_t(self.t.value())
+        Self::point_from_coefficients_and_t(&self.coefficients_matrix(), self.t.value())
     }
 
-    pub fn get_point_for_t<F: audio_lib::utils::Float>(&self, t: f32) -> [F; 2] {
-        [
-            F::from_float(Self::calc_horner(&self.get_coefficients(0), t)),
-            F::from_float(Self::calc_horner(&self.get_coefficients(1), t)),
-        ]
-    }
-
-    /// coefficients[0] + coefficients[1] * t + coefficients[2] * t^2 + ... + coefficients[N-1] * t^(N-1)
+    /// coefficients[0] + coefficients[1] * t + coefficients[2] * t^2 + ... + coefficients[n-1] * t^(n-1)
     /// (calculated via horner scheme)
-    pub fn calc_horner<const N: usize>(coefficients: &[f32; N], t: f32) -> f32 {
-        let mut accumulator = coefficients[N - 1];
-        for j in 2..=N {
-            accumulator = accumulator * t + coefficients[N - j];
+    pub fn calc_horner(coefficients: &[f32], t: f32) -> f32 {
+        let n = coefficients.len();
+        let mut accumulator = coefficients[n - 1];
+        for j in 2..=n {
+            accumulator = accumulator * t + coefficients[n - j];
         }
         accumulator
     }
 
-    pub fn get_coefficients(&self, i: usize) -> [f32; NUM_CONTROL_POINTS] {
-        assert!(i < 2);
-        let c = &self.spline_coefficients[i];
-        std::array::from_fn(|j| c[j].load(atomic::Ordering::Relaxed))
+    pub fn point_from_coefficients_and_t<F: audio_lib::utils::Float>(
+        coefficients: &SMatrix<f32, NUM_CONTROL_POINTS, 2>,
+        t: f32,
+    ) -> [F; 2] {
+        [
+            F::from_float(Self::calc_horner(coefficients.column(0).as_slice(), t)),
+            F::from_float(Self::calc_horner(coefficients.column(1).as_slice(), t)),
+        ]
     }
 
-    fn update_coefficients(&self) {
-        for i in 0..2 {
-            let c = &self.spline_coefficients[i];
-            for j in 0..4 {
-                c[j].store(
-                    (self.geometry_row(i) * self.spline_base.column(j))[0],
-                    atomic::Ordering::Relaxed,
-                );
+    pub fn coefficients_matrix(&self) -> SMatrix<f32, NUM_CONTROL_POINTS, 2> {
+        self.spline_base * self.geometry_matrix()
+    }
+
+    fn geometry_matrix(&self) -> SMatrix<f32, NUM_CONTROL_POINTS, 2> {
+        SMatrix::from_fn(|row, col| {
+            let control_point = &self.control_points[row];
+            if col == 0 {
+                control_point.x.value()
+            } else {
+                control_point.y.value()
             }
-        }
-    }
-
-    fn geometry_row(&self, i: usize) -> SMatrix<f32, 1, NUM_CONTROL_POINTS> {
-        assert!(i < 2);
-        if i == 0 {
-            SMatrix::from_fn(|_, j| self.control_points[j].x.load(atomic::Ordering::Relaxed))
-        } else {
-            SMatrix::from_fn(|_, j| self.control_points[j].y.load(atomic::Ordering::Relaxed))
-        }
+        })
     }
 }

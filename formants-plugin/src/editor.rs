@@ -187,7 +187,7 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                                                         egui_plot::Points::new(
                                                             "Path Start",
                                                             egui_plot::PlotPoints::from(
-                                                                params.path.get_control_point(i),
+                                                                params.path.control_points[i].get(),
                                                             ),
                                                         )
                                                         .id(control_point_ids[i])
@@ -220,11 +220,13 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                                                 if ui_state.hovered_control_point_index < usize::MAX
                                                     && let Some(drag_position) = plot_response.inner
                                                 {
-                                                    params.path.set_control_point(
-                                                        drag_position.x as f32,
-                                                        drag_position.y as f32,
-                                                        ui_state.hovered_control_point_index,
-                                                    );
+                                                    params.path.control_points
+                                                        [ui_state.hovered_control_point_index]
+                                                        .set(
+                                                            drag_position.x as f32,
+                                                            drag_position.y as f32,
+                                                            setter,
+                                                        );
                                                 }
                                             } else {
                                                 if let Some(drag_position) = plot_response.inner {
@@ -294,13 +296,11 @@ pub fn make_gain_response_points<'a>(
 }
 
 pub fn make_path_points<'a>(path: &params::Path) -> egui_plot::PlotPoints<'a> {
-    let c = [path.get_coefficients(0), path.get_coefficients(1)];
+    let c = path.coefficients_matrix();
     egui_plot::PlotPoints::from_parametric_callback(
         move |t| {
-            (
-                params::Path::calc_horner(&c[0], t as f32) as f64,
-                params::Path::calc_horner(&c[1], t as f32) as f64,
-            )
+            let [x, y] = params::Path::point_from_coefficients_and_t(&c, t as f32);
+            (x, y)
         },
         0.0..=1.0,
         100,
