@@ -124,8 +124,12 @@ impl Path {
         t: f32,
     ) -> [F; 2] {
         [
-            F::from_float(Self::calc_horner(coefficients.column(0).as_slice(), t)),
-            F::from_float(Self::calc_horner(coefficients.column(1).as_slice(), t)),
+            F::from_float(
+                Self::calc_horner(coefficients.column(0).as_slice(), t).clamp(0_f32, 1_f32),
+            ),
+            F::from_float(
+                Self::calc_horner(coefficients.column(1).as_slice(), t).clamp(0_f32, 1_f32),
+            ),
         ]
     }
 
