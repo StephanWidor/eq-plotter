@@ -43,7 +43,7 @@ pub fn create_editor<
                                 .inner_margin(20)
                                 .fill(ui_settings.color_palette.background),
                         )
-                        .show_inside(ui, |ui| {
+                        .show(ui, |ui| {
                             let mut presets = presets.lock().unwrap();
                             let backup_eqs = params.to_multiband_eq();
                             if let presets::Selection::Selected(_, preset) =

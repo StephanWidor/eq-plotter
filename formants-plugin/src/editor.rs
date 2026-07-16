@@ -78,7 +78,7 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                                 .inner_margin(20)
                                 .fill(egui::Color32::from_rgb(32, 35, 38)),
                         )
-                        .show_inside(ui, |ui| {
+                        .show(ui, |ui| {
                             let plot_size = ui.available_width().min(0.9 * ui.available_height());
                             let [x, y] = params.get_xy::<f64>();
                             ui.vertical(|ui| {
@@ -98,18 +98,27 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                                             .show_background(false)
                                             .show_axes(false)
                                             .show_grid(false)
-                                            .label_formatter(|_, point| {
-                                                let frequencies = params
-                                                    .frequency_transform
-                                                    .coordinates_to_frequencies(
-                                                        point.x as f32,
-                                                        point.y as f32,
-                                                    );
-                                                format!(
-                                                    "f0: {:.0}\nf1: {:.0}",
-                                                    frequencies[0], frequencies[1]
-                                                )
-                                            });
+                                            .label_formatter(
+                                                |hover_position| match hover_position {
+                                                    egui_plot::HoverPosition::NearDataPoint {
+                                                        plot_name: _,
+                                                        position: point,
+                                                        index: _,
+                                                    } => {
+                                                        let frequencies = params
+                                                            .frequency_transform
+                                                            .coordinates_to_frequencies(
+                                                                point.x as f32,
+                                                                point.y as f32,
+                                                            );
+                                                        Some(format!(
+                                                            "f0: {:.0}\nf1: {:.0}",
+                                                            frequencies[0], frequencies[1]
+                                                        ))
+                                                    }
+                                                    _ => None,
+                                                },
+                                            );
 
                                         let control_point_ids: [egui::Id;
                                             params::path::NUM_CONTROL_POINTS] =

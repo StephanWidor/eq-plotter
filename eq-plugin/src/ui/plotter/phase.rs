@@ -31,12 +31,17 @@ pub fn add_plot<F: audio_utils::Float + egui::emath::Numeric>(
                 .formatter(|_, _| String::new()),
             egui_plot::AxisHints::new_y().placement(egui_plot::HPlacement::Right),
         ])
-        .label_formatter(|_, point| {
-            format!(
+        .label_formatter(|hover_position| match hover_position {
+            egui_plot::HoverPosition::NearDataPoint {
+                plot_name: _,
+                position: point,
+                index: _,
+            } => Some(format!(
                 "{} Hz, {:.2} rad",
                 audio_utils::log_to_frequency(point.x) as i32,
                 point.y
-            )
+            )),
+            _ => None,
         })
         .show_x(false)
         .legend(egui_plot::Legend::default())
