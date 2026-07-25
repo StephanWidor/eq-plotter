@@ -15,6 +15,7 @@ impl<F: utils::Float> Coefficients<F> {
     }
 
     pub fn time_to_coefficient(time: F, sample_rate: F) -> F {
+        assert!(sample_rate > F::ZERO);
         if time <= F::zero() {
             F::one()
         } else {
@@ -33,6 +34,7 @@ impl<F: utils::Float> State<F> {
     }
 
     pub fn process(&mut self, sample: F, coefficients: &Coefficients<F>) -> F {
+        assert!(sample >= F::ZERO);
         let coefficient = if sample > self.value {
             coefficients.attack
         } else {

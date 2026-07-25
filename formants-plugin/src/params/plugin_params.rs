@@ -19,6 +19,9 @@ pub struct PluginParams {
     #[id = "Dry Gain (dB)"]
     pub dry_gain_db: nice::FloatParam,
 
+    #[id = "Limiter Enabled"]
+    pub limiter_enabled: nice::BoolParam,
+
     pub sample_rate: nice::AtomicF32,
 
     pub frequency_transform: FrequencyTransform,
@@ -56,6 +59,7 @@ impl PluginParams {
                 },
             )
             .with_smoother(nice::SmoothingStyle::Linear(SMOOTHING_LENGTH)),
+            limiter_enabled: nice::BoolParam::new("Limiter Enabled", true),
             sample_rate: nice::AtomicF32::new(48000_f32),
             frequency_transform: FrequencyTransform::default(),
         }
@@ -77,6 +81,12 @@ impl PluginParams {
         setter.begin_set_parameter(&self.dry_gain_db);
         setter.set_parameter(&self.dry_gain_db, gain_db);
         setter.end_set_parameter(&self.dry_gain_db);
+    }
+
+    pub fn set_limiter_enabled(&self, enabled: bool, setter: &nice::ParamSetter<'_>) {
+        setter.begin_set_parameter(&self.limiter_enabled);
+        setter.set_parameter(&self.limiter_enabled, enabled);
+        setter.end_set_parameter(&self.limiter_enabled);
     }
 
     pub fn get_multiband_coefficients(&self) -> [biquad::coefficients::Coefficients<f32>; 3] {
@@ -130,4 +140,16 @@ impl PluginParams {
         c.add_makeup_gain(eq::Gain::Db(gain_db));
         c
     }
+
+    pub const LIMITER: limiter::simple_limiter::Params<limiter::gain::SoftKnee<f32>, f32> =
+        limiter::simple_limiter::Params {
+            knee: limiter::gain::SoftKneeParams {
+                threshold_linear: 0.9,
+                compression_factor: 0.0,
+                knee_ratio: 1.1,
+            },
+            attack_time: 0.0,
+            release_time: 0.1,
+            lookahead_time: 0.002,
+        };
 }
