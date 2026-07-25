@@ -1,3 +1,5 @@
+use crate::params::PluginParams;
+
 use super::*;
 use audio_lib::*;
 use nice::Plugin as NicePlugin;
@@ -6,10 +8,12 @@ use std::sync::{self, atomic};
 const NUM_CHANNELS: usize = 2;
 type Filter = biquad::filter::Filter<f32>;
 type ThreeBandFilter = [Filter; 3];
+type Limiter = limiter::SimpleLimiter<limiter::gain::SoftKnee<f32>, 500, f32>;
 
 pub struct Plugin {
     params: sync::Arc<params::PluginParams>,
     filters: [ThreeBandFilter; NUM_CHANNELS],
+    limiters: [Limiter; NUM_CHANNELS],
 }
 
 impl Plugin {
@@ -19,6 +23,7 @@ impl Plugin {
             filters: std::array::from_fn(|_| {
                 std::array::from_fn(|_| Filter::new(biquad::coefficients::Coefficients::muted()))
             }),
+            limiters: std::array::from_fn(|_| Limiter::new_passthrough()),
         }
     }
 
@@ -68,7 +73,7 @@ impl nice::Plugin for Plugin {
         &mut self,
         _audio_io_layout: &nice::AudioIOLayout,
         _buffer_config: &nice::BufferConfig,
-        _context: &mut impl nice::InitContext<Self>,
+        context: &mut impl nice::InitContext<Self>,
     ) -> bool {
         let sample_rate = _buffer_config.sample_rate as f32;
         self.params
@@ -79,6 +84,10 @@ impl nice::Plugin for Plugin {
                 filter.reset_state();
             }
         }
+        for limiter in self.limiters.iter_mut() {
+            limiter.set(PluginParams::LIMITER, sample_rate);
+        }
+        context.set_latency_samples(self.limiters[0].get_lookahead_samples() as u32);
         true
     }
 
@@ -91,6 +100,7 @@ impl nice::Plugin for Plugin {
         assert!(buffer.channels() <= NUM_CHANNELS);
         let buffer_slice = buffer.as_slice();
         let coefficients = self.params.get_multiband_coefficients();
+        let limiter_enabled = self.params.limiter_enabled.value();
         for channel in 0..buffer_slice.len() {
             let channel_samples = buffer_slice.get_mut(channel).unwrap();
             let filters = &mut self.filters[channel];
@@ -99,6 +109,12 @@ impl nice::Plugin for Plugin {
             }
             for sample in (*channel_samples).iter_mut() {
                 *sample = biquad::multiband::parallel_sum::process(filters.iter_mut(), *sample);
+            }
+
+            let limiter = &mut self.limiters[channel];
+            limiter.set_enabled(limiter_enabled);
+            for sample in (*channel_samples).iter_mut() {
+                *sample = limiter.process(*sample);
             }
         }
         nice::ProcessStatus::Normal

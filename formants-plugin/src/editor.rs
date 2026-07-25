@@ -82,10 +82,16 @@ pub fn create_editor(params: sync::Arc<params::PluginParams>) -> Option<Box<dyn 
                             let plot_size = ui.available_width().min(0.9 * ui.available_height());
                             let [x, y] = params.get_xy::<f64>();
                             ui.vertical(|ui| {
-                                let mut path_enabled = params.path.enabled.value();
-                                if ui.checkbox(&mut path_enabled, "Path Mode").clicked() {
-                                    params.path.set_enabled(path_enabled, setter);
-                                }
+                                ui.horizontal(|ui| {
+                                    let mut path_enabled = params.path.enabled.value();
+                                    if ui.checkbox(&mut path_enabled, "Path Mode").clicked() {
+                                        params.path.set_enabled(path_enabled, setter);
+                                    }
+                                    let mut limiter_enabled = params.limiter_enabled.value();
+                                    if ui.checkbox(&mut limiter_enabled, "Limiter").clicked() {
+                                        params.set_limiter_enabled(limiter_enabled, setter);
+                                    }
+                                });
                                 egui::Frame::group(ui.style())
                                     .corner_radius(5)
                                     .show(ui, |ui| {
